@@ -2,11 +2,6 @@ import AppKit
 import ApplicationServices
 import OSLog
 
-// Step one only proves out the parts that are painful to retrofit: a signing
-// identity that TCC keeps recognising across rebuilds, both privacy grants, and
-// that the private accessibility symbol actually links. The switcher itself
-// comes next.
-
 private let log = Logger(subsystem: Bundle.identifier, category: "startup")
 
 // Not named main.swift on purpose: that filename means top-level code, which is
@@ -16,6 +11,11 @@ private let log = Logger(subsystem: Bundle.identifier, category: "startup")
 final class FlipApp: NSObject, NSApplicationDelegate {
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
     private var poll: Timer?
+
+    private let frontmost = FrontmostApp()
+    private let presenter = LoggingPresenter()
+    private var router: KeyRouter?
+    private var tap: EventTap?
 
     static func main() {
         let delegate = FlipApp()
@@ -35,6 +35,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         status = Permissions.request()
         Permissions.report(status)
 
+        frontmost.startObserving()
+        startInputIfPermitted()
+
         // Grants are made while the app is already running, and the switch is not
         // announced anywhere, so the only way to notice is to look again.
         poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -48,6 +51,31 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         status = latest
         Permissions.report(latest)
+
+        // Accessibility is usually granted after the first launch, and the tap
+        // could not have been created before that.
+        startInputIfPermitted()
+    }
+
+    private func startInputIfPermitted() {
+        guard tap == nil, status.accessibility else { return }
+
+        let router = KeyRouter(presenter: presenter, frontmost: frontmost)
+        self.router = router
+
+        KeyboardLayout.observeInputSourceChanges { [weak router] in
+            router?.rebuildBindings()
+        }
+
+        let tap = EventTap(observing: [.keyDown, .flagsChanged]) { type, event in
+            router.handle(type: type, event: event)
+        }
+        self.tap = tap
+        tap.start()
+
+        if Configuration.coexistWithHammerspoon {
+            log.notice("coexisting with Hammerspoon: leader is Ctrl-Alt, app switcher is Ctrl-Cmd-Tab")
+        }
     }
 
     /// A private symbol that resolves at build time can still be missing at run
