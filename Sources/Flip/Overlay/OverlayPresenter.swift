@@ -2,12 +2,8 @@ import AppKit
 import OSLog
 import SwiftUI
 
-/// The overlay, and the thing the key router drives.
-///
-/// The panel is built once at launch and never torn down — showing it is an
-/// `orderFront`, hiding it an `orderOut`. That is the difference the measurements
-/// pointed at: the Hammerspoon version created a fresh canvas and a fresh window
-/// on every single Alt-Tab, which cost about 12 ms before anything was drawn.
+/// The overlay. The panel is built once at launch and never torn down: showing
+/// it is an `orderFront`, hiding it an `orderOut`.
 @MainActor
 final class OverlayPresenter: SwitcherPresenting {
     private let log = Logger(subsystem: Bundle.identifier, category: "switcher")
@@ -37,9 +33,8 @@ final class OverlayPresenter: SwitcherPresenting {
 
         panel = NSPanel(
             contentRect: NSScreen.main?.frame ?? .zero,
-            // Non-activating is what keeps the overlay from stealing focus, which
-            // matters more than it sounds: the switcher must not itself become the
-            // application it is about to switch away from.
+            // Non-activating: the switcher must not become the application it is
+            // about to switch away from.
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -52,10 +47,8 @@ final class OverlayPresenter: SwitcherPresenting {
         panel.hasShadow = false
         panel.hidesOnDeactivate = false
 
-        // Order matters here, and getting it wrong is invisible: the isFloatingPanel
-        // setter rewrites the window level to .floating, so setting the level first
-        // silently left the overlay at level 3 — above ordinary windows, but under
-        // the menu bar and under anything running full screen.
+        // isFloatingPanel rewrites the level, so it must come first. Reversed, the
+        // overlay sits at level 3 — under the menu bar and full-screen windows.
         panel.isFloatingPanel = true
         panel.level = .screenSaver
         // Keyboard only for now; the router owns every interaction.
@@ -64,8 +57,7 @@ final class OverlayPresenter: SwitcherPresenting {
         let host = NSHostingView(rootView: OverlayView(model: model))
         panel.contentView = host
 
-        // Force SwiftUI to build its machinery now rather than on the first
-        // Alt-Tab, where it would be the one visible cost left.
+        // Build SwiftUI's machinery now, not on the first Alt-Tab.
         host.layoutSubtreeIfNeeded()
     }
 
@@ -124,9 +116,8 @@ final class OverlayPresenter: SwitcherPresenting {
 
     // MARK: - Internals
 
-    /// Which question the overlay is currently answering. Holding Alt and pressing
-    /// an application key changes it without closing anything, which is what makes
-    /// Alt-S narrow an open overlay to Spotify instead of stepping it along by one.
+    /// Which question the overlay answers. Changing it narrows an open overlay
+    /// instead of stepping it along.
     private enum Source: Equatable {
         case allWindows
         case application(String)
@@ -135,8 +126,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private func windows(for source: Source) -> [WindowInfo] {
         switch source {
         case .allWindows:
-            // Exclusions apply here and nowhere else. Naming an application by key
-            // is an explicit request for it, and refusing that would be surprising.
+            // Exclusions apply here only: naming an application by key is explicit.
             let excluded = Set(settings.settings.excludedBundleIDs)
             return store.currentSpaceWindows().filter { window in
                 window.bundleID.map { !excluded.contains($0) } ?? true
@@ -147,8 +137,7 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func open(_ source: Source, step: Int) {
-        // Same question as before, so this is another tap of the same key: walk the
-        // list rather than rebuilding it underneath the selection.
+        // Same question: walk the list rather than rebuild it under the selection.
         if isVisible, currentSource == source {
             move(by: step)
             return
@@ -160,10 +149,8 @@ final class OverlayPresenter: SwitcherPresenting {
         guard !windows.isEmpty else {
             log.debug("nothing to show for \(String(describing: source), privacy: .public)")
 
-            // Narrowing to an application with nothing on this space leaves the
-            // overlay standing rather than closing it out from under the user. Only
-            // a failed *open* has to be reported, or the router keeps believing an
-            // overlay is up and swallows keys that should pass through.
+            // Narrowing to nothing leaves the overlay standing. Only a failed open
+            // is reported, or the router keeps swallowing keys.
             if !isVisible { onUnexpectedClose?() }
             return
         }
@@ -171,9 +158,8 @@ final class OverlayPresenter: SwitcherPresenting {
         let wasVisible = isVisible
         present(windows, from: source)
 
-        // Opening steps onto the previous window, which is the whole point of a
-        // switcher. Narrowing does not: the application was named, so its own most
-        // recent window is the answer, and stepping would skip past it.
+        // Opening steps onto the previous window; narrowing does not, since the
+        // application was named and its own top window is the answer.
         if !wasVisible { move(by: step) }
 
         let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
@@ -227,8 +213,6 @@ final class OverlayPresenter: SwitcherPresenting {
         isVisible = false
         currentSource = nil
         model.windows = []
-        // The images themselves stay in the store; this only drops the references
-        // the closed overlay was holding.
         model.thumbnails = [:]
     }
 
@@ -246,12 +230,10 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func requestMissingThumbnails(for windows: [WindowInfo]) {
-        // Turned off means never captured, not captured and hidden: that is what
-        // makes the Screen Recording grant genuinely optional.
+        // Off means never captured, which is what makes Screen Recording optional.
         guard settings.settings.showThumbnails else { return }
 
-        // Selected tile first: it is the one being looked at, so its capture goes
-        // in ahead of the rest.
+        // Selected tile first.
         let selected = model.selected
         let ordered = ([windows[selected]] + windows.enumerated().filter { $0.offset != selected }.map(\.element))
             .filter { !$0.isMinimized }

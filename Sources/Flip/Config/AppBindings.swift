@@ -1,10 +1,7 @@
-/// What a fresh install starts with. Everything after that lives in
-/// `bindings.json` and is edited from the menu bar, so this is a seed rather than
-/// the configuration.
+/// A seed for a fresh install; after that `bindings.json` is the configuration.
 enum DefaultBindings {
-    /// Keyed by bundle ID rather than by name, because name lookups are ambiguous:
-    /// "Cursor" also matches a macOS text input service, and "Google Chrome" also
-    /// matches "Google Chrome Dev".
+    /// Bundle IDs, not names: "Cursor" also matches a text input service, and
+    /// "Google Chrome" also matches "Google Chrome Dev".
     static let all: [AppBinding] = [
         AppBinding(key: "c", bundleID: "com.tinyspeck.slackmacgap"),
         AppBinding(key: "e", bundleID: "com.todesktop.230313mzl4w4u92"), // Cursor

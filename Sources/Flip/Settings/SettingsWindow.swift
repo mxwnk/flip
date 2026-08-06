@@ -1,12 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// The settings window, built once and kept.
-///
-/// An accessory application has no Dock icon and is never the active application,
-/// so ordering a window front is not enough to make it visible — it would open
-/// behind whatever the user is looking at. Activating explicitly is what brings
-/// both the app and the window forward.
+/// An accessory application is never the active one, so ordering a window front
+/// is not enough — it opens behind everything without an explicit activate.
 @MainActor
 final class SettingsWindow {
     private let settings: SettingsStore
@@ -35,9 +31,8 @@ final class SettingsWindow {
         window.title = "Flip Settings"
 
         let host = NSHostingView(rootView: SettingsView(settings: settings, bindings: bindings))
-        // Left at its default, the hosting view derives the window's size from the
-        // content's ideal size — which for a list is the height of every row at
-        // once. Emptying it hands sizing back to the window.
+        // Otherwise the hosting view sizes the window to the content's ideal size,
+        // which for a list is every row at once.
         host.sizingOptions = []
         window.contentView = host
 
@@ -45,8 +40,6 @@ final class SettingsWindow {
         window.setContentSize(NSSize(width: 560, height: 440))
         window.center()
 
-        // Closing a window normally deallocates it. Keeping it means reopening is
-        // instant and the selected tab survives.
         window.isReleasedWhenClosed = false
 
         return window

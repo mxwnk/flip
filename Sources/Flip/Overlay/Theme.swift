@@ -1,10 +1,8 @@
 import SwiftUI
 
-/// Appearance of the overlay. Pure data, no logic — a direct port of the
-/// Hammerspoon `ui.lua`, so the two look the same while both are installed.
+/// Appearance of the overlay. Pure data, no logic.
 enum Theme {
-    /// One row up to the first threshold, and one more row past each further one.
-    /// Adding a number here adds a row; nothing else needs to change.
+    /// One row up to the first threshold, one more past each further one.
     static let rowThresholds = [5, 12]
 
     static let tileWidth: CGFloat = 300

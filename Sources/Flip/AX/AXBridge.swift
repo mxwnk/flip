@@ -3,8 +3,7 @@ import CAXShim
 import CoreGraphics
 
 enum AXBridge {
-    /// The WindowServer's ID for an accessibility element, or nil if the element
-    /// is not a window. This is what lets an AX window be matched against
+    /// The WindowServer's ID, which is what matches an AX window against
     /// CGWindowListCopyWindowInfo for z-order and space membership.
     static func windowID(of element: AXUIElement) -> CGWindowID? {
         var id: CGWindowID = 0
@@ -13,18 +12,15 @@ enum AXBridge {
         return id
     }
 
-    /// An AX call to a busy application blocks the calling thread until the app
-    /// answers, and the default timeout is six seconds. Every application element
-    /// gets a short one, so a hung app degrades into a missing window rather than
-    /// a frozen switcher.
+    /// The default is six seconds. A short one turns a hung app into a missing
+    /// window rather than a frozen switcher.
     static func limitMessagingTimeout(of application: AXUIElement, to seconds: Float = 0.5) {
         AXUIElementSetMessagingTimeout(application, seconds)
     }
 
     // MARK: - Attributes
     //
-    // Every one of these is a synchronous round trip into another process, so they
-    // belong on the window store's thread and nowhere near the main one.
+    // Each is a synchronous round trip into another process.
 
     static func value(_ attribute: String, of element: AXUIElement) -> CFTypeRef? {
         var value: CFTypeRef?
@@ -53,8 +49,7 @@ enum AXBridge {
         return (raw as! AXUIElement)
     }
 
-    /// Ordinary windows only. Panels, sheets, popovers and the Dock's own windows
-    /// all carry a different subrole and have no business in a switcher.
+    /// Panels, sheets and popovers carry a different subrole.
     static func isStandardWindow(_ element: AXUIElement) -> Bool {
         string(kAXSubroleAttribute as String, of: element) == (kAXStandardWindowSubrole as String)
     }

@@ -2,14 +2,9 @@ import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
 
-/// Maps characters to the physical keys that produce them.
-///
-/// Bindings are written as letters, but an event tap only ever sees virtual key
-/// codes, and the two are not interchangeable: the key that types "z" on QWERTZ is
-/// the one QWERTY calls "y". Hard-coding kVK_ANSI_* would quietly bind the wrong
-/// key the first time a binding lands on one of the swapped positions.
+/// Maps characters to the physical keys that produce them. Hard-coded kVK_ANSI_*
+/// would bind the wrong key: QWERTZ types "z" where QWERTY says "y".
 enum KeyboardLayout {
-    /// Keys that no character can express, so they can only be written by name.
     private static let namedKeys: [String: CGKeyCode] = [
         "F1": CGKeyCode(kVK_F1), "F2": CGKeyCode(kVK_F2), "F3": CGKeyCode(kVK_F3),
         "F4": CGKeyCode(kVK_F4), "F5": CGKeyCode(kVK_F5), "F6": CGKeyCode(kVK_F6),
@@ -26,27 +21,21 @@ enum KeyboardLayout {
         withLayout { codesByCharacter[character] }
     }
 
-    /// Resolves whatever a binding wrote: a single character against the current
-    /// layout, or one of the named keys above.
     static func keyCode(forBinding key: String) -> CGKeyCode? {
         if key.count == 1, let character = key.first { return keyCode(for: character) }
 
         return namedKeys[key.uppercased()]
     }
 
-    /// What Option plus this key types, but only when that is printable ASCII.
-    ///
-    /// "Produces a character" is not a useful warning: on a German layout every
-    /// single alphanumeric key does — measured, 40 of 40 — but they produce ç, €,
-    /// ƒ, ©, ∑ and other things nobody reaches for. The ASCII ones are the nine
-    /// that matter, @ | [ ] { } ~ among them, and binding one of those takes it
-    /// away everywhere, because the event tap swallows the keystroke.
+    /// Only printable ASCII, because "produces a character" is no warning at all:
+    /// on a German layout 40 of 40 alphanumeric keys do, but they produce ç, €, ƒ.
+    /// The nine ASCII ones — @ | [ ] { } ~ among them — are what a binding would
+    /// take away everywhere.
     static func asciiOptionCharacter(for character: Character) -> Character? {
         withLayout { asciiOptionByCharacter[character] }
     }
 
-    /// The whole mapping moves with the input source, so switching layouts has to
-    /// throw it away. Rebuilding is deferred to the next lookup.
+    /// The mapping moves with the input source; rebuilt on the next lookup.
     static func invalidate() {
         lock.lock()
         isLoaded = false
@@ -73,8 +62,8 @@ enum KeyboardLayout {
         return body()
     }
 
-    /// Caller holds the lock. There is no character-to-code direction in the API,
-    /// so the whole keyboard is translated once and the result reversed.
+    /// Caller holds the lock. The API has no character-to-code direction, so the
+    /// whole keyboard is translated and reversed.
     private static func reload() {
         isLoaded = true
         codesByCharacter = [:]
@@ -91,8 +80,7 @@ enum KeyboardLayout {
 
             for code in 0..<128 {
                 guard let character = translate(CGKeyCode(code), layout: layout) else { continue }
-                // Lowest code wins: the main rows come before the numeric keypad,
-                // so "1" resolves to the digit row rather than the keypad.
+                // Lowest code wins, so "1" is the digit row and not the keypad.
                 guard codesByCharacter[character] == nil else { continue }
 
                 codesByCharacter[character] = CGKeyCode(code)
@@ -117,8 +105,7 @@ enum KeyboardLayout {
         var characters = [UniChar](repeating: 0, count: 4)
         var length = 0
 
-        // UCKeyTranslate wants the modifier flags shifted down out of their
-        // NSEvent positions, which is what the >> 8 is for.
+        // UCKeyTranslate wants the flags shifted out of their NSEvent positions.
         let modifiers = holdingOption ? UInt32((optionKey >> 8) & 0xFF) : 0
 
         let status = UCKeyTranslate(

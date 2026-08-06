@@ -1,10 +1,7 @@
 import Foundation
 import OSLog
 
-/// The settings, and the file they live in.
-///
-/// Same shape as BindingStore and next to it on disk, so the whole configuration
-/// is two readable files in one directory.
+/// Next to BindingStore on disk, so the configuration is two readable files.
 @MainActor
 final class SettingsStore: ObservableObject {
     @Published var settings = Settings() {
@@ -29,16 +26,14 @@ final class SettingsStore: ObservableObject {
 
     func load() {
         guard let data = try? Data(contentsOf: Self.file) else {
-            // Written out rather than just kept in memory, so the file is there to
-            // be found and read like the bindings next to it.
             log.notice("no settings file yet, writing the defaults")
             save()
             return
         }
 
         do {
-            // Assigned through the property so an older file missing newer keys is
-            // written back complete.
+            // Through the property, so an older file missing keys is written back
+            // complete.
             settings = try JSONDecoder().decode(Settings.self, from: data)
         } catch {
             log.error("settings unreadable (\(error.localizedDescription, privacy: .public)), using defaults")

@@ -3,13 +3,8 @@ import ApplicationServices
 import CoreGraphics
 import OSLog
 
-/// The live window model.
-///
-/// This is the heart of the rewrite. Hammerspoon rebuilt its view of the world by
-/// asking the accessibility API, which is why it needed a cache and why a busy
-/// application could stall it. Here the model is maintained continuously by
-/// notifications on a thread of its own, and opening the switcher costs one lock
-/// and one window server call — no accessibility traffic at all.
+/// The live window model, maintained by AXObserver notifications on its own
+/// thread. Reading it costs one lock and one window server call, no AX traffic.
 final class WindowStore: @unchecked Sendable {
     private let log = Logger(subsystem: Bundle.identifier, category: "windows")
     private let thread = RunLoopThread(name: "\(Bundle.identifier).windows")
@@ -20,23 +15,17 @@ final class WindowStore: @unchecked Sendable {
     private var focusCounter: UInt64 = 0
     private var lastFocusedID: CGWindowID?
 
-    /// Fires for the window that just lost focus. Its content is final at that
-    /// moment and it is still on screen, which makes it the cheapest possible time
-    /// to capture a thumbnail — and it is the window the next Alt-Tab selects.
+    /// The cheapest moment to capture a thumbnail: content final, still on screen.
     var onWindowDefocused: ((CGWindowID) -> Void)?
 
-    /// The published copy, in most-recently-focused order. Read from the main
-    /// thread when the switcher opens.
+    /// Most-recently-focused order, read from the main thread.
     private let lock = NSLock()
     private var snapshot: [WindowInfo] = []
 
     // MARK: - Reading
 
-    /// Windows on the current space, most recently focused first.
-    ///
-    /// Minimised windows are not on screen and so are not in the window server's
-    /// listing; the accessibility model is the only record that they exist, which
-    /// is why they are added back rather than filtered in.
+    /// Minimised windows are absent from the window server listing, so they are
+    /// added back from the AX model rather than filtered in.
     func currentSpaceWindows(
         ofBundleID bundleID: String? = nil,
         includingMinimized: Bool = false
@@ -57,8 +46,6 @@ final class WindowStore: @unchecked Sendable {
 
     // MARK: - Focusing
 
-    /// Raising is an accessibility call and belongs on the store's thread with
-    /// everything else; only bringing the application forward is main-thread work.
     func focus(_ window: WindowInfo) {
         thread.perform { [self] in
             guard window.isMinimized else { return raise(window) }
@@ -67,8 +54,8 @@ final class WindowStore: @unchecked Sendable {
                 window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse
             )
 
-            // Unminimising is asynchronous — the window animates out of the Dock
-            // first — and a raise issued in the same breath is dropped.
+            // Unminimising animates out of the Dock; a raise in the same breath
+            // is dropped.
             DispatchQueue.global().asyncAfter(deadline: .now() + 0.15) { [self] in
                 thread.perform { self.raise(window) }
             }
@@ -76,8 +63,6 @@ final class WindowStore: @unchecked Sendable {
     }
 
     private func raise(_ window: WindowInfo) {
-        // Two separate things: main makes it the application's window, raise puts
-        // it in front of that application's other windows.
         AXUIElementSetAttributeValue(window.element, kAXMainAttribute as CFString, kCFBooleanTrue)
         AXUIElementPerformAction(window.element, kAXRaiseAction as CFString)
 
@@ -93,8 +78,6 @@ final class WindowStore: @unchecked Sendable {
     func start() {
         thread.start()
 
-        // NSWorkspace is main-thread API, so the applications are collected here
-        // and only their identities cross over to the accessibility thread.
         let running = NSWorkspace.shared.runningApplications.compactMap(Identity.init)
         thread.perform { [self] in
             running.forEach(adopt)
@@ -106,15 +89,13 @@ final class WindowStore: @unchecked Sendable {
         observeWorkspace()
     }
 
-    /// What crosses from the main thread to the accessibility thread.
     private struct Identity {
         let pid: pid_t
         let bundleID: String?
         let name: String
 
         init?(_ application: NSRunningApplication) {
-            // Agents and background helpers own no windows and would only add
-            // observers that never fire.
+            // Agents own no windows; observers on them never fire.
             guard application.activationPolicy == .regular else { return nil }
 
             pid = application.processIdentifier
@@ -147,8 +128,7 @@ final class WindowStore: @unchecked Sendable {
             self?.thread.perform { self?.drop(pid); self?.publish() }
         }
 
-        // Switching applications reorders the list even when no window-level
-        // notification fires, so activation is a focus event in its own right.
+        // Activation reorders the list even when no window notification fires.
         center.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] notification in
@@ -173,9 +153,8 @@ final class WindowStore: @unchecked Sendable {
             self?.handle(event, from: watcher, element: element)
         }
 
-        // An application that has just launched is often not ready to answer
-        // accessibility calls yet. Its windows arrive by notification later, and
-        // if even the observer cannot be created it is simply not watched.
+        // A launching application may not answer AX yet; its windows arrive by
+        // notification later.
         guard let runLoop = thread.cfRunLoop, watcher.start(on: runLoop) else { return }
 
         watchers[identity.pid] = watcher
@@ -213,8 +192,7 @@ final class WindowStore: @unchecked Sendable {
         guard AXBridge.isStandardWindow(element), let id = AXBridge.windowID(of: element)
         else { return false }
 
-        // Titles, minimising and closing are all announced by the window rather
-        // than by the application, so each window has to be subscribed to.
+        // Titles, minimising and closing are announced by the window, not the app.
         watcher.observe(window: element)
 
         windows[id] = WindowInfo(
@@ -231,8 +209,7 @@ final class WindowStore: @unchecked Sendable {
         return true
     }
 
-    /// A destroyed element can no longer be asked for its window ID, so the entry
-    /// has to be found by identity instead.
+    /// A destroyed element has no window ID left, so it is found by identity.
     private func remove(_ element: AXUIElement) {
         guard let id = windows.first(where: { CFEqual($0.value.element, element) })?.key
         else { return }
@@ -243,8 +220,7 @@ final class WindowStore: @unchecked Sendable {
     private func update(_ element: AXUIElement, _ change: (inout WindowInfo) -> Void) {
         guard let id = AXBridge.windowID(of: element) else { return }
 
-        // A window can be announced before it was ever listed, for instance when
-        // an application was still launching when its watcher was created.
+        // A window can be announced before it was ever listed.
         if windows[id] == nil {
             var pid: pid_t = 0
             guard AXUIElementGetPid(element, &pid) == .success,
@@ -274,7 +250,6 @@ final class WindowStore: @unchecked Sendable {
         lastFocusedID = id
     }
 
-    /// Every window currently known, for warming caches at startup.
     func allWindowIDs() -> [CGWindowID] {
         lock.lock()
         defer { lock.unlock() }
@@ -282,8 +257,7 @@ final class WindowStore: @unchecked Sendable {
         return snapshot.filter { !$0.isMinimized }.map(\.id)
     }
 
-    /// Nothing has been focused yet at startup, so the window server's front-to-back
-    /// order stands in: it is the closest thing to a focus history that exists.
+    /// Nothing has been focused yet at startup, so front-to-back order stands in.
     private func seedFocusOrderFromScreenOrder() {
         let onScreen = ScreenWindows.onCurrentSpace()
 

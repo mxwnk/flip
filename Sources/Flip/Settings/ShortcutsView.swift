@@ -41,7 +41,6 @@ struct ShortcutsView: View {
 
             Spacer()
 
-            // The file is the real configuration; the window is one way to edit it.
             Button("Reveal bindings.json") {
                 NSWorkspace.shared.activateFileViewerSelecting([store.fileURL])
             }
@@ -53,13 +52,8 @@ struct ShortcutsView: View {
     }
 }
 
-/// A field that holds exactly one key.
-///
-/// Clicking it empties it, and the first character typed is taken and hands focus
-/// straight back. A plain text field would let you type a word into a slot that
-/// can only ever hold one character, and leave you to notice.
-///
-/// Leaving without typing puts the old key back, so a stray click costs nothing.
+/// Clicking empties it, the first character typed commits and hands focus back.
+/// Leaving without typing restores the old key, so a stray click costs nothing.
 private struct KeyField: View {
     let id: UUID
     @ObservedObject var store: BindingStore
@@ -78,8 +72,8 @@ private struct KeyField: View {
                 text = focused ? "" : store.key(for: id)
             }
             .onChange(of: text) { _, typed in
-                // Only the last character: typing fast, or pasting, should still
-                // leave exactly one key behind rather than a rejected word.
+                // Last character only, so pasting leaves one key rather than a
+                // rejected word.
                 guard isFocused, let character = typed.last else { return }
 
                 store.setKey(String(character), for: id)
@@ -126,8 +120,8 @@ private struct BindingRow: View {
         .padding(.vertical, 8)
     }
 
-    /// A shadowed character is a warning — legal, occasionally deliberate. The
-    /// others mean the binding does nothing at all.
+    /// Shadowing is legal and sometimes deliberate; the others mean the binding
+    /// does nothing.
     private var severity: Color {
         if case .shadowsCharacter = issue { return .orange }
 
@@ -157,7 +151,6 @@ private struct BindingRow: View {
         .frame(width: 240, alignment: .leading)
     }
 
-    /// For everything not currently running, which the menu above cannot list.
     private func chooseApplication() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.application]

@@ -50,8 +50,6 @@ struct ExclusionsView: View {
         }
     }
 
-    /// Running applications that are not already excluded — offering one twice
-    /// would just be a way to do nothing.
     private var candidates: [(bundleID: String, name: String)] {
         AppCatalog.running().filter { !settings.settings.excludedBundleIDs.contains($0.bundleID) }
     }

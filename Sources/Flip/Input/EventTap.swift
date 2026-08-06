@@ -2,16 +2,11 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-/// A session-wide keyboard tap running on a thread of its own.
-///
-/// The dedicated thread is the point. macOS gives a tap callback a deadline and
-/// quietly disables the tap when it is missed, so the callback must never queue
-/// behind anything slow — and the main thread is exactly where rendering, AppKit
-/// and every window server round trip live. The Hammerspoon version could not
-/// separate the two: its tap shared a runloop with all of that, so a busy moment
-/// anywhere delayed the keyboard everywhere.
+/// A session-wide keyboard tap on a thread of its own. macOS quietly disables a
+/// tap whose callback misses its deadline, so it must never queue behind the main
+/// thread's rendering and window server round trips.
 final class EventTap {
-    /// Returning nil swallows the event. Called on the tap's own thread.
+    /// Returning nil swallows the event.
     typealias Handler = (CGEventType, CGEvent) -> CGEvent?
 
     private let mask: CGEventMask
@@ -39,8 +34,7 @@ final class EventTap {
     }
 
     private func run() {
-        // Unretained on purpose: the tap outlives every event it sees, and the app
-        // delegate owns it. Retaining here would make the cycle permanent.
+        // Unretained: the delegate owns the tap, and retaining here would cycle.
         let context = Unmanaged.passUnretained(self).toOpaque()
 
         guard let port = CGEvent.tapCreate(
@@ -57,8 +51,7 @@ final class EventTap {
             },
             userInfo: context
         ) else {
-            // The only realistic cause is a missing Accessibility grant, and the
-            // call gives no reason of its own.
+            // The call gives no reason; a missing Accessibility grant is the usual one.
             log.error("could not create the event tap; is Accessibility granted?")
             return
         }
@@ -75,9 +68,8 @@ final class EventTap {
     }
 
     private func dispatch(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // A tap that misses its deadline is switched off and announced exactly
-        // once. Without turning it back on, every hotkey stops working until the
-        // app is restarted — silently.
+        // Announced exactly once. Without re-enabling, every hotkey silently stops
+        // working until the app restarts.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             log.error("tap was disabled (\(type == .tapDisabledByTimeout ? "timeout" : "user input", privacy: .public)); re-enabling")
             if let port { CGEvent.tapEnable(tap: port, enable: true) }

@@ -2,20 +2,15 @@ import Foundation
 import OSLog
 import ServiceManagement
 
-/// Starting Flip at login.
-///
-/// The agent's plist ships inside the app bundle and is registered by the app
-/// itself, rather than written into ~/Library/LaunchAgents by the Makefile. That
-/// puts it under System Settings › Login Items where it can be found and switched
-/// off, and `BundleProgram` is resolved against the bundle, so moving Flip does
-/// not leave a launch agent pointing at nothing.
+/// Starting Flip at login. The plist ships in the bundle and is registered by the
+/// app, which puts it under System Settings › Login Items and resolves
+/// `BundleProgram` against the bundle, so moving Flip cannot strand it.
 @MainActor
 enum LoginItem {
     private static let log = Logger(subsystem: Bundle.identifier, category: "loginitem")
     private static let service = SMAppService.agent(plistName: "dev.mxwnk.Flip.login.plist")
 
-    /// The plist the Makefile used to write. Left over on machines set up before
-    /// the switch, and it would start a second copy at every login.
+    /// Written by the Makefile before the switch; would start a second copy.
     private static let legacyAgent = FileManager.default
         .homeDirectoryForCurrentUser
         .appendingPathComponent("Library/LaunchAgents/dev.mxwnk.Flip.plist")
@@ -24,9 +19,7 @@ enum LoginItem {
         service.status == .enabled
     }
 
-    /// True when the user switched Flip off in System Settings. Registering again
-    /// from here will not override that, and pretending otherwise would make the
-    /// toggle lie.
+    /// Switched off in System Settings. Registering again will not override it.
     static var isBlockedBySystemSettings: Bool {
         service.status == .requiresApproval
     }
@@ -44,10 +37,8 @@ enum LoginItem {
         }
     }
 
-    /// Removes the old launch agent's plist, but deliberately does not boot the job
-    /// out: this process is very likely the one it started, and booting it out
-    /// would kill us mid-migration. Deleting the file is enough — it simply will
-    /// not be loaded again at the next login.
+    /// Deletes the old plist but does not boot the job out: this process is very
+    /// likely the one it started. Without the file it is not loaded again.
     static func migrateFromLegacyAgent() {
         guard FileManager.default.fileExists(atPath: legacyAgent.path) else { return }
 

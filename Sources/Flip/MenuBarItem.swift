@@ -1,11 +1,6 @@
 import AppKit
 
-/// The only visible surface Flip has.
-///
-/// Without it the app is invisible by design — no Dock icon, no window — and the
-/// only way to stop it is `killall`. That became a real gap once the login agent
-/// started bringing it back after every crash: there has to be a way to say stop
-/// and be believed.
+/// The only visible surface Flip has, and the only way to quit it.
 @MainActor
 final class MenuBarItem: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -20,8 +15,8 @@ final class MenuBarItem: NSObject {
         update(for: status)
     }
 
-    /// Also the fastest way to see that something is wrong: a switcher whose
-    /// Accessibility grant went away looks exactly like a broken keyboard.
+    /// A switcher that lost Accessibility looks exactly like a broken keyboard,
+    /// so the icon carries the warning.
     func update(for status: Permissions.Status) {
         self.status = status
 
@@ -56,8 +51,7 @@ final class MenuBarItem: NSObject {
         return menu
     }
 
-    /// Shown rather than made actionable: the grant itself can only be given in
-    /// System Settings, so a checkmark here is a report, not a control.
+    /// A report, not a control: grants can only be given in System Settings.
     private func grant(_ name: String, _ granted: Bool) -> NSMenuItem {
         let item = NSMenuItem(title: name, action: nil, keyEquivalent: "")
         item.state = granted ? .on : .off
@@ -85,8 +79,7 @@ final class MenuBarItem: NSObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// A clean exit, which is exactly what the login agent's KeepAlive is set to
-    /// respect: quitting on purpose has to stick, only a crash brings Flip back.
+    /// A clean exit, which the agent's KeepAlive respects: only a crash restarts.
     @objc private func quit() {
         NSApp.terminate(nil)
     }

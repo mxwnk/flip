@@ -1,8 +1,7 @@
 import CoreGraphics
 
-/// Where the tiles go. Computed rather than left to a SwiftUI grid, because the
-/// row count follows explicit thresholds and the tiles have to shrink to fit
-/// rather than wrap.
+/// Where the tiles go. Computed rather than left to a SwiftUI grid: rows follow
+/// explicit thresholds and tiles shrink to fit rather than wrap.
 struct OverlayLayout {
     let rows: Int
     let columns: Int
@@ -41,10 +40,8 @@ struct OverlayLayout {
         )
     }
 
-    /// Moves within the column instead of stepping `columns` places through the
-    /// flat list, which only preserves the column when the last row happens to
-    /// be full. The last row can be short, so keep going rather than landing on
-    /// a gap.
+    /// Stepping `columns` places through the flat list only preserves the column
+    /// when the last row is full, so this walks rows and skips gaps.
     func index(movingRowBy step: Int, from selected: Int, count: Int) -> Int {
         let column = selected % columns
         var row = selected / columns

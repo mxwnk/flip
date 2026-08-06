@@ -4,8 +4,8 @@ import OSLog
 
 private let log = Logger(subsystem: Bundle.identifier, category: "startup")
 
-// Not named main.swift on purpose: that filename means top-level code, which is
-// nonisolated and so cannot touch a main-actor delegate.
+// Not main.swift: that filename means top-level code, which is nonisolated and
+// cannot touch a main-actor delegate.
 @main
 @MainActor
 final class FlipApp: NSObject, NSApplicationDelegate {
@@ -30,8 +30,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         let delegate = FlipApp()
         let application = NSApplication.shared
 
-        // Agent app: no Dock icon, never takes focus. Matches LSUIElement in
-        // Info.plist, and keeps runs straight out of .build behaving the same.
+        // Agent app: no Dock icon, never takes focus. Matches LSUIElement.
         application.setActivationPolicy(.accessory)
         application.delegate = delegate
         application.run()
@@ -58,8 +57,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         startWindowStoreIfPermitted()
         startInputIfPermitted()
 
-        // Grants are made while the app is already running, and the switch is not
-        // announced anywhere, so the only way to notice is to look again.
+        // Grants happen while running and are announced nowhere.
         poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.reportIfChanged() }
         }
@@ -73,8 +71,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         Permissions.report(latest)
         menuBar?.update(for: latest)
 
-        // Accessibility is usually granted after the first launch, and neither the
-        // tap nor the observers could have been created before that.
+        // Accessibility usually arrives after the first launch.
         startWindowStoreIfPermitted()
         startInputIfPermitted()
     }
@@ -88,8 +85,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         store.onWindowDefocused = { [weak self] id in self?.thumbnails.warm([id]) }
         store.start()
 
-        // Nothing has lost focus yet, so the first Alt-Tab would otherwise be the
-        // only one that opens onto empty tiles.
+        // Nothing has lost focus yet, so the first Alt-Tab would find empty tiles.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             guard let self else { return }
 
@@ -107,8 +103,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         presenter.onUnexpectedClose = { [weak router] in router?.overlayDidClose() }
 
-        // The bindings resolve against the keyboard layout, so both an edit and a
-        // layout switch invalidate them.
+        // Bindings resolve against the layout, so both invalidate them.
         let reapply = { [weak self, weak router] in
             guard let self, let router else { return }
 
@@ -130,12 +125,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     /// loser silently swallowing keys. Registering the login item starts the agent
     /// immediately, so a second copy is now one click away rather than hypothetical.
     ///
-    /// Only the oldest copy stays. "Is anyone else running?" is not enough: when
-    /// two start together they each see the other and both leave, which is exactly
-    /// what happened — three copies raced and the machine ended up with none.
-    ///
-    /// Exits zero, which the agent's KeepAlive treats as deliberate and leaves
-    /// alone. Anything else would make launchd fight this check.
+    /// Only the oldest copy stays. A symmetric "is anyone else running" check
+    /// makes every copy leave; three raced once and none survived. Exits zero, so
+    /// the agent's KeepAlive treats it as deliberate.
     private func isOnlyInstance() -> Bool {
         let ourPID = ProcessInfo.processInfo.processIdentifier
         let ourLaunch = NSRunningApplication.current.launchDate ?? .distantPast
@@ -146,8 +138,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
                 guard other.processIdentifier != ourPID else { return false }
 
                 let theirLaunch = other.launchDate ?? .distantPast
-                // Same instant is possible and has to break the same way on both
-                // sides, or the tie leaves nobody standing.
+                // A tie has to break the same way on both sides.
                 if theirLaunch == ourLaunch { return other.processIdentifier < ourPID }
 
                 return theirLaunch < ourLaunch
@@ -162,10 +153,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         return true
     }
 
-    /// A private symbol that resolves at build time can still be missing at run
-    /// time. Calling it once against the system-wide element settles the question
-    /// on every launch: that element is not a window, so the call is expected to
-    /// fail — the point is that it returns at all instead of trapping.
+    /// A private symbol resolving at build time can still be missing at run time.
+    /// The call is expected to fail; the point is that it returns rather than traps.
     private func checkAXShimLinkage() {
         _ = AXBridge.windowID(of: AXUIElementCreateSystemWide())
         log.notice("_AXUIElementGetWindow resolved")

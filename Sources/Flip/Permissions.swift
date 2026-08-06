@@ -3,21 +3,18 @@ import CoreGraphics
 import OSLog
 
 /// The two privacy grants Flip depends on. Both are keyed by code signature, so
-/// they only survive a rebuild while the app keeps a stable signing identity —
-/// see the `cert` target in the Makefile.
+/// they only survive a rebuild while the signing identity is stable.
 enum Permissions {
     private static let log = Logger(subsystem: Bundle.identifier, category: "permissions")
 
-    /// Required for everything: reading window lists and installing the event tap
-    /// both fail without it, the latter silently.
+    /// Required for everything; the event tap fails silently without it.
     static func hasAccessibility(prompting: Bool = false) -> Bool {
         let key = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
 
         return AXIsProcessTrustedWithOptions([key: prompting] as CFDictionary)
     }
 
-    /// Only window thumbnails need this. Without it the switcher still works and
-    /// falls back to application icons.
+    /// Thumbnails only; without it the tiles fall back to application icons.
     static func hasScreenRecording(requesting: Bool = false) -> Bool {
         if CGPreflightScreenCaptureAccess() { return true }
 
@@ -31,8 +28,7 @@ enum Permissions {
         var isComplete: Bool { accessibility && screenRecording }
     }
 
-    /// Asking is what puts the app into the System Settings lists in the first
-    /// place, so this runs even when a grant is already in hand.
+    /// Asking is what puts the app into the System Settings lists at all.
     static func request() -> Status {
         Status(
             accessibility: hasAccessibility(prompting: true),
@@ -50,8 +46,6 @@ enum Permissions {
         log.notice("accessibility: \(mark(status.accessibility), privacy: .public)")
         log.notice("screen recording: \(mark(status.screenRecording), privacy: .public)")
 
-        // Direct runs from a terminal also want to see this, and stdout is the
-        // only place they will look.
         print("accessibility:    \(mark(status.accessibility))")
         print("screen recording: \(mark(status.screenRecording))")
     }

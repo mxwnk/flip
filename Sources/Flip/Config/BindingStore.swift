@@ -1,17 +1,12 @@
 import Foundation
 import OSLog
 
-/// The bindings, and the file they live in.
-///
-/// Kept as readable JSON in Application Support rather than in UserDefaults, so
-/// it can be inspected, diffed and carried between machines like the rest of a
-/// dotfiles setup.
+/// The bindings, kept as readable JSON in Application Support so they can be
+/// inspected, diffed and carried between machines.
 @MainActor
 final class BindingStore: ObservableObject {
     @Published private(set) var bindings: [AppBinding] = []
 
-    /// Called after every change, once the file is written. The key router
-    /// rebuilds from this.
     var onChange: (() -> Void)?
 
     private let log = Logger(subsystem: Bundle.identifier, category: "bindings")
@@ -37,8 +32,7 @@ final class BindingStore: ObservableObject {
             bindings = try JSONDecoder().decode([AppBinding].self, from: data)
             log.notice("loaded \(self.bindings.count, privacy: .public) bindings")
         } catch {
-            // Better to keep working with the defaults than to start with no
-            // hotkeys at all; the broken file is left alone for inspection.
+            // Defaults beat no hotkeys; the broken file is left for inspection.
             log.error("bindings file unreadable (\(error.localizedDescription, privacy: .public)), using defaults")
             bindings = DefaultBindings.all
         }
@@ -66,14 +60,9 @@ final class BindingStore: ObservableObject {
     private var watcher: DispatchSourceFileSystemObject?
     private var lastWritten: Data?
 
-    /// Watches the file itself, and re-arms when it is replaced.
-    ///
-    /// Watching the containing directory instead looks tempting, because an atomic
-    /// save swaps the inode and leaves a file-level watch pointing at something
-    /// unreachable. But a directory only reports entries appearing and
-    /// disappearing — an editor that overwrites in place changes nothing about the
-    /// directory, and that edit goes unnoticed. Both kinds have to be covered, so
-    /// the file is watched and the watch is rebuilt whenever the inode goes away.
+    /// Watches the file and re-arms when it is replaced. A directory watch alone
+    /// misses in-place overwrites; a file watch alone is stranded by an atomic
+    /// save swapping the inode. Both cases have to be covered.
     func watchForExternalEdits() {
         watcher?.cancel()
 
@@ -92,8 +81,7 @@ final class BindingStore: ObservableObject {
                 guard let self else { return }
 
                 self.reloadIfChangedOnDisk()
-                // Re-arming inside the handler would cancel the source that is
-                // running, so it waits for the next turn of the runloop.
+                // Re-arming here would cancel the running source.
                 if replaced {
                     DispatchQueue.main.async { self.watchForExternalEdits() }
                 }
@@ -105,9 +93,8 @@ final class BindingStore: ObservableObject {
         watcher = source
     }
 
-    /// Comparing content rather than timestamps is what keeps this from looping:
-    /// every save is itself a directory write, and reacting to those would reload,
-    /// re-save and start again.
+    /// Compares content, not timestamps: every save is itself a write, and
+    /// reacting to those would loop.
     private func reloadIfChangedOnDisk() {
         guard let data = try? Data(contentsOf: Self.file), data != lastWritten,
               let decoded = try? JSONDecoder().decode([AppBinding].self, from: data)
@@ -143,8 +130,7 @@ final class BindingStore: ObservableObject {
     func setKey(_ key: String, for id: UUID) {
         guard let index = bindings.firstIndex(where: { $0.id == id }) else { return }
 
-        // A single character is what the field is for; longer input is only
-        // meaningful for named keys like F1, which are matched case-insensitively.
+        // Longer input is only meaningful for named keys like F1.
         bindings[index].key = key.count == 1 ? key.lowercased() : key
         commit()
     }
@@ -169,7 +155,6 @@ final class BindingStore: ObservableObject {
         case noApplication
         case unknownKey
         case duplicate
-        /// Binding this key takes a character away from every application.
         case shadowsCharacter(Character)
 
         var message: String {

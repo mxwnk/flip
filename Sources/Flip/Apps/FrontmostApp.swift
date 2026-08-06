@@ -1,15 +1,9 @@
 import AppKit
 import Foundation
 
-/// The frontmost application's bundle identifier, kept current by a workspace
-/// notification rather than asked for on demand.
-///
-/// The key router needs it to decide whether Alt-S should switch to Spotify or
-/// start walking Spotify's windows, and it decides that on the event tap's thread
-/// — where an AppKit call has no business being.
-///
-/// Unchecked rather than actually Sendable: written on the main thread and read
-/// from the tap thread, with the only mutable state guarded by the lock below.
+/// Cached rather than asked for on demand: the router reads it on the tap thread,
+/// where an AppKit call has no business being. Written on main, read there, with
+/// the lock below as the only guard.
 final class FrontmostApp: @unchecked Sendable {
     private let lock = NSLock()
     private var cached: String?

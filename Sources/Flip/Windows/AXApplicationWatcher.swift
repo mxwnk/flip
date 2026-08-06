@@ -1,11 +1,8 @@
 import ApplicationServices
 import Foundation
 
-/// Watches one application's windows through an AXObserver.
-///
-/// One observer per application is not an optimisation, it is the only shape the
-/// API offers: AXObserverCreate takes a pid. The payoff is that the window list
-/// never has to be enumerated when the switcher opens — it is already correct.
+/// Watches one application's windows. One observer per application is the only
+/// shape the API offers: AXObserverCreate takes a pid.
 final class AXApplicationWatcher: @unchecked Sendable {
     enum Event {
         case windowCreated
@@ -24,16 +21,15 @@ final class AXApplicationWatcher: @unchecked Sendable {
     private var observer: AXObserver?
     private let onEvent: (AXApplicationWatcher, Event, AXUIElement) -> Void
 
-    /// Which element a notification has to be registered on is not a detail that
-    /// can be guessed. Registering everything on the application element looks
-    /// like it works — windows appear, focus tracks — but titles silently never
-    /// update, because a title change is delivered to the window that owns it.
+    /// Registering everything on the application element looks like it works —
+    /// windows appear, focus tracks — but titles then never update, because a
+    /// title change is delivered to the window that owns it.
     private static let applicationSubscriptions: [(name: String, event: Event)] = [
         (kAXWindowCreatedNotification, .windowCreated),
         (kAXFocusedWindowChangedNotification, .focused),
     ]
 
-    /// Registered per window, as each of these is announced by the window itself.
+    /// Announced by the window itself.
     private static let windowSubscriptions: [(name: String, event: Event)] = [
         (kAXTitleChangedNotification, .titleChanged),
         (kAXUIElementDestroyedNotification, .elementDestroyed),
@@ -59,12 +55,11 @@ final class AXApplicationWatcher: @unchecked Sendable {
         CFRunLoopSourceInvalidate(AXObserverGetRunLoopSource(observer))
     }
 
-    /// Returns false for applications that expose no accessibility interface at
-    /// all — agents, helpers, and anything not yet finished launching.
+    /// False for applications with no accessibility interface at all.
     @discardableResult
     func start(on runLoop: CFRunLoop) -> Bool {
-        // Before anything else: an application that never answers must not be able
-        // to hold this thread for six seconds per call.
+        // An application that never answers must not hold this thread for the
+        // six second default.
         AXBridge.limitMessagingTimeout(of: element)
 
         var created: AXObserver?
@@ -82,8 +77,7 @@ final class AXApplicationWatcher: @unchecked Sendable {
         return true
     }
 
-    /// Called for every window the store takes on. Registrations die with the
-    /// element, so windows that close need no cleanup of their own.
+    /// Registrations die with the element, so closed windows need no cleanup.
     func observe(window: AXUIElement) {
         guard let observer else { return }
 
@@ -110,8 +104,7 @@ final class AXApplicationWatcher: @unchecked Sendable {
     }
 }
 
-/// Bare C function pointer with no captured context, which is why the watcher has
-/// to be passed through the refcon and retrieved by hand.
+/// A bare C function pointer, so the watcher travels through the refcon.
 private let callback: AXObserverCallback = { _, element, notification, context in
     guard let context else { return }
 

@@ -6,8 +6,7 @@ final class OverlayModel: ObservableObject {
     @Published var selected = 0
     @Published var layout = OverlayLayout(count: 0, screen: .zero)
 
-    /// Filled in as captures arrive, so the grid is drawn immediately and sharpens
-    /// rather than making anyone wait for the slowest window.
+    /// Filled in as captures arrive; the grid draws before they land.
     @Published var thumbnails: [CGWindowID: CGImage] = [:]
 }
 
@@ -49,8 +48,7 @@ struct OverlayView: View {
         model.windows.indices.contains(model.selected) ? model.windows[model.selected].id : nil
     }
 
-    /// The layout fixes the column count, so the flat list is cut to match rather
-    /// than being allowed to wrap on its own.
+    /// The layout fixes the column count, so the flat list is cut to match.
     private var rows: [[WindowInfo]] {
         stride(from: 0, to: model.windows.count, by: max(model.layout.columns, 1)).map { start in
             Array(model.windows[start..<min(start + model.layout.columns, model.windows.count)])
@@ -100,9 +98,7 @@ private struct TileView: View {
         )
     }
 
-    /// The capture once it exists, and the application icon until then. A
-    /// minimised window never gets past the icon: it is not on screen, so there
-    /// is nothing to capture.
+    /// A minimised window never gets past the icon: nothing to capture.
     @ViewBuilder
     private var preview: some View {
         if let thumbnail {

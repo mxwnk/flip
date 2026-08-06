@@ -1,9 +1,7 @@
 import AppKit
 
-/// Names and icons for bundle identifiers, looked up once each.
-///
-/// Resolving either one means hitting Launch Services and the file system. Cheap,
-/// but the same handful of applications comes up every time the switcher opens.
+/// Names and icons for bundle identifiers, looked up once each — resolving either
+/// hits Launch Services and the file system.
 @MainActor
 enum AppCatalog {
     private static var icons: [String: NSImage] = [:]
@@ -20,8 +18,7 @@ enum AppCatalog {
         return icon
     }
 
-    /// Falls back to the identifier itself, which is the honest answer when the
-    /// application is not installed — a binding carried over from another machine.
+    /// Falls back to the identifier when the application is not installed.
     static func name(for bundleID: String) -> String {
         if let cached = names[bundleID] { return cached }
         guard let url = url(for: bundleID) else { return bundleID }
@@ -40,8 +37,7 @@ enum AppCatalog {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
     }
 
-    /// Everything with a Dock icon right now, for the quick path in the picker.
-    /// Flip itself is an agent and so is absent, which is what we want.
+    /// Everything with a Dock icon right now. Flip is an agent, so it is absent.
     static func running() -> [(bundleID: String, name: String)] {
         var seen = Set<String>()
 

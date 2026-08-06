@@ -1,11 +1,8 @@
 import ApplicationServices
 import CoreGraphics
 
-/// One switchable window, as a plain copy.
-///
-/// Nothing here is read back through the accessibility API when the switcher opens
-/// — avoiding exactly that is the reason the store exists. The values are kept
-/// current by notifications instead.
+/// One switchable window, as a plain copy. Nothing here is read back through the
+/// accessibility API when the switcher opens.
 struct WindowInfo: Identifiable {
     let id: CGWindowID
     let element: AXUIElement
@@ -15,7 +12,6 @@ struct WindowInfo: Identifiable {
     var title: String
     var isMinimized: Bool
 
-    /// Monotonic; higher means more recently focused. Maintained here rather than
-    /// asked of the system, because macOS exposes no per-window focus history.
+    /// Higher is more recent. macOS exposes no per-window focus history.
     var focusOrder: UInt64
 }

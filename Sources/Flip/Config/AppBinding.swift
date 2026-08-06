@@ -2,20 +2,16 @@ import Foundation
 
 /// One key bound to one application.
 struct AppBinding: Identifiable, Equatable, Codable {
-    /// Only for SwiftUI list identity. Deliberately not persisted: the file is
-    /// meant to be readable and hand-editable, and a UUID in it is noise. Rows
-    /// are identified by key everywhere else, and a key can be empty or duplicated
+    /// SwiftUI list identity only, not persisted. A key can be empty or duplicated
     /// mid-edit, which is exactly when a stable identity is needed.
     let id: UUID
 
-    /// A single character, resolved against the current keyboard layout, or a
-    /// named key such as "F1" for the ones no character can express.
+    /// A single character, or a named key such as "F1".
     var key: String
 
     var bundleID: String
 
-    /// False for keys that reach an application with no modifier at all. Those are
-    /// taken away from every application, so F1 no longer opens help anywhere.
+    /// False takes the key from every application: F1 no longer opens help.
     var usesLeader: Bool
 
     init(key: String, bundleID: String, usesLeader: Bool = true) {

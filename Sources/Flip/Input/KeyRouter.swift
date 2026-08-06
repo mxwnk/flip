@@ -3,25 +3,18 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-/// Turns raw key events into switcher commands.
+/// Turns key events into switcher commands. Runs on the event tap's thread and
+/// decides synchronously: whether to swallow an event cannot wait for main.
 ///
-/// Alt is a leader key: it opens the switcher, holds it open while the selection
-/// moves, and releasing it commits. That is why none of this can be built on
-/// registered hotkeys — the event that ends the interaction is a modifier coming
-/// back up, which no hotkey API reports.
-///
-/// Everything here runs on the event tap's thread, and every decision is made
-/// synchronously: whether to swallow an event cannot wait for the main thread.
-/// The resulting work is what gets handed over.
+/// The interaction ends on a modifier coming back up, which no hotkey API
+/// reports — hence the tap rather than registered hotkeys.
 final class KeyRouter {
     private let presenter: SwitcherPresenting
     private let frontmost: FrontmostApp
     private let log = Logger(subsystem: Bundle.identifier, category: "router")
 
-    /// Read and written on the tap thread for every swallow decision, and cleared
-    /// from the main thread when the overlay closes without being asked to. An
-    /// uncontended lock costs nothing next to being wrong about this: a router
-    /// that thinks a closed overlay is open swallows arrow keys system-wide.
+    /// A router that believes a closed overlay is open swallows arrow keys
+    /// system-wide, so this crosses threads under a lock.
     private let visibility = NSLock()
     private var overlayIsVisible = false
 
@@ -30,16 +23,13 @@ final class KeyRouter {
         set { visibility.lock(); overlayIsVisible = newValue; visibility.unlock() }
     }
 
-    /// Called when the overlay closed on its own — its safety timeout expired, or
-    /// there were no windows to show in the first place.
+    /// The overlay closed without being asked: safety timeout, or nothing to show.
     func overlayDidClose() {
         isOverlayVisible = false
     }
 
-    /// Written on the main thread whenever the bindings or the keyboard layout
-    /// change, read on the tap thread for every keystroke. It was previously
-    /// neither — a plain dictionary handed between two threads — which happened to
-    /// work only because layout changes are rare.
+    /// Written on main when bindings or layout change, read on the tap thread for
+    /// every keystroke.
     private let bindingsLock = NSLock()
     private var leaderBindings: [CGKeyCode: String] = [:]
     private var bareBindings: [CGKeyCode: String] = [:]
@@ -51,15 +41,13 @@ final class KeyRouter {
         self.frontmost = frontmost
     }
 
-    /// Resolves the configured bindings against the current keyboard layout.
+    /// Resolves bindings against the current keyboard layout.
     func apply(_ bindings: [AppBinding], settings: Settings) {
         var leader: [CGKeyCode: String] = [:]
         var bare: [CGKeyCode: String] = [:]
 
         for binding in bindings where !binding.bundleID.isEmpty {
             guard let code = KeyboardLayout.keyCode(forBinding: binding.key) else {
-                // Ordinary while a row is being typed into, and worth knowing about
-                // otherwise: a binding written for a layout you no longer use.
                 log.debug("no key for '\(binding.key, privacy: .public)' on this layout")
                 continue
             }
@@ -115,9 +103,7 @@ final class KeyRouter {
 
         if code == CGKeyCode(kVK_Tab) {
             if base == leader {
-                // Holding tab should not race through the list at the key repeat
-                // rate, but the event still has to be swallowed either way or the
-                // Dock's own switcher answers it.
+                // Repeats are ignored but still swallowed, or the Dock answers them.
                 if !isRepeat { openAllWindows(step: step) }
                 return nil
             }
@@ -130,8 +116,7 @@ final class KeyRouter {
             return event
         }
 
-        // Arrows and Escape are only taken while the overlay is up, so they keep
-        // working normally everywhere else.
+        // Only taken while the overlay is up, so they work normally elsewhere.
         if isOverlayVisible, let action = navigation(for: code) {
             action()
             return nil
@@ -150,7 +135,7 @@ final class KeyRouter {
         return event
     }
 
-    /// Never swallowed: other applications need to see modifier changes too.
+    /// Never swallowed: other applications need modifier changes too.
     private func handleFlagsChanged(_ event: CGEvent) -> CGEvent? {
         guard isOverlayVisible, !Modifiers.anyHeld(in: event) else { return event }
 
@@ -187,11 +172,8 @@ final class KeyRouter {
         onMain { $0.showFrontmostAppWindows(step: step) }
     }
 
-    /// One key, three meanings, depending on what is already happening:
-    ///
-    /// - overlay open, so the leader is genuinely held: narrow it to this app
-    /// - the app is already in front: start walking its windows
-    /// - otherwise: switch to it, which is the plain tap of Alt-S
+    /// Overlay open: narrow to this app. App already in front: walk its windows.
+    /// Otherwise: switch to it.
     private func reach(_ bundleID: String) {
         if isOverlayVisible {
             onMain { $0.showWindows(of: bundleID, step: 1) }
@@ -207,8 +189,7 @@ final class KeyRouter {
         onMain { _ in AppLauncher.activate(bundleID) }
     }
 
-    /// The decision has already been made on the tap thread; only the effect is
-    /// handed to the main thread, where AppKit belongs.
+    /// The decision is already made; only the effect crosses to main.
     private func onMain(_ body: @escaping @MainActor (SwitcherPresenting) -> Void) {
         let presenter = presenter
         DispatchQueue.main.async {
