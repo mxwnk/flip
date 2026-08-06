@@ -115,6 +115,29 @@ Distributing it properly means an Apple Developer ID and notarisation.
 
 There is no application icon yet, so the disk image shows the generic one.
 
+## Releasing
+
+Every push builds. Pushing a `v*` tag additionally signs, packages and publishes
+a GitHub release with the disk image attached:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The pipeline signs with the same certificate as a local build, held as the
+repository secrets `SIGNING_CERTIFICATE_P12` (base64 of the `.p12`) and
+`SIGNING_CERTIFICATE_PASSWORD`. That is what makes an update an update rather
+than a new application as far as TCC is concerned — and `make verify` asserts it
+before anything is packaged, comparing the bundle's designated requirement
+against `Resources/designated-requirement.txt`. A drifted requirement fails the
+release instead of silently revoking everyone's privacy grants.
+
+Worth knowing about that key: anything able to use it can sign as
+`dev.mxwnk.Flip`, and macOS will hand that signature Flip's Accessibility grant.
+Keep the secrets to this repository. If they ever leak, `make uncert`, a fresh
+`make cert`, an updated `designated-requirement.txt` and one round of re-granting
+in System Settings is the whole recovery.
+
 ## The signing identity
 
 `make cert` creates a self-signed certificate and trusts it for code signing.

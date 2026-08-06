@@ -1,0 +1,111 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Pinned rather than macos-latest: the runner image decides the Swift version,
+    # and a silent bump is not something a release pipeline should discover on its
+    # own. Flip deploys to macOS 14, so the SDK here is newer than the target.
+    runs-on: macos-15
+
+    permissions:
+      contents: write # only used by the release step
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show the toolchain
+        run: swift --version
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Assemble the bundle
+        run: make bundle
+
+      # Everything below only runs for a v* tag.
+
+      - name: Import the signing certificate
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          CERTIFICATE_P12: ${{ secrets.SIGNING_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$CERTIFICATE_P12" || { echo "SIGNING_CERTIFICATE_P12 is not set"; exit 1; }
+
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          P12="$RUNNER_TEMP/signing.p12"
+          PEM="$RUNNER_TEMP/signing.pem"
+
+          echo "$CERTIFICATE_P12" | base64 --decode > "$P12"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          # No auto-lock: the default timeout can expire mid-build.
+          security set-keychain-settings -u "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$P12" -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+
+          # codesign searches the user's keychain list, so the new one has to join
+          # it rather than merely exist.
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+          # A self-signed certificate is not a valid signing identity until it is
+          # trusted; without this codesign reports CSSMERR_TP_NOT_TRUSTED. The
+          # runner is thrown away afterwards, so trusting it system-wide is fine.
+          /usr/bin/openssl pkcs12 -in "$P12" -clcerts -nokeys \
+            -passin "pass:$CERTIFICATE_PASSWORD" -out "$PEM"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign \
+            -k /Library/Keychains/System.keychain "$PEM"
+
+          rm -f "$P12" "$PEM"
+          security find-identity -v -p codesigning
+
+      - name: Assert the designated requirement has not drifted
+        if: startsWith(github.ref, 'refs/tags/v')
+        # Runs before packaging, so a release that would revoke everyone's
+        # Accessibility and Screen Recording grants never gets built at all.
+        run: make verify VERSION="${GITHUB_REF_NAME#v}"
+
+      - name: Package the disk image
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: make dmg VERSION="${GITHUB_REF_NAME#v}"
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Flip $VERSION" \
+            --generate-notes \
+            --notes "Signed with a self-signed certificate and not notarised, so
+          macOS blocks the first launch: right-click the app and choose Open, once.
+
+          Flip needs Accessibility and Screen Recording. Both are asked for on
+          first run, and both survive later updates — the signature is pinned to
+          the same certificate on every release, which the pipeline checks." \
+            "build/Flip-$VERSION.dmg"
+
+      - name: Keep the unsigned bundle for inspection
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flip-unsigned
+          path: build/Flip.app
+          retention-days: 7

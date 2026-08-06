@@ -4,7 +4,8 @@ IDENTITY  := Flip Local Signing
 VERSION   := 0.1.0
 
 BINARY    := .build/release/$(APP_NAME)
-BUNDLE    := build/$(APP_NAME).app
+BUNDLE      := build/$(APP_NAME).app
+REQUIREMENT := Resources/designated-requirement.txt
 STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
@@ -97,12 +98,22 @@ dmg: sign
 	@rm -rf $(STAGING)
 	@echo "Packaged $(DMG)"
 
-## verify: print the designated requirement, which must not change between builds
-# This is the acceptance test for step one: run it before and after a rebuild and
-# compare. Identical output means TCC will hold on to its grants.
-verify:
-	@codesign -d -r- $(INSTALLED) 2>&1 | grep '^designated' || \
-		echo "Not installed. Run: make install"
+## verify: assert the designated requirement has not drifted
+# The whole reason for signing against a certificate. This requirement is what
+# TCC keys its grants to, so if it ever changes, every installed copy silently
+# loses Accessibility and Screen Recording on the next update. Recorded in the
+# repository rather than eyeballed, and checked on every release.
+# Depends on sign, not bundle: bundle rebuilds the app unsigned, which would
+# destroy the very signature this is meant to inspect.
+verify: sign
+	@codesign -d -r- $(BUNDLE) 2>&1 | sed -n 's/^designated => //p' > build/requirement.actual
+	@if diff -q $(REQUIREMENT) build/requirement.actual >/dev/null; then \
+		echo "designated requirement unchanged"; \
+	else \
+		echo "designated requirement CHANGED — installed copies will lose their grants:"; \
+		diff $(REQUIREMENT) build/requirement.actual; \
+		exit 1; \
+	fi
 
 ## settings: open the two privacy panes Flip needs
 settings:
