@@ -15,9 +15,8 @@ Alt is the leader key:
 
 ## Status
 
-Step four of six. Flip is a working switcher: the overlay draws, the selection
-moves, and releasing the leader focuses the window. Tiles show application icons
-where the thumbnails will go.
+The seven steps that replaced the Lua switcher are done, and the hotkeys,
+shortcuts and exclusions are configurable from the menu bar.
 
 - [x] **1 — Signing and permissions.** Stable identity so TCC survives rebuilds.
 - [x] **2 — Event tap and key router.** Replaces `apps.lua`.
@@ -98,12 +97,11 @@ nothing. Its `KeepAlive` is deliberately `SuccessfulExit: false` rather than
 
 Nothing is ever started straight from a shell. Launching the binary from a
 terminal makes the terminal the responsible process for TCC, and the privacy
-grants get attributed to it rather than to Flip — so `make run` goes through the
-launch agent when one exists and `open -a` otherwise.
+grants get attributed to it rather than to Flip, which is why `make run` goes
+through `open`.
 
 The menu bar item is the only visible surface: it reports both privacy grants,
-offers the settings pane when one is missing, opens the shortcut editor, and
-quits. Its icon turns into a warning triangle when a grant goes away, which is
+offers the privacy pane when one is missing, opens Settings, and quits. Its icon turns into a warning triangle when a grant goes away, which is
 worth having — a switcher that has lost Accessibility is indistinguishable from a
 broken keyboard.
 

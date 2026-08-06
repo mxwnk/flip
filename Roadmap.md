@@ -5,21 +5,21 @@ the catch is usually the reason something is not done yet.
 
 ## Configuration
 
-- [ ] **Settings window.** Leader modifier, application-switcher modifier, start at
-      login, thumbnails or icons, sorting, exclusions. Today all of this is
-      compile-time in `Configuration.swift`. Shortcuts would become one tab of it
-      rather than its own window.
-- [ ] **Start-at-login toggle.** Writes and loads the launch agent that `make
+- [x] **Settings window.** Leader modifier, application-switcher modifier, start at
+      login, thumbnails or icons, exclusions. Sorting is still open, under
+      switcher behaviour. Before this, all of it was
+      compile-time in `Configuration.swift`. Shortcuts became one tab of it rather
+      than its own window.
+- [x] **Start-at-login toggle.** Writes and loads the launch agent that `make
       autostart` writes today. Needs to survive the app being moved, since the
       plist holds an absolute path.
-- [ ] **Thumbnails or icons per preference.** Icons make the overlay instant and
+- [x] **Thumbnails or icons per preference.** Icons make the overlay instant and
       drop the Screen Recording requirement entirely — worth offering, not just as
       a fallback.
-- [ ] **Watch `bindings.json`.** Flip reads it at launch and overwrites it on every
-      edit, so hand edits are silently lost. A watcher has to ignore its own writes
-      by comparing content, or it loops. This is a promise the JSON format makes and
-      the app currently breaks.
-- [ ] **Exclude applications.** Some applications are never worth switching to and
+- [x] **Watch `bindings.json`.** Needed a file watch *and* re-arming: watching the
+      directory misses in-place overwrites, watching the file alone is stranded by
+      an atomic save. Own writes are filtered by comparing content, or it loops.
+- [x] **Exclude applications.** Some applications are never worth switching to and
       only make the grid wider.
 
 ## Switcher behaviour
