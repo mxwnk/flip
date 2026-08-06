@@ -53,6 +53,41 @@ struct ShortcutsView: View {
     }
 }
 
+/// A field that holds exactly one key.
+///
+/// Clicking it empties it, and the first character typed is taken and hands focus
+/// straight back. A plain text field would let you type a word into a slot that
+/// can only ever hold one character, and leave you to notice.
+///
+/// Leaving without typing puts the old key back, so a stray click costs nothing.
+private struct KeyField: View {
+    let id: UUID
+    @ObservedObject var store: BindingStore
+
+    @FocusState private var isFocused: Bool
+    @State private var text = ""
+
+    var body: some View {
+        TextField(isFocused ? "press" : "key", text: $text)
+            .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.center)
+            .frame(width: 54)
+            .focused($isFocused)
+            .onAppear { text = store.key(for: id) }
+            .onChange(of: isFocused) { _, focused in
+                text = focused ? "" : store.key(for: id)
+            }
+            .onChange(of: text) { _, typed in
+                // Only the last character: typing fast, or pasting, should still
+                // leave exactly one key behind rather than a rejected word.
+                guard isFocused, let character = typed.last else { return }
+
+                store.setKey(String(character), for: id)
+                isFocused = false
+            }
+    }
+}
+
 private struct BindingRow: View {
     let binding: AppBinding
     let issue: BindingStore.Issue?
@@ -65,10 +100,7 @@ private struct BindingRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 14)
 
-                TextField("key", text: keyBinding)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 54)
-                    .multilineTextAlignment(.center)
+                KeyField(id: binding.id, store: store)
 
                 applicationPicker
 
@@ -100,13 +132,6 @@ private struct BindingRow: View {
         if case .shadowsCharacter = issue { return .orange }
 
         return .red
-    }
-
-    private var keyBinding: Binding<String> {
-        Binding(
-            get: { binding.key },
-            set: { store.setKey($0, for: binding.id) }
-        )
     }
 
     private var applicationPicker: some View {

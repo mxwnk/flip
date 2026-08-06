@@ -76,6 +76,10 @@ final class BindingStore: ObservableObject {
         commit()
     }
 
+    func key(for id: UUID) -> String {
+        bindings.first { $0.id == id }?.key ?? ""
+    }
+
     func setKey(_ key: String, for id: UUID) {
         guard let index = bindings.firstIndex(where: { $0.id == id }) else { return }
 
