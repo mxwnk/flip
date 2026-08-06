@@ -73,9 +73,9 @@ the catch is usually the reason something is not done yet.
 - [ ] **Documentation.** The Readme carries everything today and is getting long;
       an architecture note explaining the threading model would save the most
       rereading.
-- [ ] **`CLAUDE.md` / `AGENTS.md`.** Conventions an agent needs up front: comments
-      explain why, no `AppKit` off the main thread, no accessibility calls on the
-      hot path, the designated requirement must not drift.
+- [x] **`CLAUDE.md` / `AGENTS.md`.** Conventions and the invariants that break
+      silently. `CLAUDE.md` is one `@AGENTS.md` import, the way alt-tab-macos does
+      it, so there is only ever one copy.
 - [ ] **German localisation.** The interface is English on a German machine.
 - [ ] **Update check.** The release pipeline exists; the app does not know about it.
       Polling the GitHub releases API and offering the new disk image is small, and
