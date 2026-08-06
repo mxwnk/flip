@@ -23,12 +23,28 @@ where the thumbnails will go.
 - [x] **2 — Event tap and key router.** Replaces `apps.lua`.
 - [x] **3 — Window store.** `AXObserver` driven, MRU ordered.
 - [x] **4 — Overlay panel.** Icons only; replaces `switcher/`.
-- [ ] **5 — Thumbnails.** ScreenCaptureKit, captured in parallel.
+- [x] **5 — Thumbnails.** ScreenCaptureKit, captured concurrently.
 - [ ] **6 — Edge cases.** Multi-monitor, minimised windows, fullscreen spaces.
 
-Measured against the Lua switcher on the same machine: opening the overlay takes
-about 2–4 ms, against 11.5–14.7 ms. The panel is built once at launch and only
-ordered in and out, so nothing is allocated on the hot path.
+### What the numbers actually say
+
+Measured against the Lua switcher on the same machine, five windows open:
+
+| | Lua | Flip |
+| --- | --- | --- |
+| Overlay open, thumbnails present | 11.5–14.7 ms, tiles still empty | **1.5–6 ms**, tiles filled |
+| One capture | 14 ms, main thread | 67 ms first, then ~8 ms each |
+| Five captures, cold | ~70 ms, main thread | ~170 ms, off it |
+
+The cold column is worth being honest about: ScreenCaptureKit is *slower* than
+`CGWindowListCreateImage` for a one-off capture, and enumerating shareable
+content costs 60 ms on top. What it buys is that none of it happens on the main
+thread, and that the marginal window costs 8 ms instead of 14.
+
+That only matters because the cache is warmed ahead of time — at startup, and
+then for each window as it loses focus, which is when its contents are final and
+nobody is waiting. By the time the overlay opens the images are already there,
+which is the column that counts.
 
 ### Running alongside Hammerspoon
 
