@@ -15,15 +15,20 @@ Alt is the leader key:
 
 ## Status
 
-Step three of six. The window model is live and correctly ordered; the switcher
-logs what it would show instead of drawing it.
+Step four of six. Flip is a working switcher: the overlay draws, the selection
+moves, and releasing the leader focuses the window. Tiles show application icons
+where the thumbnails will go.
 
 - [x] **1 — Signing and permissions.** Stable identity so TCC survives rebuilds.
 - [x] **2 — Event tap and key router.** Replaces `apps.lua`.
 - [x] **3 — Window store.** `AXObserver` driven, MRU ordered.
-- [ ] **4 — Overlay panel.** Icons only; replaces `switcher/`.
+- [x] **4 — Overlay panel.** Icons only; replaces `switcher/`.
 - [ ] **5 — Thumbnails.** ScreenCaptureKit, captured in parallel.
 - [ ] **6 — Edge cases.** Multi-monitor, minimised windows, fullscreen spaces.
+
+Measured against the Lua switcher on the same machine: opening the overlay takes
+about 2–4 ms, against 11.5–14.7 ms. The panel is built once at launch and only
+ordered in and out, so nothing is allocated on the hot path.
 
 ### Running alongside Hammerspoon
 
