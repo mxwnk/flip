@@ -18,9 +18,23 @@ final class KeyRouter {
     private let frontmost: FrontmostApp
     private let log = Logger(subsystem: Bundle.identifier, category: "router")
 
-    /// Owned by the tap thread alone, so the swallow decision never has to read
-    /// state that the main thread might be writing.
-    private var isOverlayVisible = false
+    /// Read and written on the tap thread for every swallow decision, and cleared
+    /// from the main thread when the overlay closes without being asked to. An
+    /// uncontended lock costs nothing next to being wrong about this: a router
+    /// that thinks a closed overlay is open swallows arrow keys system-wide.
+    private let visibility = NSLock()
+    private var overlayIsVisible = false
+
+    private var isOverlayVisible: Bool {
+        get { visibility.lock(); defer { visibility.unlock() }; return overlayIsVisible }
+        set { visibility.lock(); overlayIsVisible = newValue; visibility.unlock() }
+    }
+
+    /// Called when the overlay closed on its own — its safety timeout expired, or
+    /// there were no windows to show in the first place.
+    func overlayDidClose() {
+        isOverlayVisible = false
+    }
 
     private var bundleIDsByKeyCode: [CGKeyCode: String] = [:]
 

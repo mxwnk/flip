@@ -14,7 +14,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
     private let frontmost = FrontmostApp()
     private let store = WindowStore()
-    private lazy var presenter = LoggingPresenter(store: store, frontmost: frontmost)
+    private lazy var presenter = OverlayPresenter(store: store, frontmost: frontmost)
     private var router: KeyRouter?
     private var tap: EventTap?
 
@@ -74,6 +74,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         let router = KeyRouter(presenter: presenter, frontmost: frontmost)
         self.router = router
+
+        presenter.onUnexpectedClose = { [weak router] in router?.overlayDidClose() }
 
         KeyboardLayout.observeInputSourceChanges { [weak router] in
             router?.rebuildBindings()

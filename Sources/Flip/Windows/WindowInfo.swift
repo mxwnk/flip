@@ -6,7 +6,7 @@ import CoreGraphics
 /// Nothing here is read back through the accessibility API when the switcher opens
 /// — avoiding exactly that is the reason the store exists. The values are kept
 /// current by notifications instead.
-struct WindowInfo {
+struct WindowInfo: Identifiable {
     let id: CGWindowID
     let element: AXUIElement
     let pid: pid_t
