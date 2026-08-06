@@ -5,10 +5,12 @@ VERSION   := 0.1.0
 
 BINARY    := .build/release/$(APP_NAME)
 BUNDLE    := build/$(APP_NAME).app
+STAGING   := build/dmg
+DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
 AGENT     := $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs verify settings autostart unautostart clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs dmg verify settings autostart unautostart clean
 
 all: install
 
@@ -78,6 +80,22 @@ restart: stop run
 ## logs: follow Flip's log output
 logs:
 	log stream --level debug --style compact --predicate 'subsystem == "$(BUNDLE_ID)"'
+
+## dmg: package build/Flip-<version>.dmg for installing on another Mac
+# Read the Gatekeeper caveat in the Readme first. This is signed with the local
+# self-signed identity and not notarised, so on any Mac other than the one that
+# created the certificate it opens only via right-click > Open.
+dmg: sign
+	rm -rf $(STAGING)
+	mkdir -p $(STAGING)
+	cp -R $(BUNDLE) $(STAGING)/
+	ln -s /Applications $(STAGING)/Applications
+	rm -f $(DMG)
+	hdiutil create -volname "$(APP_NAME)" -srcfolder $(STAGING) \
+		-format UDZO -quiet $(DMG)
+	codesign --force --sign "$(IDENTITY)" $(DMG)
+	@rm -rf $(STAGING)
+	@echo "Packaged $(DMG)"
 
 ## verify: print the designated requirement, which must not change between builds
 # This is the acceptance test for step one: run it before and after a rebuild and

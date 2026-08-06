@@ -24,8 +24,9 @@ where the thumbnails will go.
 - [x] **3 — Window store.** `AXObserver` driven, MRU ordered.
 - [x] **4 — Overlay panel.** Icons only; replaces `switcher/`.
 - [x] **5 — Thumbnails.** ScreenCaptureKit, captured concurrently.
-- [ ] **6 — Edge cases.** Multi-monitor, minimised windows, fullscreen spaces.
-- [ ] **7 — Packaging.** A menu bar item, and a signed `.dmg` to install from.
+- [~] **6 — Edge cases.** Multi-monitor done; minimised windows and fullscreen
+  spaces still to check.
+- [x] **7 — Packaging.** Menu bar item and a signed `.dmg`.
 
 ### What the numbers actually say
 
@@ -95,6 +96,24 @@ Nothing is ever started straight from a shell. Launching the binary from a
 terminal makes the terminal the responsible process for TCC, and the privacy
 grants get attributed to it rather than to Flip — so `make run` goes through the
 launch agent when one exists and `open -a` otherwise.
+
+The menu bar item is the only visible surface: it reports both privacy grants,
+offers the settings pane when one is missing, and quits. Its icon turns into a
+warning triangle when a grant goes away, which is worth having — a switcher that
+has lost Accessibility is indistinguishable from a broken keyboard.
+
+## Installing on another Mac
+
+```sh
+make dmg        # build/Flip-<version>.dmg
+```
+
+Gatekeeper will not like it. The bundle is signed with the self-signed identity
+from `make cert`, which is trusted only on the machine that created it, and it is
+not notarised — so on any other Mac it opens only via right-click > Open, once.
+Distributing it properly means an Apple Developer ID and notarisation.
+
+There is no application icon yet, so the disk image shows the generic one.
 
 ## The signing identity
 
