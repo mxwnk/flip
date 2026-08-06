@@ -22,7 +22,7 @@ jobs:
       contents: write # only used by the release step
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Show the toolchain
         run: swift --version
@@ -104,7 +104,7 @@ jobs:
 
       - name: Keep the unsigned bundle for inspection
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Flip-unsigned
           path: build/Flip.app
