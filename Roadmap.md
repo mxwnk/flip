@@ -66,7 +66,10 @@ the catch is usually the reason something is not done yet.
 ## Project
 
 - [ ] **LICENSE.** Nothing yet, which means all rights reserved by default.
-- [ ] **Application icon.** The disk image and the Finder show the generic one.
+- [x] **Application icon.** Drawn by `scripts/make-icon.swift` and committed as
+      `Resources/Flip.icns`, so CI packages the same icon without redrawing it.
+      The motif is the overlay's own: two offset window tiles, the front one
+      carrying the same blue selection ring.
 - [ ] **Documentation.** The Readme carries everything today and is getting long;
       an architecture note explaining the threading model would save the most
       rereading.

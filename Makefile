@@ -10,7 +10,7 @@ STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs dmg verify settings login clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs icon dmg verify settings login clean
 
 all: install
 
@@ -42,7 +42,15 @@ bundle: build
 	# which is why it ships inside the bundle.
 	sed -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' Resources/LaunchAgent.plist \
 		> $(BUNDLE)/Contents/Library/LaunchAgents/$(BUNDLE_ID).login.plist
+	cp Resources/$(APP_NAME).icns $(BUNDLE)/Contents/Resources/
 	printf 'APPL????' > $(BUNDLE)/Contents/PkgInfo
+
+## icon: redraw Resources/Flip.icns from scripts/make-icon.swift
+# Committed rather than generated during a build: CI has to package the same icon
+# without redrawing it, and an .icns is small enough to keep in the repository.
+icon:
+	@mkdir -p build
+	swift scripts/make-icon.swift
 
 ## sign: sign the bundle so TCC keeps its grants across rebuilds
 # --identifier pins the bundle ID into the signature, which is half of what the

@@ -6,6 +6,8 @@
 	<string>Flip</string>
 	<key>CFBundleIdentifier</key>
 	<string>@BUNDLE_ID@</string>
+	<key>CFBundleIconFile</key>
+	<string>Flip</string>
 	<key>CFBundleName</key>
 	<string>Flip</string>
 	<key>CFBundleDisplayName</key>

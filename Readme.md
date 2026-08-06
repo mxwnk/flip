@@ -158,7 +158,6 @@ from `make cert`, which is trusted only on the machine that created it, and it i
 not notarised — so on any other Mac it opens only via right-click > Open, once.
 Distributing it properly means an Apple Developer ID and notarisation.
 
-There is no application icon yet, so the disk image shows the generic one.
 
 ## Releasing
 
