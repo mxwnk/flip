@@ -98,9 +98,41 @@ grants get attributed to it rather than to Flip — so `make run` goes through t
 launch agent when one exists and `open -a` otherwise.
 
 The menu bar item is the only visible surface: it reports both privacy grants,
-offers the settings pane when one is missing, and quits. Its icon turns into a
-warning triangle when a grant goes away, which is worth having — a switcher that
-has lost Accessibility is indistinguishable from a broken keyboard.
+offers the settings pane when one is missing, opens the shortcut editor, and
+quits. Its icon turns into a warning triangle when a grant goes away, which is
+worth having — a switcher that has lost Accessibility is indistinguishable from a
+broken keyboard.
+
+## Shortcuts
+
+**Shortcuts…** in the menu bar edits the application bindings. Changes apply as
+you make them; there is nothing to save.
+
+They live in `~/Library/Application Support/Flip/bindings.json`, seeded from
+`DefaultBindings` on first run and readable enough to keep with your dotfiles:
+
+```json
+{ "bundleID": "com.spotify.client", "key": "s", "usesLeader": true }
+```
+
+`usesLeader: false` means the key reaches the application with no modifier at
+all — that is how F1 gets to Ghostty, and it takes F1 away from every other
+application. Keys that no character can type, the function keys, can only be
+written by name and only in the file.
+
+Flip reads the file at launch and writes it on every edit, so it does not notice
+changes made by hand while it is running.
+
+### The warning about shadowed characters
+
+A binding swallows its key globally, so binding one that Option already uses
+takes that character away everywhere. Warning about "this key produces a
+character" would be useless — on a German layout every alphanumeric key does, 40
+out of 40, but they produce ç, €, ƒ, © and other things nobody types.
+
+The nine that matter are the ones whose Option layer is printable ASCII: on this
+layout `[ ] { } | @ ~ ' .`, which is exactly the set a programmer needs. Those
+are what the editor warns about, and only those.
 
 ## Installing on another Mac
 

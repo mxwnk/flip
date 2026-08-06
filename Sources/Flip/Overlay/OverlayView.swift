@@ -73,7 +73,7 @@ private struct TileView: View {
                 .frame(height: layout.thumbnailHeight - Theme.tilePadding / 2)
 
             HStack(spacing: 6) {
-                Image(nsImage: AppIconCache.icon(for: window.bundleID) ?? NSImage())
+                Image(nsImage: AppCatalog.icon(for: window.bundleID) ?? NSImage())
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: Theme.iconSize, height: Theme.iconSize)
@@ -110,7 +110,7 @@ private struct TileView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
         } else {
-            Image(nsImage: AppIconCache.icon(for: window.bundleID) ?? NSImage())
+            Image(nsImage: AppCatalog.icon(for: window.bundleID) ?? NSImage())
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 64, height: 64)

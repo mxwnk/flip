@@ -22,6 +22,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private var tap: EventTap?
     private var menuBar: MenuBarItem?
 
+    private let bindings = BindingStore()
+    private lazy var shortcuts = ShortcutsWindow(store: bindings)
+
     static func main() {
         let delegate = FlipApp()
         let application = NSApplication.shared
@@ -40,7 +43,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         status = Permissions.request()
         Permissions.report(status)
 
-        menuBar = MenuBarItem()
+        bindings.load()
+
+        menuBar = MenuBarItem { [weak self] in self?.shortcuts.show() }
         menuBar?.update(for: status)
 
         frontmost.startObserving()
@@ -96,8 +101,18 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         presenter.onUnexpectedClose = { [weak router] in router?.overlayDidClose() }
 
-        KeyboardLayout.observeInputSourceChanges { [weak router] in
-            router?.rebuildBindings()
+        // The bindings resolve against the keyboard layout, so both an edit and a
+        // layout switch invalidate them.
+        router.apply(bindings.bindings)
+        bindings.onChange = { [weak self, weak router] in
+            guard let self, let router else { return }
+
+            router.apply(bindings.bindings)
+        }
+        KeyboardLayout.observeInputSourceChanges { [weak self, weak router] in
+            guard let self, let router else { return }
+
+            router.apply(bindings.bindings)
         }
 
         let tap = EventTap(observing: [.keyDown, .flagsChanged]) { type, event in
