@@ -36,31 +36,48 @@ final class KeyRouter {
         isOverlayVisible = false
     }
 
-    private var bundleIDsByKeyCode: [CGKeyCode: String] = [:]
+    /// Written on the main thread whenever the bindings or the keyboard layout
+    /// change, read on the tap thread for every keystroke. It was previously
+    /// neither — a plain dictionary handed between two threads — which happened to
+    /// work only because layout changes are rare.
+    private let bindingsLock = NSLock()
+    private var leaderBindings: [CGKeyCode: String] = [:]
+    private var bareBindings: [CGKeyCode: String] = [:]
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
         self.frontmost = frontmost
-        rebuildBindings()
     }
 
-    /// Resolves the character bindings against the current keyboard layout.
-    func rebuildBindings() {
-        var resolved: [CGKeyCode: String] = [:]
+    /// Resolves the configured bindings against the current keyboard layout.
+    func apply(_ bindings: [AppBinding]) {
+        var leader: [CGKeyCode: String] = [:]
+        var bare: [CGKeyCode: String] = [:]
 
-        for (character, bundleID) in AppBindings.byCharacter {
-            guard let code = KeyboardLayout.keyCode(for: character) else {
-                log.error("no key produces '\(String(character), privacy: .public)' on this layout")
+        for binding in bindings where !binding.bundleID.isEmpty {
+            guard let code = KeyboardLayout.keyCode(forBinding: binding.key) else {
+                // Ordinary while a row is being typed into, and worth knowing about
+                // otherwise: a binding written for a layout you no longer use.
+                log.debug("no key for '\(binding.key, privacy: .public)' on this layout")
                 continue
             }
-            resolved[code] = bundleID
+
+            if binding.usesLeader { leader[code] = binding.bundleID } else { bare[code] = binding.bundleID }
         }
 
-        for (code, bundleID) in AppBindings.byKeyCode {
-            resolved[code] = bundleID
-        }
+        bindingsLock.lock()
+        leaderBindings = leader
+        bareBindings = bare
+        bindingsLock.unlock()
 
-        bundleIDsByKeyCode = resolved
+        log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare")
+    }
+
+    private func bundleID(for code: CGKeyCode, withLeader: Bool) -> String? {
+        bindingsLock.lock()
+        defer { bindingsLock.unlock() }
+
+        return withLeader ? leaderBindings[code] : bareBindings[code]
     }
 
     // MARK: - Event handling
@@ -108,14 +125,12 @@ final class KeyRouter {
             return nil
         }
 
-        if base == Configuration.leader, let bundleID = bundleIDsByKeyCode[code] {
+        if base == Configuration.leader, let bundleID = bundleID(for: code, withLeader: true) {
             if !isRepeat { reach(bundleID) }
             return nil
         }
 
-        if Configuration.bareKeysEnabled, base.isEmpty,
-           let bundleID = AppBindings.byKeyCode[code]
-        {
+        if base.isEmpty, let bundleID = bundleID(for: code, withLeader: false) {
             if !isRepeat { onMain { _ in AppLauncher.activate(bundleID) } }
             return nil
         }

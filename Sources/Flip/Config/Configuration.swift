@@ -10,8 +10,4 @@ enum Configuration {
     /// event tap has to exist at all rather than a set of registered hotkeys.
     static let appLeader: CGEventFlags = [.maskCommand]
 
-    /// Keys that reach an application with no modifier at all. They are swallowed
-    /// globally, so whatever the key normally does is gone: F1 no longer opens
-    /// help, and no longer shows quick documentation in IntelliJ.
-    static let bareKeysEnabled = true
 }

@@ -1,34 +1,24 @@
-import Carbon.HIToolbox
-import CoreGraphics
-
-enum AppBindings {
+/// What a fresh install starts with. Everything after that lives in
+/// `bindings.json` and is edited from the menu bar, so this is a seed rather than
+/// the configuration.
+enum DefaultBindings {
     /// Keyed by bundle ID rather than by name, because name lookups are ambiguous:
     /// "Cursor" also matches a macOS text input service, and "Google Chrome" also
     /// matches "Google Chrome Dev".
-    ///
-    /// Written as characters, not key codes: which physical key produces "z"
-    /// depends on the keyboard layout, and KeyboardLayout resolves that.
-    static let byCharacter: [Character: String] = [
-        "c": "com.tinyspeck.slackmacgap",                              // Slack
-        "e": "com.todesktop.230313mzl4w4u92",                          // Cursor
-        "f": "org.yanex.marta",                                        // Marta
-        "g": "com.google.Chrome.app.kjgfgldnnfoeklkmfkjfagphfepbbdan", // Google Meet
-        "i": "com.jetbrains.intellij",                                 // IntelliJ IDEA
-        "j": "dev.zed.Zed",                                            // Zed
-        "o": "md.obsidian",                                            // Obsidian
-        "q": "org.whispersystems.signal-desktop",                      // Signal
-        "s": "com.spotify.client",                                     // Spotify
-        "t": "com.mitchellh.ghostty",                                  // Ghostty
-        "w": "com.microsoft.teams2",                                   // Microsoft Teams
-        "1": "com.google.Chrome",                                      // Google Chrome
-        "2": "com.google.Chrome.dev",                                  // Google Chrome Dev
-    ]
-
-    /// Reached without any modifier, so these really do take the key away from
-    /// every application: F1 no longer opens help, and no longer shows quick
-    /// documentation in IntelliJ. Function keys sit at fixed codes regardless of
-    /// layout, so they need no translation.
-    static let byKeyCode: [CGKeyCode: String] = [
-        CGKeyCode(kVK_F1): "com.mitchellh.ghostty",
+    static let all: [AppBinding] = [
+        AppBinding(key: "c", bundleID: "com.tinyspeck.slackmacgap"),
+        AppBinding(key: "e", bundleID: "com.todesktop.230313mzl4w4u92"), // Cursor
+        AppBinding(key: "f", bundleID: "org.yanex.marta"),
+        AppBinding(key: "g", bundleID: "com.google.Chrome.app.kjgfgldnnfoeklkmfkjfagphfepbbdan"), // Meet
+        AppBinding(key: "i", bundleID: "com.jetbrains.intellij"),
+        AppBinding(key: "j", bundleID: "dev.zed.Zed"),
+        AppBinding(key: "o", bundleID: "md.obsidian"),
+        AppBinding(key: "q", bundleID: "org.whispersystems.signal-desktop"),
+        AppBinding(key: "s", bundleID: "com.spotify.client"),
+        AppBinding(key: "t", bundleID: "com.mitchellh.ghostty"),
+        AppBinding(key: "w", bundleID: "com.microsoft.teams2"),
+        AppBinding(key: "1", bundleID: "com.google.Chrome"),
+        AppBinding(key: "2", bundleID: "com.google.Chrome.dev"),
+        AppBinding(key: "F1", bundleID: "com.mitchellh.ghostty", usesLeader: false),
     ]
 }
