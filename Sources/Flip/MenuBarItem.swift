@@ -10,10 +10,10 @@ import AppKit
 final class MenuBarItem: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
-    private let onShowShortcuts: () -> Void
+    private let onShowSettings: () -> Void
 
-    init(onShowShortcuts: @escaping () -> Void) {
-        self.onShowShortcuts = onShowShortcuts
+    init(onShowSettings: @escaping () -> Void) {
+        self.onShowSettings = onShowSettings
         super.init()
 
         item.button?.toolTip = "Flip"
@@ -48,7 +48,7 @@ final class MenuBarItem: NSObject {
         }
 
         menu.addItem(.separator())
-        menu.addItem(action("Shortcuts…", #selector(showShortcuts), keyEquivalent: ","))
+        menu.addItem(action("Settings…", #selector(showSettings), keyEquivalent: ","))
 
         menu.addItem(.separator())
         menu.addItem(action("Quit Flip", #selector(quit), keyEquivalent: "q"))
@@ -73,8 +73,8 @@ final class MenuBarItem: NSObject {
         return item
     }
 
-    @objc private func showShortcuts() {
-        onShowShortcuts()
+    @objc private func showSettings() {
+        onShowSettings()
     }
 
     @objc private func openPrivacySettings() {

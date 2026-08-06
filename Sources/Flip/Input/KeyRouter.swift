@@ -43,6 +43,8 @@ final class KeyRouter {
     private let bindingsLock = NSLock()
     private var leaderBindings: [CGKeyCode: String] = [:]
     private var bareBindings: [CGKeyCode: String] = [:]
+    private var leaderFlags: CGEventFlags = ModifierChoice.option.flags
+    private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
@@ -50,7 +52,7 @@ final class KeyRouter {
     }
 
     /// Resolves the configured bindings against the current keyboard layout.
-    func apply(_ bindings: [AppBinding]) {
+    func apply(_ bindings: [AppBinding], settings: Settings) {
         var leader: [CGKeyCode: String] = [:]
         var bare: [CGKeyCode: String] = [:]
 
@@ -68,6 +70,8 @@ final class KeyRouter {
         bindingsLock.lock()
         leaderBindings = leader
         bareBindings = bare
+        leaderFlags = settings.leader.flags
+        appSwitcherFlags = settings.appSwitcher.flags
         bindingsLock.unlock()
 
         log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare")
@@ -78,6 +82,13 @@ final class KeyRouter {
         defer { bindingsLock.unlock() }
 
         return withLeader ? leaderBindings[code] : bareBindings[code]
+    }
+
+    private var hotkeys: (leader: CGEventFlags, appSwitcher: CGEventFlags) {
+        bindingsLock.lock()
+        defer { bindingsLock.unlock() }
+
+        return (leaderFlags, appSwitcherFlags)
     }
 
     // MARK: - Event handling
@@ -100,9 +111,10 @@ final class KeyRouter {
         let base = flags.subtracting(.maskShift)
         let step = backwards ? -1 : 1
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+        let (leader, appSwitcher) = hotkeys
 
         if code == CGKeyCode(kVK_Tab) {
-            if base == Configuration.leader {
+            if base == leader {
                 // Holding tab should not race through the list at the key repeat
                 // rate, but the event still has to be swallowed either way or the
                 // Dock's own switcher answers it.
@@ -110,7 +122,7 @@ final class KeyRouter {
                 return nil
             }
 
-            if base == Configuration.appLeader {
+            if base == appSwitcher {
                 if !isRepeat { openFrontmostAppWindows(step: step) }
                 return nil
             }
@@ -125,7 +137,7 @@ final class KeyRouter {
             return nil
         }
 
-        if base == Configuration.leader, let bundleID = bundleID(for: code, withLeader: true) {
+        if base == leader, let bundleID = bundleID(for: code, withLeader: true) {
             if !isRepeat { reach(bundleID) }
             return nil
         }

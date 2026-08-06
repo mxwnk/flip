@@ -14,6 +14,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private let store: WindowStore
     private let frontmost: FrontmostApp
     private let thumbnails: ThumbnailStore
+    private let settings: SettingsStore
 
     private let model = OverlayModel()
     private let panel: NSPanel
@@ -21,16 +22,18 @@ final class OverlayPresenter: SwitcherPresenting {
     private var currentSource: Source?
     private var lifetime: Timer?
 
-    /// Last resort against a modifier state that never reports itself as released,
-    /// which would otherwise leave the overlay on screen for good.
-    private static let maxLifetime: TimeInterval = 30
-
     var onUnexpectedClose: (() -> Void)?
 
-    init(store: WindowStore, frontmost: FrontmostApp, thumbnails: ThumbnailStore) {
+    init(
+        store: WindowStore,
+        frontmost: FrontmostApp,
+        thumbnails: ThumbnailStore,
+        settings: SettingsStore
+    ) {
         self.store = store
         self.frontmost = frontmost
         self.thumbnails = thumbnails
+        self.settings = settings
 
         panel = NSPanel(
             contentRect: NSScreen.main?.frame ?? .zero,
@@ -132,7 +135,12 @@ final class OverlayPresenter: SwitcherPresenting {
     private func windows(for source: Source) -> [WindowInfo] {
         switch source {
         case .allWindows:
-            return store.currentSpaceWindows()
+            // Exclusions apply here and nowhere else. Naming an application by key
+            // is an explicit request for it, and refusing that would be surprising.
+            let excluded = Set(settings.settings.excludedBundleIDs)
+            return store.currentSpaceWindows().filter { window in
+                window.bundleID.map { !excluded.contains($0) } ?? true
+            }
         case .application(let bundleID):
             return store.currentSpaceWindows(ofBundleID: bundleID, includingMinimized: true)
         }
@@ -200,7 +208,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
         requestMissingThumbnails(for: windows)
 
-        lifetime = Timer.scheduledTimer(withTimeInterval: Self.maxLifetime, repeats: false) { _ in
+        lifetime = Timer.scheduledTimer(withTimeInterval: Configuration.maxOverlayLifetime, repeats: false) { _ in
             MainActor.assumeIsolated { [weak self] in
                 guard let self, isVisible else { return }
 
@@ -227,6 +235,8 @@ final class OverlayPresenter: SwitcherPresenting {
     // MARK: - Thumbnails
 
     private func alreadyCaptured(_ windows: [WindowInfo]) -> [CGWindowID: CGImage] {
+        guard settings.settings.showThumbnails else { return [:] }
+
         var known: [CGWindowID: CGImage] = [:]
         for window in windows where !window.isMinimized {
             known[window.id] = thumbnails.cached(window.id)
@@ -236,6 +246,10 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func requestMissingThumbnails(for windows: [WindowInfo]) {
+        // Turned off means never captured, not captured and hidden: that is what
+        // makes the Screen Recording grant genuinely optional.
+        guard settings.settings.showThumbnails else { return }
+
         // Selected tile first: it is the one being looked at, so its capture goes
         // in ahead of the rest.
         let selected = model.selected

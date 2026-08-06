@@ -16,14 +16,15 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private let store = WindowStore()
     private let thumbnails = ThumbnailStore()
     private lazy var presenter = OverlayPresenter(
-        store: store, frontmost: frontmost, thumbnails: thumbnails
+        store: store, frontmost: frontmost, thumbnails: thumbnails, settings: settings
     )
     private var router: KeyRouter?
     private var tap: EventTap?
     private var menuBar: MenuBarItem?
 
     private let bindings = BindingStore()
-    private lazy var shortcuts = ShortcutsWindow(store: bindings)
+    private let settings = SettingsStore()
+    private lazy var settingsWindow = SettingsWindow(settings: settings, bindings: bindings)
 
     static func main() {
         let delegate = FlipApp()
@@ -37,6 +38,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        guard isOnlyInstance() else { return }
+
         log.notice("Flip \(Bundle.main.shortVersion, privacy: .public) starting")
         checkAXShimLinkage()
 
@@ -44,8 +47,11 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         Permissions.report(status)
 
         bindings.load()
+        bindings.watchForExternalEdits()
+        settings.load()
+        LoginItem.migrateFromLegacyAgent()
 
-        menuBar = MenuBarItem { [weak self] in self?.shortcuts.show() }
+        menuBar = MenuBarItem { [weak self] in self?.settingsWindow.show() }
         menuBar?.update(for: status)
 
         frontmost.startObserving()
@@ -103,23 +109,57 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         // The bindings resolve against the keyboard layout, so both an edit and a
         // layout switch invalidate them.
-        router.apply(bindings.bindings)
-        bindings.onChange = { [weak self, weak router] in
+        let reapply = { [weak self, weak router] in
             guard let self, let router else { return }
 
-            router.apply(bindings.bindings)
+            router.apply(bindings.bindings, settings: settings.settings)
         }
-        KeyboardLayout.observeInputSourceChanges { [weak self, weak router] in
-            guard let self, let router else { return }
-
-            router.apply(bindings.bindings)
-        }
+        reapply()
+        bindings.onChange = reapply
+        settings.onChange = reapply
+        KeyboardLayout.observeInputSourceChanges(onChange: reapply)
 
         let tap = EventTap(observing: [.keyDown, .flagsChanged]) { type, event in
             router.handle(type: type, event: event)
         }
         self.tap = tap
         tap.start()
+    }
+
+    /// Two copies of Flip mean two event taps racing for every keystroke, and the
+    /// loser silently swallowing keys. Registering the login item starts the agent
+    /// immediately, so a second copy is now one click away rather than hypothetical.
+    ///
+    /// Only the oldest copy stays. "Is anyone else running?" is not enough: when
+    /// two start together they each see the other and both leave, which is exactly
+    /// what happened — three copies raced and the machine ended up with none.
+    ///
+    /// Exits zero, which the agent's KeepAlive treats as deliberate and leaves
+    /// alone. Anything else would make launchd fight this check.
+    private func isOnlyInstance() -> Bool {
+        let ourPID = ProcessInfo.processInfo.processIdentifier
+        let ourLaunch = NSRunningApplication.current.launchDate ?? .distantPast
+
+        let older = NSRunningApplication
+            .runningApplications(withBundleIdentifier: Bundle.identifier)
+            .filter { other in
+                guard other.processIdentifier != ourPID else { return false }
+
+                let theirLaunch = other.launchDate ?? .distantPast
+                // Same instant is possible and has to break the same way on both
+                // sides, or the tie leaves nobody standing.
+                if theirLaunch == ourLaunch { return other.processIdentifier < ourPID }
+
+                return theirLaunch < ourLaunch
+            }
+
+        guard older.isEmpty else {
+            log.notice("an older copy of Flip is running; stepping aside")
+            NSApp.terminate(nil)
+            return false
+        }
+
+        return true
     }
 
     /// A private symbol that resolves at build time can still be missing at run

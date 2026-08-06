@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- A different label from the app's own bundle identifier on purpose: the
+	     launch agent the Makefile used to install owns that one, and registering
+	     over a job that is already loaded fails. -->
+	<key>Label</key>
+	<string>@BUNDLE_ID@.login</string>
+
+	<!-- Resolved against the app bundle rather than an absolute path, so moving
+	     Flip does not leave the agent pointing at nothing. -->
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/Flip</string>
+
+	<key>RunAtLoad</key>
+	<true/>
+
+	<!-- Restart after a crash, but not after a deliberate quit: launchd
+	     resurrecting an app the user just closed is a bug, not a feature. -->
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+
+	<!-- Groups the agent under Flip in System Settings › Login Items instead of
+	     listing it as an anonymous background item. -->
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>@BUNDLE_ID@</string>
+	</array>
+</dict>
+</plist>

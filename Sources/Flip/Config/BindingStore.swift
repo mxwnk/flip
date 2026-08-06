@@ -53,10 +53,70 @@ final class BindingStore: ObservableObject {
                 at: Self.file.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            try encoder.encode(bindings).write(to: Self.file, options: .atomic)
+            let data = try encoder.encode(bindings)
+            try data.write(to: Self.file, options: .atomic)
+            lastWritten = data
         } catch {
             log.error("could not save bindings: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    // MARK: - Noticing edits made by hand
+
+    private var watcher: DispatchSourceFileSystemObject?
+    private var lastWritten: Data?
+
+    /// Watches the file itself, and re-arms when it is replaced.
+    ///
+    /// Watching the containing directory instead looks tempting, because an atomic
+    /// save swaps the inode and leaves a file-level watch pointing at something
+    /// unreachable. But a directory only reports entries appearing and
+    /// disappearing — an editor that overwrites in place changes nothing about the
+    /// directory, and that edit goes unnoticed. Both kinds have to be covered, so
+    /// the file is watched and the watch is rebuilt whenever the inode goes away.
+    func watchForExternalEdits() {
+        watcher?.cancel()
+
+        let descriptor = open(Self.file.path, O_EVTONLY)
+        guard descriptor >= 0 else { return }
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: [.write, .extend, .delete, .rename],
+            queue: .main
+        )
+        source.setEventHandler { [weak self] in
+            let replaced = source.data.contains(.delete) || source.data.contains(.rename)
+
+            MainActor.assumeIsolated {
+                guard let self else { return }
+
+                self.reloadIfChangedOnDisk()
+                // Re-arming inside the handler would cancel the source that is
+                // running, so it waits for the next turn of the runloop.
+                if replaced {
+                    DispatchQueue.main.async { self.watchForExternalEdits() }
+                }
+            }
+        }
+        source.setCancelHandler { close(descriptor) }
+        source.resume()
+
+        watcher = source
+    }
+
+    /// Comparing content rather than timestamps is what keeps this from looping:
+    /// every save is itself a directory write, and reacting to those would reload,
+    /// re-save and start again.
+    private func reloadIfChangedOnDisk() {
+        guard let data = try? Data(contentsOf: Self.file), data != lastWritten,
+              let decoded = try? JSONDecoder().decode([AppBinding].self, from: data)
+        else { return }
+
+        log.notice("bindings.json changed on disk, reloading \(decoded.count, privacy: .public) bindings")
+        lastWritten = data
+        bindings = decoded
+        onChange?()
     }
 
     private func commit() {

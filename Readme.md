@@ -84,15 +84,17 @@ not needed — SwiftPM compiles, the Makefile assembles the bundle.
 
 ```sh
 make cert       # once, interactive: creates the signing identity
-make autostart  # build, install, and start at login
+make run        # build, install, launch
 make logs       # follow along
-make verify     # print the designated requirement
+make verify     # check the designated requirement has not drifted
 ```
 
-`make autostart` writes a launch agent to `~/Library/LaunchAgents` and loads it.
-Its `KeepAlive` is deliberately `SuccessfulExit: false` rather than `true`: a
-crash should bring Flip back, but quitting it on purpose should not be undone by
-launchd. `make unautostart` removes it again.
+Starting at login is a switch in Settings › General, not a Makefile target. The
+launch agent ships inside the app bundle and the app registers it through
+`SMAppService`, which puts it under System Settings › Login Items and resolves the
+executable against the bundle, so moving Flip cannot leave an agent pointing at
+nothing. Its `KeepAlive` is deliberately `SuccessfulExit: false` rather than
+`true`: a crash should bring Flip back, quitting on purpose should not.
 
 Nothing is ever started straight from a shell. Launching the binary from a
 terminal makes the terminal the responsible process for TCC, and the privacy
@@ -105,12 +107,20 @@ quits. Its icon turns into a warning triangle when a grant goes away, which is
 worth having — a switcher that has lost Accessibility is indistinguishable from a
 broken keyboard.
 
-## Shortcuts
+## Settings
 
-**Shortcuts…** in the menu bar edits the application bindings. Changes apply as
-you make them; there is nothing to save.
+**Settings…** in the menu bar, or ⌘, — three tabs, and every change applies as you
+make it. There is nothing to save.
 
-They live in `~/Library/Application Support/Flip/bindings.json`, seeded from
+**General** carries the two hotkeys, whether tiles show thumbnails or only icons,
+and whether Flip starts at login. Turning thumbnails off drops the Screen
+Recording requirement entirely rather than merely hiding the images.
+
+**Excluded** keeps applications out of the window list. A key bound directly to one
+still reaches it: naming an application is an explicit request, and refusing that
+would be surprising.
+
+**Shortcuts** edits the application bindings. They live in `~/Library/Application Support/Flip/bindings.json`, seeded from
 `DefaultBindings` on first run and readable enough to keep with your dotfiles:
 
 ```json
@@ -122,8 +132,11 @@ all — that is how F1 gets to Ghostty, and it takes F1 away from every other
 application. Keys that no character can type, the function keys, can only be
 written by name and only in the file.
 
-Flip reads the file at launch and writes it on every edit, so it does not notice
-changes made by hand while it is running.
+Edits made by hand are picked up while Flip runs. Watching for them needs both a
+file watch and a directory watch in effect: an editor that overwrites in place
+leaves the directory untouched, while an atomic save replaces the inode and
+strands a file watch — so the file is watched and the watch is rebuilt whenever it
+is replaced. Settings are not watched; they are only read at launch.
 
 ### The warning about shadowed characters
 

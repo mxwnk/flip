@@ -9,9 +9,8 @@ REQUIREMENT := Resources/designated-requirement.txt
 STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
-AGENT     := $(HOME)/Library/LaunchAgents/$(BUNDLE_ID).plist
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs dmg verify settings autostart unautostart clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs dmg verify settings login clean
 
 all: install
 
@@ -34,10 +33,15 @@ build:
 ## bundle: assemble build/Flip.app
 bundle: build
 	rm -rf $(BUNDLE)
-	mkdir -p $(BUNDLE)/Contents/MacOS $(BUNDLE)/Contents/Resources
+	mkdir -p $(BUNDLE)/Contents/MacOS $(BUNDLE)/Contents/Resources \
+		$(BUNDLE)/Contents/Library/LaunchAgents
 	cp $(BINARY) $(BUNDLE)/Contents/MacOS/$(APP_NAME)
 	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' \
 		Resources/Info.plist > $(BUNDLE)/Contents/Info.plist
+	# Registered by the app through SMAppService, not installed by this Makefile,
+	# which is why it ships inside the bundle.
+	sed -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' Resources/LaunchAgent.plist \
+		> $(BUNDLE)/Contents/Library/LaunchAgents/$(BUNDLE_ID).login.plist
 	printf 'APPL????' > $(BUNDLE)/Contents/PkgInfo
 
 ## sign: sign the bundle so TCC keeps its grants across rebuilds
@@ -59,21 +63,16 @@ install: sign stop
 ## run: install and launch
 # Never started straight from the shell: that would make the terminal the
 # responsible process for TCC, and the privacy grants would be attributed to it
-# rather than to Flip. Once the login agent exists it is the way in, so that
-# `make run` does not silently downgrade an autostarting install to a manual one.
+# rather than to Flip. The login agent is registered by the app, not from here.
 run: install
-	@if [ -f $(AGENT) ]; then \
-		launchctl bootstrap gui/$$(id -u) $(AGENT) && echo "Started via the login agent."; \
-	else \
-		open -a $(INSTALLED) && echo "Started."; \
-	fi
-	@echo "Follow along with: make logs"
+	open -a $(INSTALLED)
+	@echo "Started. Follow along with: make logs"
 
 ## stop: quit a running instance
 # The login job has to go first. Killing the process while launchd still owns it
 # only means launchd starts it again — in the middle of replacing the bundle.
 stop:
-	@launchctl bootout gui/$$(id -u)/$(BUNDLE_ID) 2>/dev/null || true
+	@launchctl bootout gui/$$(id -u)/$(BUNDLE_ID).login 2>/dev/null || true
 	@killall $(APP_NAME) 2>/dev/null || true
 
 restart: stop run
@@ -120,33 +119,13 @@ settings:
 	open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
 	open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
 
-## autostart: start Flip at login
-autostart: install
-	@mkdir -p $(HOME)/Library/LaunchAgents
-	@printf '%s\n' \
-		'<?xml version="1.0" encoding="UTF-8"?>' \
-		'<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
-		'<plist version="1.0">' \
-		'<dict>' \
-		'	<key>Label</key><string>$(BUNDLE_ID)</string>' \
-		'	<key>ProgramArguments</key>' \
-		'	<array><string>$(INSTALLED)/Contents/MacOS/$(APP_NAME)</string></array>' \
-		'	<key>RunAtLoad</key><true/>' \
-		'	<!-- Restart after a crash, but not after a deliberate quit: launchd' \
-		'	     resurrecting an app the user just closed is a bug, not a feature.' \
-		'	     Plain <true/> here also makes launchd log the job as "constantly' \
-		'	     running and inherently inefficient" on every load. -->' \
-		'	<key>KeepAlive</key>' \
-		'	<dict><key>SuccessfulExit</key><false/></dict>' \
-		'</dict>' \
-		'</plist>' > $(AGENT)
-	launchctl bootstrap gui/$$(id -u) $(AGENT)
-	@echo "Flip will start at login."
-
-unautostart:
-	@launchctl bootout gui/$$(id -u)/$(BUNDLE_ID) 2>/dev/null || true
-	@rm -f $(AGENT)
-	@echo "Login item removed."
+## login: report whether Flip starts at login
+# Registering is the app's job now — SMAppService only accepts it from inside the
+# bundle — so this only reports. The switch lives in Settings, General.
+login:
+	@launchctl print gui/$$(id -u)/$(BUNDLE_ID).login >/dev/null 2>&1 \
+		&& echo "Flip starts at login." \
+		|| echo "Flip does not start at login. Turn it on in Settings > General."
 
 clean:
 	rm -rf .build build
