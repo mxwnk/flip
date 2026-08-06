@@ -49,6 +49,38 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
+    // MARK: - Focusing
+
+    /// Raising is an accessibility call and belongs on the store's thread with
+    /// everything else; only bringing the application forward is main-thread work.
+    func focus(_ window: WindowInfo) {
+        thread.perform { [self] in
+            guard window.isMinimized else { return raise(window) }
+
+            AXUIElementSetAttributeValue(
+                window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse
+            )
+
+            // Unminimising is asynchronous — the window animates out of the Dock
+            // first — and a raise issued in the same breath is dropped.
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.15) { [self] in
+                thread.perform { self.raise(window) }
+            }
+        }
+    }
+
+    private func raise(_ window: WindowInfo) {
+        // Two separate things: main makes it the application's window, raise puts
+        // it in front of that application's other windows.
+        AXUIElementSetAttributeValue(window.element, kAXMainAttribute as CFString, kCFBooleanTrue)
+        AXUIElementPerformAction(window.element, kAXRaiseAction as CFString)
+
+        let pid = window.pid
+        DispatchQueue.main.async {
+            NSRunningApplication(processIdentifier: pid)?.activate()
+        }
+    }
+
     // MARK: - Lifecycle
 
     @MainActor
