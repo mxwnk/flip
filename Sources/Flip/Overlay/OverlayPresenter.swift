@@ -178,7 +178,7 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func present(_ windows: [WindowInfo], from source: Source) {
-        let screen = NSScreen.main ?? NSScreen.screens[0]
+        let screen = ActiveScreen.current()
 
         model.windows = windows
         model.selected = 0
