@@ -25,6 +25,7 @@ where the thumbnails will go.
 - [x] **4 — Overlay panel.** Icons only; replaces `switcher/`.
 - [x] **5 — Thumbnails.** ScreenCaptureKit, captured concurrently.
 - [ ] **6 — Edge cases.** Multi-monitor, minimised windows, fullscreen spaces.
+- [ ] **7 — Packaging.** A menu bar item, and a signed `.dmg` to install from.
 
 ### What the numbers actually say
 
@@ -80,11 +81,20 @@ not needed — SwiftPM compiles, the Makefile assembles the bundle.
 
 ```sh
 make cert       # once, interactive: creates the signing identity
-make install    # build, bundle, sign, copy to ~/Applications
-make run        # install and launch
+make autostart  # build, install, and start at login
 make logs       # follow along
-make autostart  # start at login
+make verify     # print the designated requirement
 ```
+
+`make autostart` writes a launch agent to `~/Library/LaunchAgents` and loads it.
+Its `KeepAlive` is deliberately `SuccessfulExit: false` rather than `true`: a
+crash should bring Flip back, but quitting it on purpose should not be undone by
+launchd. `make unautostart` removes it again.
+
+Nothing is ever started straight from a shell. Launching the binary from a
+terminal makes the terminal the responsible process for TCC, and the privacy
+grants get attributed to it rather than to Flip — so `make run` goes through the
+launch agent when one exists and `open -a` otherwise.
 
 ## The signing identity
 

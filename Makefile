@@ -54,14 +54,23 @@ install: sign stop
 	@echo "Installed $(INSTALLED)"
 
 ## run: install and launch
-# Launched with `open` rather than directly, so launchd owns the process and TCC
-# attributes the grants to Flip instead of to the terminal that started it.
+# Never started straight from the shell: that would make the terminal the
+# responsible process for TCC, and the privacy grants would be attributed to it
+# rather than to Flip. Once the login agent exists it is the way in, so that
+# `make run` does not silently downgrade an autostarting install to a manual one.
 run: install
-	open -a $(INSTALLED)
-	@echo "Running. Follow along with: make logs"
+	@if [ -f $(AGENT) ]; then \
+		launchctl bootstrap gui/$$(id -u) $(AGENT) && echo "Started via the login agent."; \
+	else \
+		open -a $(INSTALLED) && echo "Started."; \
+	fi
+	@echo "Follow along with: make logs"
 
 ## stop: quit a running instance
+# The login job has to go first. Killing the process while launchd still owns it
+# only means launchd starts it again — in the middle of replacing the bundle.
 stop:
+	@launchctl bootout gui/$$(id -u)/$(BUNDLE_ID) 2>/dev/null || true
 	@killall $(APP_NAME) 2>/dev/null || true
 
 restart: stop run
@@ -94,10 +103,14 @@ autostart: install
 		'	<key>ProgramArguments</key>' \
 		'	<array><string>$(INSTALLED)/Contents/MacOS/$(APP_NAME)</string></array>' \
 		'	<key>RunAtLoad</key><true/>' \
-		'	<key>KeepAlive</key><true/>' \
+		'	<!-- Restart after a crash, but not after a deliberate quit: launchd' \
+		'	     resurrecting an app the user just closed is a bug, not a feature.' \
+		'	     Plain <true/> here also makes launchd log the job as "constantly' \
+		'	     running and inherently inefficient" on every load. -->' \
+		'	<key>KeepAlive</key>' \
+		'	<dict><key>SuccessfulExit</key><false/></dict>' \
 		'</dict>' \
 		'</plist>' > $(AGENT)
-	@launchctl bootout gui/$$(id -u)/$(BUNDLE_ID) 2>/dev/null || true
 	launchctl bootstrap gui/$$(id -u) $(AGENT)
 	@echo "Flip will start at login."
 
