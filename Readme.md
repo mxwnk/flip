@@ -15,15 +15,22 @@ Alt is the leader key:
 
 ## Status
 
-Step one of six. The app builds, signs, asks for its privacy grants and reports
-them; there is no switcher yet.
+Step two of six. Keys are routed and applications can be reached; the switcher
+commands are logged rather than drawn, because there are no windows to draw yet.
 
 - [x] **1 — Signing and permissions.** Stable identity so TCC survives rebuilds.
-- [ ] **2 — Event tap and key router.** Replaces `apps.lua`.
+- [x] **2 — Event tap and key router.** Replaces `apps.lua`.
 - [ ] **3 — Window store.** `AXObserver` driven, MRU ordered.
 - [ ] **4 — Overlay panel.** Icons only; replaces `switcher/`.
 - [ ] **5 — Thumbnails.** ScreenCaptureKit, captured in parallel.
 - [ ] **6 — Edge cases.** Multi-monitor, minimised windows, fullscreen spaces.
+
+### Running alongside Hammerspoon
+
+Two event taps grabbing the same keys would fight, so while the Lua switcher is
+still installed Flip listens one modifier over: the leader is `Ctrl-Alt` and the
+application switcher is `Ctrl-Cmd-Tab`. Set `coexistWithHammerspoon` to false in
+`Configuration.swift` to take the real bindings over; that is the whole handover.
 
 ## Why not stay on Hammerspoon
 
