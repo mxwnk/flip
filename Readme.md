@@ -15,12 +15,12 @@ Alt is the leader key:
 
 ## Status
 
-Step two of six. Keys are routed and applications can be reached; the switcher
-commands are logged rather than drawn, because there are no windows to draw yet.
+Step three of six. The window model is live and correctly ordered; the switcher
+logs what it would show instead of drawing it.
 
 - [x] **1 — Signing and permissions.** Stable identity so TCC survives rebuilds.
 - [x] **2 — Event tap and key router.** Replaces `apps.lua`.
-- [ ] **3 — Window store.** `AXObserver` driven, MRU ordered.
+- [x] **3 — Window store.** `AXObserver` driven, MRU ordered.
 - [ ] **4 — Overlay panel.** Icons only; replaces `switcher/`.
 - [ ] **5 — Thumbnails.** ScreenCaptureKit, captured in parallel.
 - [ ] **6 — Edge cases.** Multi-monitor, minimised windows, fullscreen spaces.
