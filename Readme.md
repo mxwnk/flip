@@ -1,7 +1,7 @@
 # Flip
 
-A native window and application switcher for macOS, replacing the Hammerspoon
-implementation in [macos-setup](https://github.com/mxwnk/macos-setup).
+A window and application switcher for macOS. Agent app, no Dock icon, driven by
+a keyboard event tap.
 
 Alt is the leader key:
 
@@ -15,64 +15,46 @@ Alt is the leader key:
 
 ## Status
 
-The seven steps that replaced the Lua switcher are done, and the hotkeys,
-shortcuts and exclusions are configurable from the menu bar.
+Working and in daily use. Hotkeys, shortcuts and exclusions are configurable from
+the menu bar; the rest is in [Roadmap.md](Roadmap.md).
 
-- [x] **1 — Signing and permissions.** Stable identity so TCC survives rebuilds.
-- [x] **2 — Event tap and key router.** Replaces `apps.lua`.
-- [x] **3 — Window store.** `AXObserver` driven, MRU ordered.
-- [x] **4 — Overlay panel.** Icons only; replaces `switcher/`.
-- [x] **5 — Thumbnails.** ScreenCaptureKit, captured concurrently.
-- [~] **6 — Edge cases.** Multi-monitor done; minimised windows and fullscreen
-  spaces still to check.
-- [x] **7 — Packaging.** Menu bar item and a signed `.dmg`.
+- [x] Signed with a stable identity, so TCC grants survive an update
+- [x] Event tap and key router, including Cmd-Tab ahead of the Dock
+- [x] Window model driven by `AXObserver`, most-recently-used order
+- [x] Overlay panel with thumbnails, on whichever screen is active
+- [x] Menu bar item, settings window, signed disk image
+- [ ] Minimised windows and fullscreen spaces still to check
 
-Everything beyond those seven steps is in [Roadmap.md](Roadmap.md).
+### Numbers
 
-### What the numbers actually say
+Measured on a two-monitor machine with five windows open:
 
-Measured against the Lua switcher on the same machine, five windows open:
+| | |
+| --- | --- |
+| Opening the overlay, thumbnails present | **1.5–6 ms** |
+| Resolving the window list | ~1 ms, no accessibility calls |
+| One thumbnail capture | 67 ms for the first, then ~8 ms each |
+| Five captures from cold | ~170 ms, none of it on the main thread |
 
-| | Lua | Flip |
-| --- | --- | --- |
-| Overlay open, thumbnails present | 11.5–14.7 ms, tiles still empty | **1.5–6 ms**, tiles filled |
-| One capture | 14 ms, main thread | 67 ms first, then ~8 ms each |
-| Five captures, cold | ~70 ms, main thread | ~170 ms, off it |
+The capture numbers only matter when the cache is cold, which it rarely is: it is
+warmed at startup and then for each window as it loses focus — the moment its
+contents are final and nobody is waiting. By the time the overlay opens the
+images are already there, which is the first row.
 
-The cold column is worth being honest about: ScreenCaptureKit is *slower* than
-`CGWindowListCreateImage` for a one-off capture, and enumerating shareable
-content costs 60 ms on top. What it buys is that none of it happens on the main
-thread, and that the marginal window costs 8 ms instead of 14.
+## Design
 
-That only matters because the cache is warmed ahead of time — at startup, and
-then for each window as it loses focus, which is when its contents are final and
-nobody is waiting. By the time the overlay opens the images are already there,
-which is the column that counts.
+Three decisions carry most of the behaviour:
 
-Flip owns the real bindings as of step five. The Lua `switcher/` and `apps.lua`
-are commented out in `macos-setup`, because two event taps grabbing Alt-Tab would
-fight over it.
-
-## Why not stay on Hammerspoon
-
-Measured against the Lua implementation with four windows open, the overlay
-itself was never the problem — it appeared in 12–15 ms, roughly one frame. Three
-other things were:
-
-- **Thumbnails cost 14 ms each**, taken serially on the main thread, one per
-  runloop tick. Fifteen windows meant about 210 ms of half-empty grid competing
-  with keystroke handling. Captured in parallel through ScreenCaptureKit and
-  scaled on the GPU, the same work is roughly 20 ms and never touches the main
-  thread.
-- **A hung application froze everything.** Hammerspoon reads windows with
-  synchronous accessibility calls on the main thread, where the default timeout
-  is six seconds — and the Cmd-Tab event tap sits on that same runloop, so a
-  busy app delayed the keyboard. Here every AX call runs on a background queue
-  with a 0.5 s messaging timeout, and the event tap owns a thread and runloop of
-  its own.
-- **Every keystroke on the system was routed through the Lua VM** by the event
-  tap that Cmd-Tab requires. A native callback comparing a keycode is about a
-  microsecond.
+- **The window model is maintained, not queried.** `AXObserver` notifications
+  keep it current on a thread of its own, with a 0.5 s messaging timeout per
+  application, so an unresponsive app degrades into a missing window rather than
+  a frozen switcher. Opening the switcher costs one lock and one window server
+  call.
+- **The event tap owns a thread and a runloop.** macOS quietly disables a tap
+  whose callback misses its deadline, and the main thread is where rendering and
+  window server round trips live. The callback itself is a keycode comparison.
+- **The overlay panel is built once and kept.** Showing it is an `orderFront`,
+  hiding it an `orderOut`; nothing is allocated on the hot path.
 
 ## Requirements
 
