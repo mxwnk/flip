@@ -13,7 +13,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private var poll: Timer?
 
     private let frontmost = FrontmostApp()
-    private let presenter = LoggingPresenter()
+    private let store = WindowStore()
+    private lazy var presenter = LoggingPresenter(store: store, frontmost: frontmost)
     private var router: KeyRouter?
     private var tap: EventTap?
 
@@ -36,6 +37,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         Permissions.report(status)
 
         frontmost.startObserving()
+        startWindowStoreIfPermitted()
         startInputIfPermitted()
 
         // Grants are made while the app is already running, and the switch is not
@@ -52,9 +54,19 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         status = latest
         Permissions.report(latest)
 
-        // Accessibility is usually granted after the first launch, and the tap
-        // could not have been created before that.
+        // Accessibility is usually granted after the first launch, and neither the
+        // tap nor the observers could have been created before that.
+        startWindowStoreIfPermitted()
         startInputIfPermitted()
+    }
+
+    private var storeIsRunning = false
+
+    private func startWindowStoreIfPermitted() {
+        guard !storeIsRunning, status.accessibility else { return }
+
+        storeIsRunning = true
+        store.start()
     }
 
     private func startInputIfPermitted() {
