@@ -13,6 +13,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private let log = Logger(subsystem: Bundle.identifier, category: "switcher")
     private let store: WindowStore
     private let frontmost: FrontmostApp
+    private let thumbnails: ThumbnailStore
 
     private let model = OverlayModel()
     private let panel: NSPanel
@@ -25,9 +26,10 @@ final class OverlayPresenter: SwitcherPresenting {
 
     var onUnexpectedClose: (() -> Void)?
 
-    init(store: WindowStore, frontmost: FrontmostApp) {
+    init(store: WindowStore, frontmost: FrontmostApp, thumbnails: ThumbnailStore) {
         self.store = store
         self.frontmost = frontmost
+        self.thumbnails = thumbnails
 
         panel = NSPanel(
             contentRect: NSScreen.main?.frame ?? .zero,
@@ -139,7 +141,8 @@ final class OverlayPresenter: SwitcherPresenting {
             let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
             log.notice("""
             opened with \(windows.count, privacy: .public) windows \
-            in \(String(format: "%.2f", elapsed), privacy: .public)ms
+            in \(String(format: "%.2f", elapsed), privacy: .public)ms, \
+            \(self.model.thumbnails.count, privacy: .public) thumbnails ready
             """)
         }
 
@@ -152,6 +155,7 @@ final class OverlayPresenter: SwitcherPresenting {
         model.windows = windows
         model.selected = 0
         model.layout = OverlayLayout(count: windows.count, screen: screen.frame.size)
+        model.thumbnails = alreadyCaptured(windows)
 
         panel.setFrame(screen.frame, display: false)
         panel.orderFront(nil)
@@ -164,6 +168,8 @@ final class OverlayPresenter: SwitcherPresenting {
         alpha=\(self.panel.alphaValue, privacy: .public) \
         screen=\(NSStringFromRect(screen.frame), privacy: .public)
         """)
+
+        requestMissingThumbnails(for: windows)
 
         lifetime = Timer.scheduledTimer(withTimeInterval: Self.maxLifetime, repeats: false) { _ in
             MainActor.assumeIsolated { [weak self] in
@@ -183,5 +189,35 @@ final class OverlayPresenter: SwitcherPresenting {
         panel.orderOut(nil)
         isVisible = false
         model.windows = []
+        // The images themselves stay in the store; this only drops the references
+        // the closed overlay was holding.
+        model.thumbnails = [:]
+    }
+
+    // MARK: - Thumbnails
+
+    private func alreadyCaptured(_ windows: [WindowInfo]) -> [CGWindowID: CGImage] {
+        var known: [CGWindowID: CGImage] = [:]
+        for window in windows where !window.isMinimized {
+            known[window.id] = thumbnails.cached(window.id)
+        }
+
+        return known.compactMapValues { $0 }
+    }
+
+    private func requestMissingThumbnails(for windows: [WindowInfo]) {
+        // Selected tile first: it is the one being looked at, so its capture goes
+        // in ahead of the rest.
+        let selected = model.selected
+        let ordered = ([windows[selected]] + windows.enumerated().filter { $0.offset != selected }.map(\.element))
+            .filter { !$0.isMinimized }
+            .map(\.id)
+
+        thumbnails.fill(ordered) { [weak self] id, image in
+            guard let self, isVisible, model.windows.contains(where: { $0.id == id })
+            else { return }
+
+            model.thumbnails[id] = image
+        }
     }
 }

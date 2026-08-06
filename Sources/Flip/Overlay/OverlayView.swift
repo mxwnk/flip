@@ -5,6 +5,10 @@ final class OverlayModel: ObservableObject {
     @Published var windows: [WindowInfo] = []
     @Published var selected = 0
     @Published var layout = OverlayLayout(count: 0, screen: .zero)
+
+    /// Filled in as captures arrive, so the grid is drawn immediately and sharpens
+    /// rather than making anyone wait for the slowest window.
+    @Published var thumbnails: [CGWindowID: CGImage] = [:]
 }
 
 struct OverlayView: View {
@@ -20,6 +24,7 @@ struct OverlayView: View {
                         ForEach(row) { window in
                             TileView(
                                 window: window,
+                                thumbnail: model.thumbnails[window.id],
                                 isSelected: window.id == selectedID,
                                 layout: model.layout
                             )
@@ -55,16 +60,16 @@ struct OverlayView: View {
 
 private struct TileView: View {
     let window: WindowInfo
+    let thumbnail: CGImage?
     let isSelected: Bool
     let layout: OverlayLayout
 
     var body: some View {
         VStack(spacing: 0) {
-            // Kept even though step four has nothing to put in it: step five fills
-            // this exact rectangle with a thumbnail and the layout must not move.
             RoundedRectangle(cornerRadius: 6)
                 .fill(Theme.thumbnailBackground)
-                .overlay(icon)
+                .overlay(preview)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
                 .frame(height: layout.thumbnailHeight - Theme.tilePadding / 2)
 
             HStack(spacing: 6) {
@@ -95,14 +100,21 @@ private struct TileView: View {
         )
     }
 
-    /// Stands in for the missing thumbnail, and is what a minimised window will
-    /// keep showing even once thumbnails exist — a minimised window cannot be
-    /// captured.
-    private var icon: some View {
-        Image(nsImage: AppIconCache.icon(for: window.bundleID) ?? NSImage())
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 64, height: 64)
-            .opacity(0.85)
+    /// The capture once it exists, and the application icon until then. A
+    /// minimised window never gets past the icon: it is not on screen, so there
+    /// is nothing to capture.
+    @ViewBuilder
+    private var preview: some View {
+        if let thumbnail {
+            Image(decorative: thumbnail, scale: 1)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            Image(nsImage: AppIconCache.icon(for: window.bundleID) ?? NSImage())
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
+                .opacity(0.85)
+        }
     }
 }

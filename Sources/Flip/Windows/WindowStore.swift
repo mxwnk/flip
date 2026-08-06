@@ -18,6 +18,12 @@ final class WindowStore: @unchecked Sendable {
     private var watchers: [pid_t: AXApplicationWatcher] = [:]
     private var windows: [CGWindowID: WindowInfo] = [:]
     private var focusCounter: UInt64 = 0
+    private var lastFocusedID: CGWindowID?
+
+    /// Fires for the window that just lost focus. Its content is final at that
+    /// moment and it is still on screen, which makes it the cheapest possible time
+    /// to capture a thumbnail — and it is the window the next Alt-Tab selects.
+    var onWindowDefocused: ((CGWindowID) -> Void)?
 
     /// The published copy, in most-recently-focused order. Read from the main
     /// thread when the switcher opens.
@@ -196,10 +202,7 @@ final class WindowStore: @unchecked Sendable {
         case .deminimized:
             update(element) { $0.isMinimized = false }
         case .focused:
-            update(element) { [self] in
-                focusCounter += 1
-                $0.focusOrder = focusCounter
-            }
+            markFocused(element)
         }
 
         publish()
@@ -256,10 +259,27 @@ final class WindowStore: @unchecked Sendable {
     private func promoteFocusedWindow(of pid: pid_t) {
         guard let focused = watchers[pid]?.focusedWindow() else { return }
 
-        update(focused) { [self] in
+        markFocused(focused)
+    }
+
+    private func markFocused(_ element: AXUIElement) {
+        update(element) { [self] in
             focusCounter += 1
             $0.focusOrder = focusCounter
         }
+
+        guard let id = AXBridge.windowID(of: element), id != lastFocusedID else { return }
+
+        if let previous = lastFocusedID { onWindowDefocused?(previous) }
+        lastFocusedID = id
+    }
+
+    /// Every window currently known, for warming caches at startup.
+    func allWindowIDs() -> [CGWindowID] {
+        lock.lock()
+        defer { lock.unlock() }
+
+        return snapshot.filter { !$0.isMinimized }.map(\.id)
     }
 
     /// Nothing has been focused yet at startup, so the window server's front-to-back

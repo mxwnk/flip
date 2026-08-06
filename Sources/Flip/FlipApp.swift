@@ -14,7 +14,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
     private let frontmost = FrontmostApp()
     private let store = WindowStore()
-    private lazy var presenter = OverlayPresenter(store: store, frontmost: frontmost)
+    private let thumbnails = ThumbnailStore()
+    private lazy var presenter = OverlayPresenter(
+        store: store, frontmost: frontmost, thumbnails: thumbnails
+    )
     private var router: KeyRouter?
     private var tap: EventTap?
 
@@ -66,7 +69,18 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         guard !storeIsRunning, status.accessibility else { return }
 
         storeIsRunning = true
+        store.onWindowDefocused = { [weak self] id in self?.thumbnails.warm([id]) }
         store.start()
+
+        // Nothing has lost focus yet, so the first Alt-Tab would otherwise be the
+        // only one that opens onto empty tiles.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            guard let self else { return }
+
+            let ids = store.allWindowIDs()
+            log.notice("warming \(ids.count, privacy: .public) thumbnails at startup")
+            thumbnails.warm(ids)
+        }
     }
 
     private func startInputIfPermitted() {
