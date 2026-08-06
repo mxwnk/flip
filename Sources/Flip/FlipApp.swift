@@ -20,6 +20,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     )
     private var router: KeyRouter?
     private var tap: EventTap?
+    private var menuBar: MenuBarItem?
 
     static func main() {
         let delegate = FlipApp()
@@ -39,6 +40,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         status = Permissions.request()
         Permissions.report(status)
 
+        menuBar = MenuBarItem()
+        menuBar?.update(for: status)
+
         frontmost.startObserving()
         startWindowStoreIfPermitted()
         startInputIfPermitted()
@@ -56,6 +60,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         status = latest
         Permissions.report(latest)
+        menuBar?.update(for: latest)
 
         // Accessibility is usually granted after the first launch, and neither the
         // tap nor the observers could have been created before that.
