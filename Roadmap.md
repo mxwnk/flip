@@ -10,9 +10,10 @@ the catch is usually the reason something is not done yet.
       switcher behaviour. Before this, all of it was
       compile-time in `Configuration.swift`. Shortcuts became one tab of it rather
       than its own window.
-- [x] **Start-at-login toggle.** Writes and loads the launch agent that `make
-      autostart` writes today. Needs to survive the app being moved, since the
-      plist holds an absolute path.
+- [x] **Start-at-login toggle.** Moved from `make autostart` to `SMAppService`: the
+      agent ships in the bundle and the app registers it. Registering starts a
+      second copy immediately, so it also needed a single-instance guard — and one
+      that picks a winner, since "is anyone else running" makes both copies leave.
 - [x] **Thumbnails or icons per preference.** Icons make the overlay instant and
       drop the Screen Recording requirement entirely — worth offering, not just as
       a fallback.
