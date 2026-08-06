@@ -46,12 +46,9 @@ then for each window as it loses focus, which is when its contents are final and
 nobody is waiting. By the time the overlay opens the images are already there,
 which is the column that counts.
 
-### Running alongside Hammerspoon
-
-Two event taps grabbing the same keys would fight, so while the Lua switcher is
-still installed Flip listens one modifier over: the leader is `Ctrl-Alt` and the
-application switcher is `Ctrl-Cmd-Tab`. Set `coexistWithHammerspoon` to false in
-`Configuration.swift` to take the real bindings over; that is the whole handover.
+Flip owns the real bindings as of step five. The Lua `switcher/` and `apps.lua`
+are commented out in `macos-setup`, because two event taps grabbing Alt-Tab would
+fight over it.
 
 ## Why not stay on Hammerspoon
 

@@ -100,10 +100,6 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         }
         self.tap = tap
         tap.start()
-
-        if Configuration.coexistWithHammerspoon {
-            log.notice("coexisting with Hammerspoon: leader is Ctrl-Alt, app switcher is Ctrl-Cmd-Tab")
-        }
     }
 
     /// A private symbol that resolves at build time can still be missing at run

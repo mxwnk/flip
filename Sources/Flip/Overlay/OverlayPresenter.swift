@@ -18,6 +18,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private let model = OverlayModel()
     private let panel: NSPanel
     private var isVisible = false
+    private var currentSource: Source?
     private var lifetime: Timer?
 
     /// Last resort against a modifier state that never reports itself as released,
@@ -68,19 +69,17 @@ final class OverlayPresenter: SwitcherPresenting {
     // MARK: - SwitcherPresenting
 
     func showAllWindows(step: Int) {
-        open(step: step) { [self] in store.currentSpaceWindows() }
+        open(.allWindows, step: step)
     }
 
     func showWindows(of bundleID: String, step: Int) {
-        open(step: step) { [self] in
-            store.currentSpaceWindows(ofBundleID: bundleID, includingMinimized: true)
-        }
+        open(.application(bundleID), step: step)
     }
 
     func showFrontmostAppWindows(step: Int) {
         guard let bundleID = frontmost.bundleID else { return }
 
-        showWindows(of: bundleID, step: step)
+        open(.application(bundleID), step: step)
     }
 
     func move(by step: Int) {
@@ -122,34 +121,63 @@ final class OverlayPresenter: SwitcherPresenting {
 
     // MARK: - Internals
 
-    /// Reopening replaces the list; stepping again keeps it, so the selection can
-    /// walk a list that does not shift underneath it.
-    private func open(step: Int, source: () -> [WindowInfo]) {
-        if !isVisible {
-            let started = DispatchTime.now().uptimeNanoseconds
-            let windows = source()
-
-            // Nothing to switch between. The router still believes the overlay is
-            // up, so it has to be told otherwise or it will swallow the next keys.
-            guard !windows.isEmpty else {
-                onUnexpectedClose?()
-                return
-            }
-
-            present(windows)
-
-            let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
-            log.notice("""
-            opened with \(windows.count, privacy: .public) windows \
-            in \(String(format: "%.2f", elapsed), privacy: .public)ms, \
-            \(self.model.thumbnails.count, privacy: .public) thumbnails ready
-            """)
-        }
-
-        move(by: step)
+    /// Which question the overlay is currently answering. Holding Alt and pressing
+    /// an application key changes it without closing anything, which is what makes
+    /// Alt-S narrow an open overlay to Spotify instead of stepping it along by one.
+    private enum Source: Equatable {
+        case allWindows
+        case application(String)
     }
 
-    private func present(_ windows: [WindowInfo]) {
+    private func windows(for source: Source) -> [WindowInfo] {
+        switch source {
+        case .allWindows:
+            return store.currentSpaceWindows()
+        case .application(let bundleID):
+            return store.currentSpaceWindows(ofBundleID: bundleID, includingMinimized: true)
+        }
+    }
+
+    private func open(_ source: Source, step: Int) {
+        // Same question as before, so this is another tap of the same key: walk the
+        // list rather than rebuilding it underneath the selection.
+        if isVisible, currentSource == source {
+            move(by: step)
+            return
+        }
+
+        let started = DispatchTime.now().uptimeNanoseconds
+        let windows = windows(for: source)
+
+        guard !windows.isEmpty else {
+            log.debug("nothing to show for \(String(describing: source), privacy: .public)")
+
+            // Narrowing to an application with nothing on this space leaves the
+            // overlay standing rather than closing it out from under the user. Only
+            // a failed *open* has to be reported, or the router keeps believing an
+            // overlay is up and swallows keys that should pass through.
+            if !isVisible { onUnexpectedClose?() }
+            return
+        }
+
+        let wasVisible = isVisible
+        present(windows, from: source)
+
+        // Opening steps onto the previous window, which is the whole point of a
+        // switcher. Narrowing does not: the application was named, so its own most
+        // recent window is the answer, and stepping would skip past it.
+        if !wasVisible { move(by: step) }
+
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
+        log.notice("""
+        \(wasVisible ? "narrowed" : "opened", privacy: .public) to \
+        \(windows.count, privacy: .public) windows \
+        in \(String(format: "%.2f", elapsed), privacy: .public)ms, \
+        \(self.model.thumbnails.count, privacy: .public) thumbnails ready
+        """)
+    }
+
+    private func present(_ windows: [WindowInfo], from source: Source) {
         let screen = NSScreen.main ?? NSScreen.screens[0]
 
         model.windows = windows
@@ -160,6 +188,7 @@ final class OverlayPresenter: SwitcherPresenting {
         panel.setFrame(screen.frame, display: false)
         panel.orderFront(nil)
         isVisible = true
+        currentSource = source
 
         log.debug("""
         panel \(NSStringFromRect(self.panel.frame), privacy: .public) \
@@ -188,6 +217,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
         panel.orderOut(nil)
         isVisible = false
+        currentSource = nil
         model.windows = []
         // The images themselves stay in the store; this only drops the references
         // the closed overlay was holding.
