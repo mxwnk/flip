@@ -28,6 +28,8 @@ where the thumbnails will go.
   spaces still to check.
 - [x] **7 — Packaging.** Menu bar item and a signed `.dmg`.
 
+Everything beyond those seven steps is in [Roadmap.md](Roadmap.md).
+
 ### What the numbers actually say
 
 Measured against the Lua switcher on the same machine, five windows open:
