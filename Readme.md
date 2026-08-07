@@ -102,10 +102,25 @@ share lasts.
 Turn them off in Settings and Flip shows application icons instead — and stops
 asking for it.
 
-**macOS says it cannot verify Flip.** It is signed with its own certificate rather
-than notarised through Apple's paid programme. Homebrew clears that for you; a
-copy installed by hand has to be allowed once under System Settings › Privacy &
-Security.
+**macOS says the disk image "cannot be opened because Apple cannot check it for
+malicious software".** Flip is signed with its own certificate rather than
+notarised through Apple's paid programme, and macOS quarantines anything a browser
+downloads. Homebrew clears that for you — this only happens with the disk image.
+Either:
+
+1. Double-click the disk image and dismiss the warning.
+2. Open **System Settings › Privacy & Security** and scroll down to *Security*.
+3. Next to *"Flip-x.y.z.dmg" was blocked to protect your Mac*, click **Open
+   Anyway**, then confirm.
+
+Or clear it in one line, which also spares the copied app the same warning on its
+first launch:
+
+```sh
+xattr -d com.apple.quarantine ~/Downloads/Flip-*.dmg
+```
+
+Control-clicking and choosing Open no longer works for this on macOS 26.
 
 **Do I have to grant the permissions again after every update?** No. The signature
 is pinned to the same certificate on every release, and the pipeline refuses to

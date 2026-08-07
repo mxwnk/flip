@@ -184,6 +184,25 @@ kbd + kbd { margin-left: 6px; }
 .how h3 { color: var(--ink); }
 .how p { margin: 0; font-size: 15px; }
 
+/* The one thing a first-time visitor may actually get stuck on, so it is set
+   apart rather than left as a sentence in a paragraph. */
+.notice {
+    margin-top: 32px;
+    padding: 24px 26px;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--blue);
+    border-radius: 12px;
+}
+
+.notice h3 { margin-top: 0; }
+.notice p:last-child { margin-bottom: 0; }
+.notice .install { margin-top: 4px; font-size: 13px; }
+.notice ol { color: var(--ink-dim); padding-left: 20px; margin: 0 0 16px; }
+.notice li { margin-bottom: 6px; }
+.notice strong, .notice em { color: var(--ink); font-style: normal; }
+.fineprint { font-size: 13px; color: var(--ink-faint); }
+
 footer {
     padding: 40px 0 64px;
     text-align: center;

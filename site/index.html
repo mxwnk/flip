@@ -189,12 +189,29 @@
     </div>
     <p style="margin-top:20px">Flip asks for Accessibility on first run, and for
       Screen Recording only if you want thumbnails — turn them off and it never
-      asks. It is signed with its own certificate rather than notarised, so a copy
-      installed by hand has to be allowed once under System Settings › Privacy &amp;
-      Security. Homebrew clears that for you.</p>
-    <p>Everything it stores is readable JSON in
-      <code>~/Library/Application&nbsp;Support/Flip/</code>. The only request it ever
-      makes is a daily check for a newer release, and that can be turned off.</p>
+      asks. Everything it stores is readable JSON in
+      <code>~/Library/Application&nbsp;Support/Flip/</code>, and the only request it
+      ever makes is a daily check for a newer release, which can be turned off.</p>
+
+    <div class="notice">
+      <h3>“Apple cannot check it for malicious software”</h3>
+      <p>Flip is signed with its own certificate rather than notarised through
+        Apple's paid programme, and macOS quarantines anything a browser downloads.
+        <strong>Homebrew clears that for you</strong> — you only meet this warning
+        with the disk image.</p>
+      <ol>
+        <li>Double-click the disk image and dismiss the warning.</li>
+        <li>Open <strong>System Settings › Privacy &amp; Security</strong> and
+          scroll down to <em>Security</em>.</li>
+        <li>Next to <em>“Flip-x.y.z.dmg” was blocked to protect your Mac</em>, click
+          <strong>Open Anyway</strong>, then confirm.</li>
+      </ol>
+      <p>Or clear it in one line, which also spares the copied application the same
+        warning on its first launch:</p>
+      <div class="install"><span class="prompt">$</span><code>xattr -d com.apple.quarantine ~/Downloads/Flip-*.dmg</code></div>
+      <p class="fineprint">Control-clicking and choosing Open no longer works for
+        this on macOS 26.</p>
+    </div>
   </div>
 </section>
 
