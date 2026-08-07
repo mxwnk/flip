@@ -11,6 +11,9 @@ CGEventTap. macOS 14+, built with SwiftPM; Xcode is needed only for the tests.
 - `make test` runs the unit tests. XCTest needs Xcode, so the target points
   `DEVELOPER_DIR` at it rather than changing `xcode-select`
 - `make icon` redraws the app icon
+- `scripts/demo.sh` stages a reproducible scene and performs the demonstration
+  sequence. It rewrites the user's configuration and restores it from a trap, so
+  never remove the trap
 - Never launch the binary from a shell. TCC would attribute the privacy grants to
   the terminal instead of to Flip.
 
