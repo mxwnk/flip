@@ -5,25 +5,37 @@ import AppKit
 final class MenuBarItem: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
+    private var isPaused = false
     private let onShowSettings: () -> Void
+    private let onTogglePause: () -> Void
 
-    init(onShowSettings: @escaping () -> Void) {
+    init(onShowSettings: @escaping () -> Void, onTogglePause: @escaping () -> Void) {
         self.onShowSettings = onShowSettings
+        self.onTogglePause = onTogglePause
         super.init()
 
-        item.button?.toolTip = "Flip"
-        update(for: status)
+        update(for: status, paused: false)
     }
 
     /// A switcher that lost Accessibility looks exactly like a broken keyboard,
     /// so the icon carries the warning.
-    func update(for status: Permissions.Status) {
+    func update(for status: Permissions.Status, paused: Bool) {
         self.status = status
+        isPaused = paused
 
-        let symbol = status.isComplete ? "rectangle.on.rectangle" : "exclamationmark.triangle"
+        let symbol: String
+        if paused {
+            symbol = "pause.circle"
+        } else if status.isComplete {
+            symbol = "rectangle.on.rectangle"
+        } else {
+            symbol = "exclamationmark.triangle"
+        }
+
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Flip")
         image?.isTemplate = true
         item.button?.image = image
+        item.button?.toolTip = paused ? "Flip is paused" : "Flip"
         item.menu = buildMenu()
     }
 
@@ -43,6 +55,9 @@ final class MenuBarItem: NSObject {
         }
 
         menu.addItem(.separator())
+        let pause = action(isPaused ? "Resume Flip" : "Pause Flip", #selector(togglePause))
+        pause.state = isPaused ? .on : .off
+        menu.addItem(pause)
         menu.addItem(action("Settings…", #selector(showSettings), keyEquivalent: ","))
 
         menu.addItem(.separator())
@@ -65,6 +80,10 @@ final class MenuBarItem: NSObject {
         item.target = self
 
         return item
+    }
+
+    @objc private func togglePause() {
+        onTogglePause()
     }
 
     @objc private func showSettings() {

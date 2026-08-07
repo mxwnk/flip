@@ -61,8 +61,10 @@ the catch is usually the reason something is not done yet.
       on-screen list cannot catch it, because minimised windows are not in it.
 - [ ] **The 8–11 ms outliers.** Opening the overlay is usually 2–4 ms but sometimes
       three times that, from SwiftUI re-layout when the window count changes.
-- [ ] **Pause Flip.** A menu bar toggle that stops the router without quitting, for
-      screen sharing, games, or anything else that wants Alt-Tab back for a while.
+- [x] **Pause Flip.** Disables the tap at the port, so events never reach Flip and
+      the Dock gets Cmd-Tab back. Not persisted: pausing is for the length of a
+      screen share, and a switcher that silently does nothing after a restart would
+      be worse than one that resumed.
 - [ ] **Diagnostics.** A menu item that copies versions, grants, binding count and
       recent log lines, so a problem can be reported without a terminal.
 

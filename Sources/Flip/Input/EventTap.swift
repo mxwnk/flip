@@ -13,8 +13,15 @@ final class EventTap {
     private let handler: Handler
     private let log = Logger(subsystem: Bundle.identifier, category: "eventtap")
 
+    /// Written on the tap's thread, read from the main one when pausing.
+    private let state = NSLock()
     private var port: CFMachPort?
     private var runLoop: CFRunLoop?
+
+    /// Whether the tap is meant to be running. Disabling it makes macOS report the
+    /// tap as disabled, which is indistinguishable from a missed deadline — without
+    /// this the recovery below would switch it straight back on.
+    private var wanted = true
 
     init(observing types: [CGEventType], handler: @escaping Handler) {
         self.mask = types.reduce(into: CGEventMask(0)) { $0 |= 1 << CGEventMask($1.rawValue) }
@@ -28,7 +35,27 @@ final class EventTap {
         thread.start()
     }
 
+    /// Disabling at the port rather than short-circuiting the handler: while paused
+    /// the events never reach Flip at all, so the Dock gets Cmd-Tab back.
+    func setEnabled(_ enabled: Bool) {
+        state.lock()
+        wanted = enabled
+        let port = port
+        state.unlock()
+
+        guard let port else { return }
+
+        CGEvent.tapEnable(tap: port, enable: enabled)
+        log.notice("tap \(enabled ? "enabled" : "disabled", privacy: .public)")
+    }
+
     func stop() {
+        state.lock()
+        wanted = false
+        let port = port
+        let runLoop = runLoop
+        state.unlock()
+
         if let port { CGEvent.tapEnable(tap: port, enable: false) }
         if let runLoop { CFRunLoopStop(runLoop) }
     }
@@ -56,8 +83,10 @@ final class EventTap {
             return
         }
 
+        state.lock()
         self.port = port
         runLoop = CFRunLoopGetCurrent()
+        state.unlock()
 
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
@@ -69,10 +98,18 @@ final class EventTap {
 
     private func dispatch(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // Announced exactly once. Without re-enabling, every hotkey silently stops
-        // working until the app restarts.
+        // working until the app restarts — but a pause looks identical from here,
+        // so intent decides.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            state.lock()
+            let recover = wanted
+            let port = port
+            state.unlock()
+
+            guard recover, let port else { return Unmanaged.passUnretained(event) }
+
             log.error("tap was disabled (\(type == .tapDisabledByTimeout ? "timeout" : "user input", privacy: .public)); re-enabling")
-            if let port { CGEvent.tapEnable(tap: port, enable: true) }
+            CGEvent.tapEnable(tap: port, enable: true)
 
             return Unmanaged.passUnretained(event)
         }

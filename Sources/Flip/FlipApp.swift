@@ -22,6 +22,11 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private var tap: EventTap?
     private var menuBar: MenuBarItem?
 
+    /// Deliberately not persisted. Pausing is for the length of a screen share or
+    /// a game, and coming back to a switcher that silently does nothing would be
+    /// worse than one that resumed on its own.
+    private var isPaused = false
+
     private let bindings = BindingStore()
     private let settings = SettingsStore()
     private lazy var settingsWindow = SettingsWindow(settings: settings, bindings: bindings)
@@ -50,8 +55,11 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         settings.load()
         LoginItem.migrateFromLegacyAgent()
 
-        menuBar = MenuBarItem { [weak self] in self?.settingsWindow.show() }
-        menuBar?.update(for: status)
+        menuBar = MenuBarItem(
+            onShowSettings: { [weak self] in self?.settingsWindow.show() },
+            onTogglePause: { [weak self] in self?.togglePause() }
+        )
+        menuBar?.update(for: status, paused: isPaused)
 
         frontmost.startObserving()
         startWindowStoreIfPermitted()
@@ -69,11 +77,22 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         status = latest
         Permissions.report(latest)
-        menuBar?.update(for: latest)
+        menuBar?.update(for: latest, paused: isPaused)
 
         // Accessibility usually arrives after the first launch.
         startWindowStoreIfPermitted()
         startInputIfPermitted()
+    }
+
+    private func togglePause() {
+        isPaused.toggle()
+        tap?.setEnabled(!isPaused)
+
+        // An overlay left on screen would have no keys to close it.
+        if isPaused { presenter.cancel(); router?.overlayDidClose() }
+
+        menuBar?.update(for: status, paused: isPaused)
+        log.notice("\(self.isPaused ? "paused" : "resumed", privacy: .public)")
     }
 
     private var storeIsRunning = false

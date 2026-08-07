@@ -83,7 +83,9 @@ grants get attributed to it rather than to Flip, which is why `make run` goes
 through `open`.
 
 The menu bar item is the only visible surface: it reports both privacy grants,
-offers the privacy pane when one is missing, opens Settings, and quits. Its icon turns into a warning triangle when a grant goes away, which is
+offers the privacy pane when one is missing, pauses, opens Settings, and quits.
+Pausing disables the event tap itself rather than ignoring events, so macOS gets
+Cmd-Tab back for as long as it lasts. It is not remembered across restarts. Its icon turns into a warning triangle when a grant goes away, which is
 worth having — a switcher that has lost Accessibility is indistinguishable from a
 broken keyboard.
 
