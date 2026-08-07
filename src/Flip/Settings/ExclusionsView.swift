@@ -6,31 +6,14 @@ struct ExclusionsView: View {
     @ObservedObject var settings: SettingsStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("These applications stay out of the window list. A key bound directly to one still reaches it.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-
-            if settings.settings.excludedBundleIDs.isEmpty {
-                Spacer()
-                Text("Nothing excluded")
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity)
-                Spacer()
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(settings.settings.excludedBundleIDs, id: \.self) { bundleID in
-                            row(for: bundleID)
-                            Divider().opacity(0.4)
-                        }
-                    }
+        Form {
+            Section {
+                if settings.settings.excludedBundleIDs.isEmpty {
+                    Caption("Nothing excluded.")
                 }
-            }
 
-            HStack {
+                ForEach(settings.settings.excludedBundleIDs, id: \.self, content: row)
+
                 Menu {
                     ForEach(candidates, id: \.bundleID) { application in
                         Button(application.name) { settings.excluding(application.bundleID) }
@@ -42,12 +25,12 @@ struct ExclusionsView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-
-                Spacer()
+            } footer: {
+                Caption("These applications stay out of the window list. A key bound directly to "
+                    + "one still reaches it.")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
         }
+        .formStyle(.grouped)
     }
 
     private var candidates: [(bundleID: String, name: String)] {
@@ -73,8 +56,6 @@ struct ExclusionsView: View {
             .buttonStyle(.borderless)
             .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private func chooseApplication() {

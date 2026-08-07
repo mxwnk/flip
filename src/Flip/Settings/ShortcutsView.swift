@@ -6,49 +6,37 @@ struct ShortcutsView: View {
     @ObservedObject var store: BindingStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
+        Form {
+            Section {
+                if store.bindings.isEmpty {
+                    // The other tabs say when they are empty; this one used to show
+                    // a blank space and leave you guessing.
+                    Caption("No shortcuts yet.")
+                }
 
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(store.bindings) { binding in
-                        BindingRow(binding: binding, issue: store.issue(for: binding), store: store)
-                        Divider().opacity(0.4)
+                ForEach(store.bindings) { binding in
+                    BindingRow(binding: binding, issue: store.issue(for: binding), store: store)
+                }
+
+                Button("Add Shortcut", systemImage: "plus") { store.add() }
+                    .buttonStyle(.borderless)
+            } footer: {
+                HStack(alignment: .firstTextBaseline) {
+                    Caption("Hold Option and press a key to reach an application. Pressing it "
+                        + "again while that application is in front walks its windows.")
+
+                    Spacer(minLength: 16)
+
+                    Button("Reveal bindings.json") {
+                        NSWorkspace.shared.activateFileViewerSelecting([store.fileURL])
                     }
+                    .buttonStyle(.link)
+                    .font(.caption)
+                    .fixedSize()
                 }
             }
-
-            footer
         }
-        .frame(minWidth: 460, minHeight: 320)
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Hold Option and press a key to reach an application.")
-                .font(.callout)
-            Text("Pressing it again while that application is in front walks its windows.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-
-    private var footer: some View {
-        HStack {
-            Button("Add Shortcut", systemImage: "plus") { store.add() }
-
-            Spacer()
-
-            Button("Reveal bindings.json") {
-                NSWorkspace.shared.activateFileViewerSelecting([store.fileURL])
-            }
-            .buttonStyle(.link)
-            .font(.caption)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .formStyle(.grouped)
     }
 }
 
@@ -63,6 +51,9 @@ private struct KeyField: View {
 
     var body: some View {
         TextField(isFocused ? "press" : "key", text: $text)
+            // Without this the form lifts the placeholder into its label column
+            // and every row lines up differently.
+            .labelsHidden()
             .textFieldStyle(.roundedBorder)
             .multilineTextAlignment(.center)
             .frame(width: 54)
@@ -116,8 +107,6 @@ private struct BindingRow: View {
                     .padding(.leading, 24)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     /// Shadowing is legal and sometimes deliberate; the others mean the binding

@@ -79,9 +79,9 @@ square on a German keyboard too, which `y u h j` does not.
 
 **Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.
 
-- **General** — the two hotkeys, how long Option must be held before the grid
-  appears, thumbnails or plain icons, whether to list windows from every space,
-  whether to check for updates, and whether Flip starts at login.
+- **General** — whether Flip starts at login, the two hotkeys, how long Option
+  must be held before the grid appears, thumbnails or plain icons, whether to list
+  windows from every space, and whether to check for updates.
 - **Shortcuts** — one key per application. The editor warns when a key would
   shadow a character you need to type.
 - **Windows** — the keys above, listed so they can be found without this file.

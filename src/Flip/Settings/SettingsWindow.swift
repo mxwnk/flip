@@ -36,9 +36,9 @@ final class SettingsWindow {
         host.sizingOptions = []
         window.contentView = host
 
-        // Tall enough for the longest tab without clipping: the window actions are
-        // a fixed list of eleven and have no scroll view to fall back on.
-        window.contentMinSize = NSSize(width: 560, height: 600)
+        // A comfortable floor, not a required one: every tab is a grouped form now
+        // and scrolls, so nothing can be cut off however small this gets.
+        window.contentMinSize = NSSize(width: 520, height: 460)
         window.setContentSize(NSSize(width: 660, height: 620))
         window.center()
 
