@@ -30,7 +30,7 @@ LAYOUT_FILE="$ROOT/resources/dmg/DS_Store"
 # Has to agree with scripts/make-dmg-background.swift, or the arrow drawn on the
 # backdrop points somewhere the icons are not.
 WINDOW_WIDTH=660
-WINDOW_HEIGHT=400
+WINDOW_HEIGHT=440
 # Finder measures the window, not the area the backdrop gets: the title bar takes
 # 31 points off the top and the status bar 28 off the bottom. Measured, because
 # guessing them clips the line along the bottom edge of the image.
@@ -57,7 +57,10 @@ rm -rf "$STAGING"
 mkdir -p "$STAGING/.background"
 cp -R "$ROOT/build/$NAME.app" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
-cp "$ROOT/resources/dmg-background.tiff" "$STAGING/.background/background.tiff"
+# Redrawn per release so the window names the version being installed. The
+# layout refers to the backdrop by name, so replacing its contents is free.
+swift "$HERE/make-dmg-background.swift" "$VERSION" >/dev/null
+cp "$ROOT/build/dmg-background.tiff" "$STAGING/.background/background.tiff"
 cp "$ROOT/resources/$NAME.icns" "$STAGING/.VolumeIcon.icns"
 
 if [ "$LAYOUT" != "--layout" ]; then

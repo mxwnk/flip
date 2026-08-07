@@ -1,4 +1,4 @@
-// Draws the backdrop of the disk image window into resources/dmg-background.tiff.
+// Draws the backdrop of the disk image window into build/dmg-background.tiff.
 //
 // A TIFF with both a normal and a doubled representation, which is how a Finder
 // background stays crisp on a retina display — a plain PNG is measured in points
@@ -11,11 +11,15 @@ import AppKit
 import Foundation
 
 let width = 660.0
-let height = 400.0
+let height = 440.0
 
 /// Where Finder puts the two icons, measured from the top left like Finder does.
-let appIcon = CGPoint(x: 170, y: 205)
-let applications = CGPoint(x: 490, y: 205)
+let appIcon = CGPoint(x: 170, y: 215)
+let applications = CGPoint(x: 490, y: 215)
+
+/// Stamped into the backdrop, so the window says which version is being installed
+/// rather than leaving that to the file name. Passed in by scripts/make-dmg.sh.
+let version = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : ""
 
 // Taken from Theme.swift by way of the application icon, so the disk image, the
 // icon and the overlay are recognisably one thing.
@@ -58,7 +62,7 @@ func drawBackground() {
     NSGradient(starting: plateTop, ending: plateBottom)?.draw(in: bounds, angle: -90)
 
     draw(
-        title: "Flip",
+        title: version.isEmpty ? "Flip" : "Flip \(version)",
         .systemFont(ofSize: 34, weight: .semibold),
         NSColor(white: 1, alpha: 0.94),
         centredAt: CGPoint(x: width / 2, y: height - 74)
@@ -78,7 +82,15 @@ func drawBackground() {
         title: "Drag Flip into Applications",
         .systemFont(ofSize: 12),
         NSColor(white: 1, alpha: 0.42),
-        centredAt: CGPoint(x: width / 2, y: 62)
+        centredAt: CGPoint(x: width / 2, y: 100)
+    )
+    // Said here rather than left to the first launch: a permission dialog nobody
+    // was expecting is the moment an unsigned application looks like malware.
+    draw(
+        title: "It asks for Accessibility the first time you switch a window.",
+        .systemFont(ofSize: 11),
+        NSColor(white: 1, alpha: 0.28),
+        centredAt: CGPoint(x: width / 2, y: 74)
     )
 }
 
@@ -111,7 +123,9 @@ let double = build.appendingPathComponent("dmg-background@2x.png")
 try render(scale: 1).write(to: single)
 try render(scale: 2).write(to: double)
 
-let output = root.appendingPathComponent("resources/dmg-background.tiff")
+// Into build/ rather than the repository: the version is stamped in, so a
+// committed copy would be stale the moment it was committed.
+let output = build.appendingPathComponent("dmg-background.tiff")
 let tiffutil = Process()
 tiffutil.executableURL = URL(fileURLWithPath: "/usr/bin/tiffutil")
 tiffutil.arguments = ["-cathidpicheck", single.path, double.path, "-out", output.path]

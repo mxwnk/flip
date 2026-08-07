@@ -3,6 +3,14 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 1.2.0
+
+The disk image says which version it is installing, and warns you about the
+permission dialog before it appears rather than after. A permission nobody was
+expecting is the moment an unsigned application starts to look like malware.
+
+Flip also has a page now: [mxwnk.github.io/flip](https://mxwnk.github.io/flip/).
+
 ## 1.1.0
 
 **Pick the display the grid opens on.** On a desk with two monitors the switcher

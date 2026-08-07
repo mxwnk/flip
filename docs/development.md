@@ -91,5 +91,6 @@ the run.
 
 The disk image window — backdrop, icon positions, volume icon — is assembled by
 `scripts/make-dmg.sh`. Its layout lives in a `.DS_Store` that only Finder can
-write, so it is produced once with `make dmg-layout` on a desktop and committed,
-the same way the application icon is committed rather than drawn during a build.
+write, so it is produced once with `make dmg-layout` on a desktop and committed.
+The backdrop itself is redrawn on every build, because the version is stamped into
+it; the layout refers to it by name, so replacing its contents is free.
