@@ -160,8 +160,9 @@ the run.
 
 ## Contributing
 
-Conventions and the invariants that break silently are in
-[AGENTS.md](AGENTS.md).
+Open work and known gaps live in
+[issues](https://github.com/mxwnk/flip/issues). Conventions and the invariants
+that break silently are in [AGENTS.md](AGENTS.md).
 
 ## License
 
