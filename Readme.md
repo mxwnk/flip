@@ -33,7 +33,7 @@ Add `⇧` to any of those to go backwards.
 | `⌃⌥←` `⌃⌥→` | left or right half |
 | `⌃⌥↑` `⌃⌥↓` | top or bottom half |
 | `⌃⌥↩` | fill the screen |
-| `⌃⌥⌘←` `⌃⌥⌘→` | previous or next display, keeping the window's place on it |
+| `⇧⌥←` `⇧⌥→` | previous or next display, keeping the window's place on it |
 
 Everything is measured against the visible frame, so filling the screen stops at
 the menu bar and the Dock.
@@ -41,6 +41,9 @@ the menu bar and the Dock.
 Two modifiers is not fussiness: every single one is already spoken for with the
 arrow keys. Option moves by word, Control switches spaces, fn is Home and End, and
 Command is beginning and end of line in every text field there is.
+
+Moving between displays takes `⇧⌥` and the arrows, which macOS otherwise uses to
+extend a selection by word. A deliberate trade.
 
 `fn` is ignored throughout. Apple keyboards set it for whole groups of keys — the
 F-row and the arrows both carry it — so treating it as meaningful would mean no

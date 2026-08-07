@@ -122,7 +122,9 @@ final class KeyRouter {
             return nil
         }
 
-        if let arrangement = arrangement(for: code, modifiers: base) {
+        // Matched against the flags as pressed, not `base`: shift is part of a
+        // window binding, where the switcher only ever reads it as "backwards".
+        if let arrangement = arrangement(for: code, modifiers: flags) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil
         }

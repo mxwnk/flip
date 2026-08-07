@@ -30,7 +30,7 @@ extension WindowArrangement {
     /// and Command is start and end of line — so two of them is what is left.
     static let shortcuts: [WindowShortcut] = {
         let halves: CGEventFlags = [.maskControl, .maskAlternate]
-        let displays: CGEventFlags = [.maskControl, .maskAlternate, .maskCommand]
+        let displays: CGEventFlags = [.maskShift, .maskAlternate]
 
         return [
             WindowShortcut(arrangement: .leftHalf, modifiers: halves,
@@ -44,9 +44,9 @@ extension WindowArrangement {
             WindowShortcut(arrangement: .maximize, modifiers: halves,
                            keyCode: CGKeyCode(kVK_Return), name: "Fill the screen", keys: "⌃⌥↩"),
             WindowShortcut(arrangement: .previousDisplay, modifiers: displays,
-                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display", keys: "⌃⌥⌘←"),
+                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display", keys: "⇧⌥←"),
             WindowShortcut(arrangement: .nextDisplay, modifiers: displays,
-                           keyCode: CGKeyCode(kVK_RightArrow), name: "Next display", keys: "⌃⌥⌘→"),
+                           keyCode: CGKeyCode(kVK_RightArrow), name: "Next display", keys: "⇧⌥→"),
         ]
     }()
 }
