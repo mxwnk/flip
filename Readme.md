@@ -119,7 +119,7 @@ Measured with nine windows open on a two-monitor machine:
 | --- | --- |
 | Opening the grid, thumbnails already there | **6–10 ms** |
 | Resolving the window list | ~1 ms, no accessibility calls |
-| Warming every thumbnail at startup | ~230 ms for nine, in parallel |
+| Warming every thumbnail at startup | ~200 ms for nine, in parallel |
 
 ## Building it yourself
 

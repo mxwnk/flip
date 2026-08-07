@@ -111,7 +111,9 @@ private struct TileView: View {
         }
     }
 
-    /// A minimised window never gets past the icon: nothing to capture.
+    /// A minimised window never gets past the icon: nothing to capture. Neither
+    /// does anything at all with thumbnails turned off, which is the case this is
+    /// sized for — a fixed icon looked lost in a tile meant to hold a window.
     @ViewBuilder
     private var preview: some View {
         if let thumbnail {
@@ -122,7 +124,9 @@ private struct TileView: View {
             Image(nsImage: AppCatalog.icon(for: window.bundleID) ?? NSImage())
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 64, height: 64)
+                // Proportional, so it shrinks along with the tile once enough
+                // windows are open to squeeze the columns.
+                .frame(height: layout.thumbnailHeight * Theme.iconFraction)
                 .opacity(0.85)
         }
     }
