@@ -91,9 +91,10 @@ the catch is usually the reason something is not done yet.
 
 ## Showing it off
 
-- [~] **A GIF of Flip in use, for the readme.** `scripts/demo.sh` stages the scene,
-      performs the sequence and restores everything; the recording and the keystroke
-      overlay are still to be added.
+- [~] **A GIF of Flip in use, for the readme.** `scripts/demo.sh` stages the scene
+      and performs the sequence; the recording is in `Docs/demo.gif`. Still missing
+      the keystroke overlay, so the film shows what happens but not what was
+      pressed — which is half of what it is for.
   - **Keystrokes on screen: KeyCastr** (`brew install --cask keycastr`), open
     source and the standard choice on macOS. One catch to verify: it watches
     through an event tap of its own, and Flip swallows its bound keys before

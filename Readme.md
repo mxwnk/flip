@@ -13,6 +13,10 @@
   <img src="Docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
 </p>
 
+<p align="center">
+  <img src="Docs/demo.gif" width="820" alt="Switching windows, jumping to an application, and moving a window across the screen">
+</p>
+
 ## Keys
 
 | | |
