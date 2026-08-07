@@ -110,6 +110,27 @@ enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Where command sits in the bottom row. Apple puts it beside the space bar;
+/// a board with a Windows layout puts the Windows key there instead, which macOS
+/// reads as command, so the order reads control, command, option.
+///
+/// macOS cannot be asked: the modifier remapping it exposes says what each key
+/// *does*, not where it *is*, and a keyboard like the Nuphy Air75 reports Apple's
+/// own vendor identifier while carrying the other arrangement.
+enum ModifierRowOrder: String, Codable, CaseIterable, Identifiable {
+    case appleStyle
+    case windowsStyle
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .appleStyle: return "⌃ ⌥ ⌘"
+        case .windowsStyle: return "⌃ ⌘ ⌥"
+        }
+    }
+}
+
 struct Settings: Codable, Equatable {
     var leader: ModifierChoice = .option
 
@@ -130,6 +151,9 @@ struct Settings: Codable, Equatable {
     /// Only the display moves are settable; the halves and quarters are not, for
     /// the reason spelled out in WindowArrangement.
     var displayMoveModifier: DisplayMoveModifier = .shiftOption
+
+    /// Only affects the picture of the keyboard in the settings window.
+    var modifierRowOrder: ModifierRowOrder = .appleStyle
 
     /// The only thing Flip ever sends a request for.
     var checkForUpdates = true
@@ -165,6 +189,9 @@ struct Settings: Codable, Equatable {
         displayMoveModifier = try container
             .decodeIfPresent(DisplayMoveModifier.self, forKey: .displayMoveModifier)
             ?? defaults.displayMoveModifier
+        modifierRowOrder = try container
+            .decodeIfPresent(ModifierRowOrder.self, forKey: .modifierRowOrder)
+            ?? defaults.modifierRowOrder
         checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates)
             ?? defaults.checkForUpdates
         excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)

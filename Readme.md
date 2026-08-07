@@ -103,6 +103,8 @@ you are on lit up, and the modifiers spelled out — `⌃` is labelled *control*
 is *option*. The letters come from the layout you type on and the shape from the
 keyboard you type on, which are not the same question: a German layout on an ANSI
 board has no key between the left shift and Z, and Flip asks macOS which it is.
+Where command sits in the bottom row is the one thing macOS cannot answer, so
+there is a small switch under the picture for it.
 
 **Pause** in the menu bar hands `⌘ Tab` back to macOS for as long as a screen
 share lasts.

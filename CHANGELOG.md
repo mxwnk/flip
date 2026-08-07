@@ -19,12 +19,17 @@ tab you are on lit up. `⌃⌥⌘⇧` mean nothing until you can see which physi
 each one is, and the settings window was full of them — so the modifiers carry the
 word as well as the symbol, in the positions your thumbs already know.
 
-Two questions go into drawing it, and they are not the same one. The letters come
-from the keyboard layout, so a German one shows Z and ß where an American shows Y
-and a hyphen. The shape comes from the hardware, which macOS reports separately —
-a German layout is typed on plenty of ANSI boards, and those have no key between
-the left shift and Z and no key beside the return. Drawing the European shape for
-everyone would have put two keys on the picture that are not on the desk.
+Three questions go into drawing it, and they are not the same one. The letters
+come from the keyboard layout, so a German one shows Z and ß where an American
+shows Y and a hyphen. The shape comes from the hardware, which macOS reports
+separately — a German layout is typed on plenty of ANSI boards, and those have no
+key between the left shift and Z and no key beside the return.
+
+The third is where command sits in the bottom row, and that one macOS genuinely
+cannot answer: the modifier remapping it exposes says what each key *does*, not
+where it *is*, and a board like the Nuphy Air75 reports Apple's own vendor
+identifier while carrying the Windows arrangement — control, command, option. So
+it is a small switch under the picture, and nothing else depends on it.
 
 ## 1.2.0
 

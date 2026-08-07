@@ -14,14 +14,15 @@ import SwiftUI
 struct KeyboardMap: View {
     let keys: Set<CGKeyCode>
     let modifiers: CGEventFlags
+    @Binding var order: ModifierRowOrder
 
     private let unit: CGFloat = 26
     private let gap: CGFloat = 3
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(spacing: 6) {
             VStack(spacing: gap) {
-                ForEach(Array(Self.rows.enumerated()), id: \.offset) { _, row in
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                     HStack(spacing: gap) {
                         ForEach(Array(row.enumerated()), id: \.offset) { _, key in
                             cap(key)
@@ -34,10 +35,27 @@ struct KeyboardMap: View {
                 RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04))
             )
 
-            if !legend.isEmpty {
-                Text(legend)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                if !legend.isEmpty {
+                    Text(legend)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 16)
+
+                // Sits with the picture rather than in a tab, because it changes
+                // nothing about how Flip behaves — only whether the drawing
+                // matches the keyboard on the desk.
+                Picker("", selection: $order) {
+                    ForEach(ModifierRowOrder.allCases) { choice in
+                        Text(choice.label).tag(choice)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .font(.caption)
+                .fixedSize()
             }
         }
     }
@@ -124,8 +142,14 @@ struct KeyboardMap: View {
     /// the *shape* follows the hardware, and the two are independent: a German
     /// layout is typed on plenty of ANSI keyboards, which have no key between the
     /// left shift and Z and no key beside the return.
-    private static var rows: [[Key]] {
-        Int(KBGetLayoutType(Int16(LMGetKbdType()))) == kKeyboardANSI ? ansi : iso
+    /// The upper rows come from the hardware, the bottom one from the setting —
+    /// macOS knows the first and cannot know the second.
+    private var rows: [[Key]] {
+        let shape = Int(KBGetLayoutType(Int16(LMGetKbdType()))) == kKeyboardANSI
+            ? Self.ansi
+            : Self.iso
+
+        return shape + [bottom(order)]
     }
 
     private static let common: [Key] = [
@@ -136,21 +160,26 @@ struct KeyboardMap: View {
         named("F10", kVK_F10), named("F11", kVK_F11), named("F12", kVK_F12),
     ]
 
-    private static let bottom: [Key] = [
-        named("fn"),
-        modifier("⌃", "control", .maskControl, width: 1.3),
-        modifier("⌥", "option", .maskAlternate, width: 1.3),
-        modifier("⌘", "command", .maskCommand, width: 1.8),
-        named("space", nil, width: 3.6),
-        modifier("⌘", "command", .maskCommand, width: 1.8),
-        modifier("⌥", "option", .maskAlternate, width: 1.3),
+    private func bottom(_ order: ModifierRowOrder) -> [Key] {
+        let control = Self.modifier("⌃", "control", .maskControl, width: 1.4)
+        let option = Self.modifier("⌥", "option", .maskAlternate, width: 1.4)
+        let command = Self.modifier("⌘", "command", .maskCommand, width: 1.8)
+        let left = order == .appleStyle ? [control, option, command] : [control, command, option]
+        // Two on the right, not three: that is the asymmetry every keyboard has,
+        // and mirroring all three made this row stick out past the ones above it.
+        let right = left.suffix(2).reversed()
+
+        return left + [
+        Self.named("space", nil, width: 3.0),
+    ] + right + [
         // Four in a row rather than the real inverted T: each one has to be
         // able to light up on its own, and a stacked pair cannot.
-        named("←", kVK_LeftArrow),
-        named("↓", kVK_DownArrow),
-        named("↑", kVK_UpArrow),
-        named("→", kVK_RightArrow),
-    ]
+        Self.named("←", kVK_LeftArrow),
+        Self.named("↓", kVK_DownArrow),
+        Self.named("↑", kVK_UpArrow),
+        Self.named("→", kVK_RightArrow),
+        ]
+    }
 
     private static let ansi: [[Key]] = [
         common,
@@ -185,7 +214,6 @@ struct KeyboardMap: View {
             letter(kVK_ANSI_Comma), letter(kVK_ANSI_Period), letter(kVK_ANSI_Slash),
             modifier("⇧", "shift", .maskShift, width: 2.25),
         ],
-        bottom,
     ]
 
     private static let iso: [[Key]] = [
@@ -221,6 +249,5 @@ struct KeyboardMap: View {
             letter(kVK_ANSI_Comma), letter(kVK_ANSI_Period), letter(kVK_ANSI_Slash),
             modifier("⇧", "shift", .maskShift, width: 1.4),
         ],
-        bottom,
     ]
 }

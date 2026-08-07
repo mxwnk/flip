@@ -118,7 +118,11 @@ private struct SettingsView: View {
 
             // Always on show, lighting up whatever the tab above is about. The
             // symbols are unreadable until you can see which key each one is.
-            KeyboardMap(keys: litKeys, modifiers: litModifiers)
+            KeyboardMap(
+                keys: litKeys,
+                modifiers: litModifiers,
+                order: $settings.settings.modifierRowOrder
+            )
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
         }
