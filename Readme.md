@@ -158,10 +158,10 @@ and is never edited by hand. Bumping it uses a deploy key held as
 it the release still goes out and the cask stays where it was, with a warning in
 the run.
 
-## Roadmap
+## Contributing
 
-Open ideas and known gaps live in [Roadmap.md](Roadmap.md); conventions for
-working on this in [AGENTS.md](AGENTS.md).
+Conventions and the invariants that break silently are in
+[AGENTS.md](AGENTS.md).
 
 ## License
 
