@@ -25,6 +25,10 @@ the catch is usually the reason something is not done yet.
 
 ## Switcher behaviour
 
+- [ ] **Minimised windows in Alt-Tab.** They are listed for a single application
+      but filtered out of the all-windows list, so Alt-Tab cannot reach a window
+      that is in the Dock. Deliberate, and arguably wrong.
+
 - [ ] **Mouse: hover to select, click to confirm.** The panel sets
       `ignoresMouseEvents = true` today, so this is a deliberate reversal rather
       than an addition. Careful with the non-activating panel: clicking must not

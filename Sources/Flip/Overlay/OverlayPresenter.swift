@@ -80,6 +80,19 @@ final class OverlayPresenter: SwitcherPresenting {
         open(.application(bundleID), step: step)
     }
 
+    func reachApplication(_ bundleID: String) {
+        let windows = store.currentSpaceWindows(ofBundleID: bundleID, includingMinimized: true)
+
+        // NSRunningApplication.activate() brings the application forward but leaves
+        // its windows in the Dock, so one with nothing but minimised windows would
+        // arrive showing nothing at all.
+        guard let target = windows.first, windows.allSatisfy(\.isMinimized) else {
+            return AppLauncher.activate(bundleID)
+        }
+
+        store.focus(target)
+    }
+
     func move(by step: Int) {
         guard isVisible, !model.windows.isEmpty else { return }
 

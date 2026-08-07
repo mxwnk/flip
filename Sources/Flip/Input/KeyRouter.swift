@@ -128,7 +128,7 @@ final class KeyRouter {
         }
 
         if base.isEmpty, let bundleID = bundleID(for: code, withLeader: false) {
-            if !isRepeat { onMain { _ in AppLauncher.activate(bundleID) } }
+            if !isRepeat { onMain { $0.reachApplication(bundleID) } }
             return nil
         }
 
@@ -186,7 +186,7 @@ final class KeyRouter {
             return
         }
 
-        onMain { _ in AppLauncher.activate(bundleID) }
+        onMain { $0.reachApplication(bundleID) }
     }
 
     /// The decision is already made; only the effect crosses to main.

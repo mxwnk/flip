@@ -11,6 +11,9 @@ protocol SwitcherPresenting: AnyObject {
 
     func showFrontmostAppWindows(step: Int)
 
+    /// Brings an application forward without opening the overlay.
+    func reachApplication(_ bundleID: String)
+
     func move(by step: Int)
     func moveRow(by step: Int)
 
