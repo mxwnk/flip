@@ -14,11 +14,19 @@ enum KeyboardLayout {
 
     private static let lock = NSLock()
     private static var codesByCharacter: [Character: CGKeyCode] = [:]
+    private static var charactersByCode: [CGKeyCode: Character] = [:]
     private static var asciiOptionByCharacter: [Character: Character] = [:]
     private static var isLoaded = false
 
     static func keyCode(for character: Character) -> CGKeyCode? {
         withLayout { codesByCharacter[character] }
+    }
+
+    /// The other direction: what the key in this position types. Drawing a picture
+    /// of the keyboard needs it, and a picture labelled from a hard-coded American
+    /// layout would put Z and Y in the wrong places on a German one.
+    static func character(for code: CGKeyCode) -> Character? {
+        withLayout { charactersByCode[code] }
     }
 
     static func keyCode(forBinding key: String) -> CGKeyCode? {
@@ -67,6 +75,7 @@ enum KeyboardLayout {
     private static func reload() {
         isLoaded = true
         codesByCharacter = [:]
+        charactersByCode = [:]
         asciiOptionByCharacter = [:]
 
         guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
@@ -80,6 +89,9 @@ enum KeyboardLayout {
 
             for code in 0..<128 {
                 guard let character = translate(CGKeyCode(code), layout: layout) else { continue }
+
+                charactersByCode[CGKeyCode(code)] = character
+
                 // Lowest code wins, so "1" is the digit row and not the keypad.
                 guard codesByCharacter[character] == nil else { continue }
 

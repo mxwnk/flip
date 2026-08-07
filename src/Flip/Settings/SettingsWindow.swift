@@ -1,4 +1,6 @@
 import AppKit
+import Carbon.HIToolbox
+import CoreGraphics
 import SwiftUI
 
 /// An accessory application is never the active one, so ordering a window front
@@ -38,8 +40,8 @@ final class SettingsWindow {
 
         // A comfortable floor, not a required one: every tab is a grouped form now
         // and scrolls, so nothing can be cut off however small this gets.
-        window.contentMinSize = NSSize(width: 520, height: 460)
-        window.setContentSize(NSSize(width: 660, height: 620))
+        window.contentMinSize = NSSize(width: 560, height: 640)
+        window.setContentSize(NSSize(width: 680, height: 820))
         window.center()
 
         // Remembers a size you dragged to. Without it every launch snaps back.
@@ -56,19 +58,69 @@ private struct SettingsView: View {
     @ObservedObject var settings: SettingsStore
     @ObservedObject var bindings: BindingStore
 
+    @State private var tab: Tab = .general
+
+    private enum Tab: Hashable { case general, shortcuts, windows, excluded }
+
+    /// What the keyboard lights up, following whichever tab is open. Showing every
+    /// binding at once would be a keyboard with half its keys lit and no meaning.
+    private var litKeys: Set<CGKeyCode> {
+        switch tab {
+        case .general:
+            return [CGKeyCode(kVK_Tab)]
+        case .shortcuts:
+            return Set(bindings.bindings.compactMap { KeyboardLayout.keyCode(forBinding: $0.key) })
+        case .windows:
+            return Set(
+                WindowArrangement.shortcuts(displayMove: settings.settings.displayMoveModifier)
+                    .map(\.keyCode)
+            )
+        case .excluded:
+            return []
+        }
+    }
+
+    private var litModifiers: CGEventFlags {
+        switch tab {
+        case .general:
+            return settings.settings.leader.flags.union(settings.settings.appSwitcher.flags)
+        case .shortcuts:
+            return settings.settings.leader.flags
+        case .windows:
+            return CGEventFlags([.maskControl, .maskAlternate])
+                .union(settings.settings.displayMoveModifier.flags)
+        case .excluded:
+            return []
+        }
+    }
+
     var body: some View {
-        TabView {
-            GeneralView(settings: settings)
-                .tabItem { Label("General", systemImage: "gearshape") }
+        VStack(spacing: 0) {
+            TabView(selection: $tab) {
+                GeneralView(settings: settings)
+                    .tabItem { Label("General", systemImage: "gearshape") }
+                    .tag(Tab.general)
 
-            ShortcutsView(store: bindings)
-                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                ShortcutsView(store: bindings)
+                    .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                    .tag(Tab.shortcuts)
 
-            WindowActionsView(settings: settings)
-                .tabItem { Label("Windows", systemImage: "macwindow.on.rectangle") }
+                WindowActionsView(settings: settings)
+                    .tabItem { Label("Windows", systemImage: "macwindow.on.rectangle") }
+                    .tag(Tab.windows)
 
-            ExclusionsView(settings: settings)
-                .tabItem { Label("Excluded", systemImage: "eye.slash") }
+                ExclusionsView(settings: settings)
+                    .tabItem { Label("Excluded", systemImage: "eye.slash") }
+                    .tag(Tab.excluded)
+            }
+
+            Divider()
+
+            // Always on show, lighting up whatever the tab above is about. The
+            // symbols are unreadable until you can see which key each one is.
+            KeyboardMap(keys: litKeys, modifiers: litModifiers)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

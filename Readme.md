@@ -98,6 +98,12 @@ modifier is already spoken for with the arrow keys.
 - **Excluded** — applications kept out of the grid. A key bound directly to one
   still reaches it.
 
+Along the bottom sits a picture of your keyboard with the keys of whichever tab
+you are on lit up, and the modifiers spelled out — `⌃` is labelled *control*, `⌥`
+is *option*. The letters come from the layout you type on and the shape from the
+keyboard you type on, which are not the same question: a German layout on an ANSI
+board has no key between the left shift and Z, and Flip asks macOS which it is.
+
 **Pause** in the menu bar hands `⌘ Tab` back to macOS for as long as a screen
 share lasts.
 
