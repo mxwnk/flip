@@ -155,23 +155,10 @@ final class KeyRouter {
         return event
     }
 
-    /// Fixed for now. Every single modifier with an arrow is already taken on
-    /// macOS — Option moves by word, Control switches spaces, fn is Home and End —
-    /// so two of them is what is left rather than a preference.
     private func arrangement(for code: CGKeyCode, modifiers: CGEventFlags) -> WindowArrangement? {
-        let halves: CGEventFlags = [.maskAlternate, .maskCommand]
-        let displays: CGEventFlags = [.maskAlternate, .maskCommand, .maskControl]
-
-        switch (modifiers, Int(code)) {
-        case (halves, kVK_LeftArrow): return .leftHalf
-        case (halves, kVK_RightArrow): return .rightHalf
-        case (halves, kVK_UpArrow): return .topHalf
-        case (halves, kVK_DownArrow): return .bottomHalf
-        case (halves, kVK_ANSI_F): return .maximize
-        case (displays, kVK_RightArrow): return .nextDisplay
-        case (displays, kVK_LeftArrow): return .previousDisplay
-        default: return nil
-        }
+        WindowArrangement.shortcuts
+            .first { $0.keyCode == code && $0.modifiers == modifiers }?
+            .arrangement
     }
 
     // MARK: - Actions

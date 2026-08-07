@@ -1,14 +1,54 @@
 import AppKit
+import Carbon.HIToolbox
 import CoreGraphics
 
-enum WindowArrangement {
+enum WindowArrangement: CaseIterable {
     case leftHalf
     case rightHalf
     case topHalf
     case bottomHalf
     case maximize
-    case nextDisplay
     case previousDisplay
+    case nextDisplay
+}
+
+/// One action and the key that performs it. The router matches against this and
+/// the settings window lists it, so the two cannot drift apart.
+struct WindowShortcut: Identifiable {
+    let arrangement: WindowArrangement
+    let modifiers: CGEventFlags
+    let keyCode: CGKeyCode
+    let name: String
+    let keys: String
+
+    var id: String { keys }
+}
+
+extension WindowArrangement {
+    /// Fixed for now. Every single modifier is already spoken for with the arrow
+    /// keys — Option moves by word, Control switches spaces, fn is Home and End,
+    /// and Command is start and end of line — so two of them is what is left.
+    static let shortcuts: [WindowShortcut] = {
+        let halves: CGEventFlags = [.maskAlternate, .maskCommand]
+        let displays: CGEventFlags = [.maskAlternate, .maskCommand, .maskControl]
+
+        return [
+            WindowShortcut(arrangement: .leftHalf, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Left half", keys: "⌥⌘←"),
+            WindowShortcut(arrangement: .rightHalf, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_RightArrow), name: "Right half", keys: "⌥⌘→"),
+            WindowShortcut(arrangement: .topHalf, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_UpArrow), name: "Top half", keys: "⌥⌘↑"),
+            WindowShortcut(arrangement: .bottomHalf, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_DownArrow), name: "Bottom half", keys: "⌥⌘↓"),
+            WindowShortcut(arrangement: .maximize, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_ANSI_F), name: "Fill the screen", keys: "⌥⌘F"),
+            WindowShortcut(arrangement: .previousDisplay, modifiers: displays,
+                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display", keys: "⌃⌥⌘←"),
+            WindowShortcut(arrangement: .nextDisplay, modifiers: displays,
+                           keyCode: CGKeyCode(kVK_RightArrow), name: "Next display", keys: "⌃⌥⌘→"),
+        ]
+    }()
 }
 
 @MainActor

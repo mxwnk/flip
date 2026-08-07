@@ -82,6 +82,9 @@ a character you need: on a German layout every alphanumeric key produces somethi
 with Option, but only nine produce printable ASCII — `[ ] { } | @ ~ ' .` — and
 those are the ones worth protecting.
 
+**Windows** — the fixed keys for moving and resizing, listed so they can be found
+without this file.
+
 **Excluded** — applications kept out of the grid. A key bound directly to one
 still reaches it.
 
