@@ -149,7 +149,7 @@ Every push builds and tests. Pushing a `v*` tag also signs, packages, publishes 
 release with the disk image attached, and points the Homebrew cask at it:
 
 ```sh
-git tag v0.2.0 && git push origin v0.2.0
+git tag v1.0.0 && git push origin v1.0.0
 ```
 
 The cask lives in [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip)
