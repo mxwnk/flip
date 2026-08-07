@@ -126,9 +126,16 @@ Measured with nine windows open on a two-monitor machine:
 ```sh
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
-make test       # 78 unit tests
+make test       # 81 unit tests
+make smoke      # 23 checks against a running copy, before a release
 make logs       # follow along; almost everything interesting is logged
 ```
+
+`make test` covers the arithmetic. `make smoke` covers the border with macOS,
+which is where every real bug in this project has been: it drives the keyboard and
+the mouse through synthetic events, reads back what Flip decided from its log, and
+measures windows it moved. Hands off the keyboard while it runs — a real keystroke
+releases the modifier holding the switcher open.
 
 SwiftPM compiles and the Makefile assembles the bundle, so Xcode is needed only
 for the tests. Nothing is ever started straight from a shell: that would make the

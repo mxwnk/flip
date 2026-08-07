@@ -16,7 +16,7 @@ STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs test icon icon-background dmg dmg-layout verify settings login clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs test smoke icon icon-background dmg dmg-layout verify settings login clean
 
 all: install
 
@@ -101,6 +101,13 @@ restart: stop run
 ## logs: follow Flip's log output
 logs:
 	log stream --level debug --style compact --predicate 'subsystem == "$(BUNDLE_ID)"'
+
+## smoke: everything only a running Mac can answer, before a release
+# The unit tests cover the arithmetic. This covers the border with macOS, which
+# is where every real bug in this project has been. Hands off the keyboard while
+# it runs: a real keystroke releases the modifier holding the switcher open.
+smoke:
+	@scripts/smoke.sh
 
 ## dmg: package build/Flip-<version>.dmg for installing on another Mac
 # Read the Gatekeeper caveat in the Readme first. This is signed with the local
