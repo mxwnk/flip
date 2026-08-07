@@ -21,13 +21,15 @@ ROOT="$(dirname "$HERE")"
 SUPPORT="$HOME/Library/Application Support/Flip"
 BACKUP="$(mktemp -d)"
 
-# Chosen for scriptability: each opens a window with no dialog in the way. Pages
-# and Numbers greet you with a template chooser, which cannot be staged blind.
-APPS=("Calculator" "Safari" "TextEdit")
+APPS=("Pages" "Numbers" "Safari" "Calculator")
 
-# The binding the jump scene presses. Restored with everything else.
-DEMO_KEY="c"
-DEMO_BUNDLE="com.apple.calculator"
+# Two temporary bindings. The jump scene presses the first; the arrange scene
+# presses the second so it lands on a window worth resizing, rather than acting
+# on whatever happened to be focused last.
+JUMP_KEY="c"
+JUMP_BUNDLE="com.apple.calculator"
+ARRANGE_KEY="s"
+ARRANGE_BUNDLE="com.apple.Safari"
 
 SCENE=""
 RECORD=false
@@ -72,11 +74,12 @@ echo "==> Staging: everything else excluded, one binding added"
 osascript -e 'tell application "System Events" to tell process "Flip" to click menu item "Quit Flip" of menu 1 of menu bar item 1 of menu bar 1' >/dev/null 2>&1 || true
 sleep 2
 
-python3 - "$SUPPORT" "$DEMO_KEY" "$DEMO_BUNDLE" "${APPS[@]}" <<'PY'
+python3 - "$SUPPORT" "$JUMP_KEY" "$JUMP_BUNDLE" "$ARRANGE_KEY" "$ARRANGE_BUNDLE" "${APPS[@]}" <<'PY'
 import json, subprocess, sys
 
-support, key, bundle = sys.argv[1], sys.argv[2], sys.argv[3]
-names = set(sys.argv[4:])
+support = sys.argv[1]
+temporary = [(sys.argv[2], sys.argv[3]), (sys.argv[4], sys.argv[5])]
+names = set(sys.argv[6:])
 
 listing = subprocess.run(["swift", "-e", '''
 import AppKit
@@ -94,8 +97,10 @@ settings["excludedBundleIDs"] = sorted(excluded)
 json.dump(settings, open(f"{support}/settings.json", "w"), indent=2, sort_keys=True)
 
 bindings = json.load(open(f"{support}/bindings.json"))
-bindings = [b for b in bindings if b["key"] != key]
-bindings.append({"bundleID": bundle, "key": key, "usesLeader": True})
+taken = {key for key, _ in temporary}
+bindings = [b for b in bindings if b["key"] not in taken]
+bindings += [{"bundleID": bundle, "key": key, "usesLeader": True}
+             for key, bundle in temporary]
 json.dump(bindings, open(f"{support}/bindings.json", "w"), indent=2, sort_keys=True)
 
 print(f"    showing {len(keep)} applications, hiding {len(excluded)}")
@@ -103,6 +108,29 @@ PY
 
 (cd "$ROOT" && make run >/dev/null 2>&1)
 sleep 4
+
+# A take is only worth recording if every application actually put a window up.
+# Pages and Numbers open onto a template chooser when they have no document to
+# restore, and a chooser is not a window worth filming.
+echo "==> Checking each application has a window"
+python3 - "${APPS[@]}" <<'PY'
+import subprocess, sys
+
+wanted = sys.argv[1:]
+listing = subprocess.run(["swift", "-e", """
+import CoreGraphics
+let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+let all = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] ?? []
+for w in all where (w[kCGWindowLayer as String] as? Int) == 0 {
+    if let owner = w[kCGWindowOwnerName as String] as? String { print(owner) }
+}"""], capture_output=True, text=True).stdout.split()
+
+for name in wanted:
+    print(f"    {name}: {'window' if name in listing else 'NO WINDOW'}")
+missing = [n for n in wanted if n not in listing]
+if missing:
+    print(f"    Open a document in {', '.join(missing)} first.")
+PY
 
 if $RECORD; then
     OUTPUT="$ROOT/build/demo.mov"

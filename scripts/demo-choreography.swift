@@ -27,6 +27,7 @@ let leftArrow: CGKeyCode = 123
 let rightArrow: CGKeyCode = 124
 let returnKey: CGKeyCode = 36
 let cKey: CGKeyCode = 8
+let sKey: CGKeyCode = 1
 
 let option: CGEventFlags = [.maskAlternate]
 let controlOption: CGEventFlags = [.maskControl, .maskAlternate]
@@ -84,7 +85,13 @@ func jumping() {
 }
 
 /// Halves, filling, and across to the other display.
+///
+/// Lands on Safari first. Window actions apply to whatever was focused last,
+/// and after the jump scene that is the calculator — a small fixed window that
+/// looks wrong stretched across half a screen.
 func arranging() {
+    tap(sKey, option, wait: pause)
+
     tap(leftArrow, controlOption, wait: pause)
     tap(rightArrow, controlOption, wait: pause)
     tap(returnKey, controlOption, wait: pause)
