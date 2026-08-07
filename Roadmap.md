@@ -29,8 +29,13 @@ the catch is usually the reason something is not done yet.
       what Rectangle's alternate set uses, so there is nothing to relearn.
 - [ ] **Configurable keys for the window actions.** The modifier is hard-coded;
       it belongs in Settings next to the switcher's.
-- [ ] **Quarters, thirds, centre, and restore.** The obvious next helpings once the
-      geometry is trusted.
+- [ ] **Quarters, addressed with letters rather than arrows.** Four corners need
+      four keys, and arrows only offer two axes. Either `h j k l` in the vim sense,
+      or the `u i j k` block Rectangle uses, whose physical layout already forms the
+      2×2 the action describes. `⌃⌥` with letters is free — the leader is Option on
+      its own.
+- [ ] **Thirds, centre, and restore.** The rest of the usual set, once quarters
+      have settled which key scheme wins.
 
 ## Switcher behaviour
 
@@ -49,13 +54,20 @@ the catch is usually the reason something is not done yet.
       drawing waits, so a release inside the delay commits without the panel ever
       appearing. Configurable in Settings › General; 150 ms by default.
 - [ ] **Jump by number.** 1–9 selects the nth tile directly while the overlay is up.
-- [ ] **Windows on other spaces.** Currently filtered out, which is right for
-      Alt-Tab and wrong when you know the window exists somewhere. Worth a modifier
-      or a setting rather than a change of default.
+- [ ] **A switch for windows on every space.** Off keeps today's behaviour; on
+      lists everything Flip knows about. Two things make this more than a filter
+      change. Minimised windows already bypass the space check, because they are
+      absent from the window server's on-screen listing and there is nothing to
+      compare them against — so the current behaviour is inconsistent rather than
+      strict. And doing it properly, in either direction, needs the private
+      SkyLight call for a window's space, the way AltTab and yabai do it.
 - [ ] **Per-monitor filtering.** The overlay follows the active monitor, but lists
       windows from both. Deliberate — but it should be a choice.
-- [ ] **Sort order.** Most recently used today; spatial or alphabetical are
-      defensible alternatives for a grid you read rather than cycle.
+- [ ] **Sort order as a setting.** Most recently used today. Alphabetical is the
+      obvious alternative: it makes the grid something you read rather than cycle,
+      and a window keeps its place between openings, which MRU deliberately does
+      not. The store already carries `focusOrder`, so this is a comparator and a
+      picker.
 
 ## Quality
 
@@ -76,6 +88,30 @@ the catch is usually the reason something is not done yet.
       be worse than one that resumed.
 - [ ] **Diagnostics.** A menu item that copies versions, grants, binding count and
       recent log lines, so a problem can be reported without a terminal.
+
+## Showing it off
+
+- [ ] **A GIF of Flip in use, for the readme.** The pieces exist; the sequence has
+      to be scripted rather than performed, because a synthetic keystroke and a real
+      one cannot share a keyboard.
+  - **Keystrokes on screen: KeyCastr** (`brew install --cask keycastr`), open
+    source and the standard choice on macOS. One catch to verify: it watches
+    through an event tap of its own, and Flip swallows its bound keys before
+    passing them on. Whichever tap was inserted last sees the event first, so
+    KeyCastr has to be started *after* Flip or it will show nothing for exactly the
+    keys the recording is about.
+  - **Recording:** `screencapture -v -R<x,y,w,h> -V<seconds>` records a region for
+    a fixed duration with no interaction, which is what makes the whole thing
+    scriptable. `ffmpeg` is already installed; `gifski` produces a noticeably
+    better palette if the result looks banded.
+  - **Staging:** the same trick the screenshot used — exclude every application but
+    the demo ones, so nothing private can wander into frame — and then use Flip's
+    own window actions to place them, so the scene is reproducible rather than
+    arranged by hand.
+  - **Known pitfalls:** holds must outlast the 150 ms overlay delay or the grid
+    never draws; a 5K recording needs scaling to something a readme can carry; and
+    nobody may touch the keyboard while it runs, since a real keystroke releases
+    the modifier and ends the take.
 
 ## Project
 
