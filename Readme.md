@@ -163,8 +163,12 @@ Every push builds and tests. Pushing a `v*` tag also signs, packages, publishes 
 release with the disk image attached, and points the Homebrew cask at it:
 
 ```sh
-git tag v1.0.0 && git push origin v1.0.0
+git tag v1.1.0 && git push origin v1.1.0
 ```
+
+Release notes come from the section in [CHANGELOG.md](CHANGELOG.md) matching the
+tag, so they are written and reviewed with the change rather than assembled from
+commit subjects afterwards. A tag with no section still releases, with a warning.
 
 The cask lives in [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip)
 and is never edited by hand. Bumping it uses a deploy key held as

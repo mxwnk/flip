@@ -94,19 +94,49 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
+          NOTES="$RUNNER_TEMP/notes.md"
+
+          # The readable half comes out of CHANGELOG.md, so release notes are
+          # written and reviewed alongside the change rather than assembled from
+          # commit subjects afterwards.
+          awk -v heading="## $VERSION" '
+            $0 == heading { inside = 1; next }
+            inside && /^## / { exit }
+            inside { print }
+          ' CHANGELOG.md > "$NOTES"
+
+          if [ ! -s "$NOTES" ]; then
+            echo "::warning::CHANGELOG.md has no section for $VERSION"
+            echo "See the commit history for what changed." > "$NOTES"
+          fi
+
+          cat >> "$NOTES" <<'TRAILER'
+
+          ---
+
+          ### Installing
+
+          ```sh
+          brew install --cask mxwnk/flip/flip
+          ```
+
+          Or take the disk image below. Flip is signed with its own certificate
+          rather than notarised, so a copy installed by hand has to be allowed once
+          under System Settings › Privacy & Security. Homebrew does that for you.
+
+          Accessibility is asked for on first run, Screen Recording only if you
+          want thumbnails. Both survive updates: the signature is pinned to the same
+          certificate every release, and the pipeline refuses to publish one where
+          it has drifted.
+          TRAILER
+
+          # Leading indentation is what keeps this readable in the workflow file;
+          # GitHub would render it as code blocks.
+          sed -i '' 's/^          //' "$NOTES"
+
           gh release create "$GITHUB_REF_NAME" \
             --title "Flip $VERSION" \
-            --generate-notes \
-            --notes "    brew install --cask mxwnk/flip/flip
-
-          Flip is signed with its own certificate rather than notarised, so
-          Gatekeeper blocks the first launch of a hand-installed copy: open
-          System Settings › Privacy & Security and allow it there, once. The
-          cask does that for you.
-
-          Flip needs Accessibility and Screen Recording. Both are asked for on
-          first run, and both survive later updates — the signature is pinned to
-          the same certificate on every release, which the pipeline checks." \
+            --notes-file "$NOTES" \
             "build/Flip-$VERSION.dmg"
 
       - name: Point the Homebrew tap at the new version
