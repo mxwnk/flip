@@ -80,6 +80,11 @@ Add `⇧` to any of those to go backwards.
 Everything stops at the menu bar and the Dock. Filling is a toggle: press it on a
 window that already fills and it goes back where it was.
 
+The display moves take the same arrows as the halves, so they need a modifier of
+their own — `⇧⌥` to begin with, or `⌃⌥⌘` if that suits your other shortcuts
+better. Settings › Windows. The halves and quarters are fixed: every remaining
+modifier is already spoken for with the arrow keys.
+
 ## Settings
 
 **Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.

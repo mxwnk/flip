@@ -3,6 +3,17 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 1.3.0
+
+**The display moves are settable.** They share the arrow keys with the halves, so
+they have always needed a modifier of their own — and which one is a matter of
+what else is bound on the machine. Settings › Windows now offers `⇧⌥` as before,
+or `⌃⌥⌘`, all three at once. It switches rather than adds: whichever you do not
+pick stops working, so nothing is bound twice behind your back.
+
+The halves and quarters stay fixed, and the settings window now says why rather
+than only that they cannot be changed.
+
 ## 1.2.0
 
 Nothing in the application itself changed — this release is about everything

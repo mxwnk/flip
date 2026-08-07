@@ -64,7 +64,7 @@ private struct SettingsView: View {
             ShortcutsView(store: bindings)
                 .tabItem { Label("Shortcuts", systemImage: "keyboard") }
 
-            WindowActionsView()
+            WindowActionsView(settings: settings)
                 .tabItem { Label("Windows", systemImage: "macwindow.on.rectangle") }
 
             ExclusionsView(settings: settings)

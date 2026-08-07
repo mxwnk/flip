@@ -31,24 +31,34 @@ struct WindowShortcut: Identifiable {
 extension WindowArrangement {
     /// The lookup the router performs, on the table rather than inside it, so both
     /// the router and its tests ask the same question.
-    static func matching(keyCode: CGKeyCode, modifiers: CGEventFlags) -> WindowArrangement? {
-        shortcuts
+    static func matching(
+        keyCode: CGKeyCode,
+        modifiers: CGEventFlags,
+        displayMove: DisplayMoveModifier
+    ) -> WindowArrangement? {
+        shortcuts(displayMove: displayMove)
             .first { $0.keyCode == keyCode && $0.modifiers == Modifiers.significant(in: modifiers) }?
             .arrangement
     }
 
-    /// Fixed for now. Every single modifier is already spoken for with the arrow
-    /// keys — Option moves by word, Control switches spaces, fn is Home and End,
-    /// and Command is start and end of line — so two of them is what is left.
+    /// The halves and quarters are fixed, and stay that way. Every single modifier
+    /// is already spoken for with the arrow keys — Option moves by word, Control
+    /// switches spaces, fn is Home and End, and Command is start and end of line —
+    /// so two of them is what is left, and there is no second pair to offer.
+    ///
+    /// The display moves are the exception: they take the same arrows as the
+    /// halves, so they need a modifier of their own, and which one is a matter of
+    /// what else is bound on the machine.
     ///
     /// Corners take letters rather than arrows: four corners need four keys and
     /// arrows only offer two axes. `u i j k` because those four sit as a square on
     /// the keyboard, which the obvious vim choice does not — `y u / h j` looks like
     /// a square on a US layout but types `z u / h j` on a German one, putting the
     /// top left corner on the wrong key.
-    static let shortcuts: [WindowShortcut] = {
+    static func shortcuts(displayMove: DisplayMoveModifier) -> [WindowShortcut] {
         let halves: CGEventFlags = [.maskControl, .maskAlternate]
-        let displays: CGEventFlags = [.maskShift, .maskAlternate]
+        let displays = displayMove.flags
+        let move = displayMove.symbols
 
         return [
             WindowShortcut(arrangement: .leftHalf, modifiers: halves,
@@ -70,11 +80,13 @@ extension WindowArrangement {
             WindowShortcut(arrangement: .maximize, modifiers: halves,
                            keyCode: CGKeyCode(kVK_Return), name: "Fill the screen", keys: "⌃⌥↩"),
             WindowShortcut(arrangement: .previousDisplay, modifiers: displays,
-                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display", keys: "⇧⌥←"),
+                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display",
+                           keys: "\(move)←"),
             WindowShortcut(arrangement: .nextDisplay, modifiers: displays,
-                           keyCode: CGKeyCode(kVK_RightArrow), name: "Next display", keys: "⇧⌥→"),
+                           keyCode: CGKeyCode(kVK_RightArrow), name: "Next display",
+                           keys: "\(move)→"),
         ]
-    }()
+    }
 }
 
 @MainActor

@@ -54,6 +54,27 @@ final class SettingsTests: XCTestCase {
 
     /// The default has to stay off: turning it on for everyone who upgrades would
     /// silently widen the grid to windows they have never seen in it.
+    /// The default has to stay the pair it always was: changing it under an
+    /// upgrade would take away a shortcut somebody's fingers already know.
+    func testTheDisplayMoveKeepsItsOldModifier() throws {
+        XCTAssertEqual(Settings().displayMoveModifier, .shiftOption)
+
+        let old = Data(#"{"leader":"option"}"#.utf8)
+        XCTAssertEqual(
+            try JSONDecoder().decode(Settings.self, from: old).displayMoveModifier, .shiftOption
+        )
+    }
+
+    func testBothDisplayMoveChoicesSurviveARoundTrip() throws {
+        for choice in DisplayMoveModifier.allCases {
+            var settings = Settings()
+            settings.displayMoveModifier = choice
+            let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+
+            XCTAssertEqual(round.displayMoveModifier, choice)
+        }
+    }
+
     func testWindowsFromEverySpaceIsOffUntilAsked() throws {
         XCTAssertFalse(Settings().showWindowsFromEverySpace)
 

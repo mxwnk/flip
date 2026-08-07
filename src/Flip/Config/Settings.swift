@@ -80,6 +80,36 @@ enum OverlayPlacement: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Which modifier carries a window to the next display. Kept apart from the
+/// halves, which own Control and Option with the same arrow keys.
+enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable {
+    case shiftOption
+    case allThree
+
+    var id: String { rawValue }
+
+    var flags: CGEventFlags {
+        switch self {
+        case .shiftOption: return [.maskShift, .maskAlternate]
+        case .allThree: return [.maskControl, .maskAlternate, .maskCommand]
+        }
+    }
+
+    var symbols: String {
+        switch self {
+        case .shiftOption: return "⇧⌥"
+        case .allThree: return "⌃⌥⌘"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .shiftOption: return "⇧⌥ and the arrows"
+        case .allThree: return "⌃⌥⌘ and the arrows"
+        }
+    }
+}
+
 struct Settings: Codable, Equatable {
     var leader: ModifierChoice = .option
 
@@ -96,6 +126,10 @@ struct Settings: Codable, Equatable {
     var showWindowsFromEverySpace = false
 
     var overlayPlacement: OverlayPlacement = .activeWindow
+
+    /// Only the display moves are settable; the halves and quarters are not, for
+    /// the reason spelled out in WindowArrangement.
+    var displayMoveModifier: DisplayMoveModifier = .shiftOption
 
     /// The only thing Flip ever sends a request for.
     var checkForUpdates = true
@@ -128,6 +162,9 @@ struct Settings: Codable, Equatable {
         overlayPlacement = try container
             .decodeIfPresent(OverlayPlacement.self, forKey: .overlayPlacement)
             ?? defaults.overlayPlacement
+        displayMoveModifier = try container
+            .decodeIfPresent(DisplayMoveModifier.self, forKey: .displayMoveModifier)
+            ?? defaults.displayMoveModifier
         checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates)
             ?? defaults.checkForUpdates
         excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)

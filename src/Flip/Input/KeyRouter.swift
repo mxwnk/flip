@@ -35,6 +35,7 @@ final class KeyRouter {
     private var bareBindings: [CGKeyCode: String] = [:]
     private var leaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
+    private var displayMove: DisplayMoveModifier = .shiftOption
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
@@ -60,6 +61,7 @@ final class KeyRouter {
         bareBindings = bare
         leaderFlags = settings.leader.flags
         appSwitcherFlags = settings.appSwitcher.flags
+        displayMove = settings.displayMoveModifier
         bindingsLock.unlock()
 
         log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare")
@@ -124,7 +126,13 @@ final class KeyRouter {
 
         // Matched against the flags as pressed, not `base`: shift is part of a
         // window binding, where the switcher only ever reads it as "backwards".
-        if let arrangement = WindowArrangement.matching(keyCode: code, modifiers: flags) {
+        bindingsLock.lock()
+        let displayMoveModifier = displayMove
+        bindingsLock.unlock()
+
+        if let arrangement = WindowArrangement.matching(
+            keyCode: code, modifiers: flags, displayMove: displayMoveModifier
+        ) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil
         }

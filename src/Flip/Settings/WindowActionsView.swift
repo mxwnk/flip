@@ -3,10 +3,24 @@ import SwiftUI
 /// Read-only for now: these keys are fixed, and a list that looked editable but
 /// was not would be worse than one that says so.
 struct WindowActionsView: View {
+    @ObservedObject var settings: SettingsStore
+
     var body: some View {
         Form {
             Section {
-                ForEach(WindowArrangement.shortcuts) { shortcut in
+                Picker("Move to another display with", selection: $settings.settings.displayMoveModifier) {
+                    ForEach(DisplayMoveModifier.allCases) { choice in
+                        Text(choice.label).tag(choice)
+                    }
+                }
+            } footer: {
+                Caption("The only one of these that is settable. The halves and "
+                    + "quarters share the arrow keys with it, so it needs a modifier "
+                    + "of its own.")
+            }
+
+            Section {
+                ForEach(WindowArrangement.shortcuts(displayMove: settings.settings.displayMoveModifier)) { shortcut in
                     LabeledContent(shortcut.name) { Keycap(shortcut.keys) }
                 }
             } footer: {
@@ -15,9 +29,11 @@ struct WindowActionsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Caption("Halves and filling stop at the menu bar and the Dock. Filling a "
                         + "window that already fills puts it back where it was.")
-                    Caption("These keys cannot be changed yet. Every single modifier is already "
-                        + "taken with the arrows: Option moves by word, Control switches spaces, "
-                        + "fn is Home and End, and Command is the start and end of a line.")
+                    Caption("The halves and quarters cannot be changed. Every single modifier "
+                        + "is already taken with the arrows: Option moves by word, Control "
+                        + "switches spaces, fn is Home and End, and Command is the start and "
+                        + "end of a line — so two of them is what is left, and there is no "
+                        + "second pair to offer.")
                 }
             }
         }
