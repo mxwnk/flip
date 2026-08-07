@@ -59,11 +59,13 @@ resting pointer still does what the keyboard told it to.
 | `⌃⌥←` `⌃⌥→` | left or right half |
 | `⌃⌥↑` `⌃⌥↓` | top or bottom half |
 | `⌃⌥U` `⌃⌥I` `⌃⌥J` `⌃⌥K` | the four quarters |
-| `⌃⌥↩` | fill the screen |
+| `⌃⌥↩` | fill the screen, or put it back if it already fills |
 | `⇧⌥←` `⇧⌥→` | previous or next display, keeping the window's place on it |
 
 Everything is measured against the visible frame, so filling the screen stops at
-the menu bar and the Dock.
+the menu bar and the Dock. Filling is a toggle: press it on a window that already
+fills and it goes back where it was, and on a window in macOS's own full screen it
+leaves full screen.
 
 The corners are `u i j k` rather than the vim keys because those four sit as a
 square on a German keyboard too, which `y u h j` does not.
@@ -113,7 +115,7 @@ Measured with five windows open on a two-monitor machine:
 ```sh
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
-make test       # 64 unit tests
+make test       # 70 unit tests
 make logs       # follow along; almost everything interesting is logged
 ```
 

@@ -32,8 +32,16 @@ the catch is usually the reason something is not done yet.
 - [x] **Quarters on `⌃⌥` and `u i j k`.** Letters rather than arrows, because four
       corners need four keys. Not the vim four: `y u / h j` is only a square on a US
       layout, and types `z u / h j` on a German one.
-- [ ] **Thirds, centre, and restore.** The rest of the usual set, once quarters
-      have settled which key scheme wins.
+- [x] **Filling is a toggle.** Pressing it on a window that already fills puts it
+      back, which needs the previous frame remembered per window. Two catches: a
+      terminal resizes in whole character cells and stops a few points short of the
+      edges, so "already fills" needs a tolerance rather than an equality; and with
+      nothing remembered — after a restart, or a window that opened filled — it
+      falls back to sixty per cent centred, because refusing to move looks exactly
+      like the bug. macOS's own full screen is handled separately: the frame cannot
+      be written there at all, so the key clears `AXFullScreen` instead.
+- [ ] **Thirds and centre.** The rest of the usual set, once quarters have settled
+      which key scheme wins. Restore is done, as part of the fill toggle.
 
 ## Switcher behaviour
 
@@ -72,7 +80,7 @@ the catch is usually the reason something is not done yet.
 
 ## Quality
 
-- [x] **Unit tests.** 64 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
+- [x] **Unit tests.** 70 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
       `AppBinding`, `Modifiers` and `WindowArrangement` — the logic that does not
       need a running Mac, including the overlay's hit test.
       They found one bug immediately: synthesised `Codable` requires every key, so

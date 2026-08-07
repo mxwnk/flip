@@ -14,6 +14,10 @@ final class WindowStore: @unchecked Sendable {
     private var windows: [CGWindowID: WindowInfo] = [:]
     private var focusCounter: UInt64 = 0
     private var lastFocusedID: CGWindowID?
+    /// Where a window sat before it was told to fill the screen, so pressing the
+    /// same key again puts it back. Cocoa coordinates, cleared when the window
+    /// goes away or is arranged some other way.
+    private var restoreFrames: [CGWindowID: CGRect] = [:]
 
     /// The cheapest moment to capture a thumbnail: content final, still on screen.
     var onWindowDefocused: ((CGWindowID) -> Void)?
@@ -77,24 +81,50 @@ final class WindowStore: @unchecked Sendable {
     /// thread. Two hops, but neither framework is touched from the wrong place.
     func arrange(_ arrangement: WindowArrangement) {
         thread.perform { [self] in
-            guard let element = focusedElement(), let current = AXBridge.frame(of: element)
-            else { return }
+            guard let (id, element) = focusedWindow() else { return }
 
+            // Native full screen is the other way a window can already fill the
+            // screen, and there the frame cannot be written at all — the window
+            // owns its own space. Only the fill key leaves it: the halves would
+            // then have to wait out the space animation to place anything, and
+            // silently undoing full screen is not what they were pressed for.
+            if arrangement == .maximize,
+               AXBridge.bool(AXBridge.fullScreenAttribute, of: element) == true {
+                AXBridge.setBool(false, AXBridge.fullScreenAttribute, of: element)
+                return
+            }
+
+            guard let current = AXBridge.frame(of: element) else { return }
+
+            let remembered = restoreFrames[id]
+
+            // Only the geometry needs the main thread: NSScreen is not safe to read
+            // anywhere else. The decision and the write stay where the state lives.
             DispatchQueue.main.async { [self] in
-                guard let cocoa = ScreenGeometry.cocoa(fromTopLeft: current),
-                      let target = WindowArranger.target(for: arrangement, window: cocoa),
+                guard let cocoa = ScreenGeometry.cocoa(fromTopLeft: current) else { return }
+
+                let outcome = WindowArranger.outcome(
+                    for: arrangement, window: cocoa, remembered: remembered
+                )
+                guard let target = outcome.target,
                       let topLeft = ScreenGeometry.topLeft(fromCocoa: target)
                 else { return }
 
-                thread.perform { AXBridge.setFrame(topLeft, of: element) }
+                thread.perform { [self] in
+                    AXBridge.setFrame(topLeft, of: element)
+                    restoreFrames[id] = outcome.restore
+                }
             }
         }
     }
 
-    private func focusedElement() -> AXUIElement? {
-        if let id = lastFocusedID, let window = windows[id] { return window.element }
+    private func focusedWindow() -> (id: CGWindowID, element: AXUIElement)? {
+        if let id = lastFocusedID, let window = windows[id] { return (id, window.element) }
 
-        return windows.values.max { $0.focusOrder < $1.focusOrder }?.element
+        guard let window = windows.values.max(by: { $0.focusOrder < $1.focusOrder })
+        else { return nil }
+
+        return (window.id, window.element)
     }
 
     // MARK: - Lifecycle
@@ -240,6 +270,7 @@ final class WindowStore: @unchecked Sendable {
         else { return }
 
         windows[id] = nil
+        restoreFrames[id] = nil
     }
 
     private func update(_ element: AXUIElement, _ change: (inout WindowInfo) -> Void) {

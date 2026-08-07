@@ -79,18 +79,75 @@ extension WindowArrangement {
 
 @MainActor
 enum WindowArranger {
+    /// What a keypress should do, given where the window is now.
+    struct Outcome: Equatable {
+        var target: CGRect?
+        /// Where to put the window back next time, or nil to forget.
+        var restore: CGRect?
+    }
+
     /// Where the window should end up, in Cocoa coordinates.
     ///
     /// Everything is measured against `visibleFrame`, so a maximised window stops
     /// at the menu bar and the Dock rather than hiding behind them.
-    static func target(for arrangement: WindowArrangement, window: CGRect) -> CGRect? {
-        guard let screen = ScreenGeometry.screen(containing: window) else { return nil }
+    static func outcome(
+        for arrangement: WindowArrangement,
+        window: CGRect,
+        remembered: CGRect?
+    ) -> Outcome {
+        guard let screen = ScreenGeometry.screen(containing: window) else { return Outcome() }
 
         switch arrangement {
-        case .nextDisplay: return moved(window, from: screen, by: 1)
-        case .previousDisplay: return moved(window, from: screen, by: -1)
-        default: return frame(for: arrangement, in: screen.visibleFrame)
+        case .nextDisplay: return Outcome(target: moved(window, from: screen, by: 1))
+        case .previousDisplay: return Outcome(target: moved(window, from: screen, by: -1))
+        default:
+            return outcome(
+                for: arrangement, window: window,
+                in: screen.visibleFrame, remembered: remembered
+            )
         }
+    }
+
+    /// Filling a window that already fills puts it back where it was. Every other
+    /// arrangement is one-way and forgets whatever was being held for a restore,
+    /// so a remembered frame can never outlive the fill it belongs to.
+    nonisolated static func outcome(
+        for arrangement: WindowArrangement,
+        window: CGRect,
+        in area: CGRect,
+        remembered: CGRect?
+    ) -> Outcome {
+        guard arrangement == .maximize else {
+            return Outcome(target: frame(for: arrangement, in: area))
+        }
+
+        guard fills(window, area) else {
+            return Outcome(target: area, restore: window)
+        }
+
+        // Nothing remembered means the window was already filling when Flip first
+        // saw it — a restart, or the application opened that way. Something
+        // reasonable beats refusing to move.
+        return Outcome(target: remembered ?? centred(in: area))
+    }
+
+    /// Applications that resize in steps cannot land on the visible frame exactly
+    /// — a terminal snaps to whole character cells — and a window a few points
+    /// short of the edges is filled as far as anyone pressing the key is concerned.
+    nonisolated static func fills(_ window: CGRect, _ area: CGRect, tolerance: CGFloat = 20) -> Bool {
+        abs(window.minX - area.minX) <= tolerance
+            && abs(window.minY - area.minY) <= tolerance
+            && abs(window.width - area.width) <= tolerance
+            && abs(window.height - area.height) <= tolerance
+    }
+
+    private nonisolated static func centred(in area: CGRect) -> CGRect {
+        let size = CGSize(width: area.width * 0.6, height: area.height * 0.6)
+
+        return CGRect(
+            x: area.midX - size.width / 2, y: area.midY - size.height / 2,
+            width: size.width, height: size.height
+        )
     }
 
     /// The half and maximise geometry on its own, so it can be checked without a

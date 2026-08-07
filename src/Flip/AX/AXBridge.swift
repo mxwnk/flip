@@ -49,6 +49,16 @@ enum AXBridge {
         return (raw as! AXUIElement)
     }
 
+    /// Native full screen — the green button, its own space. Not a constant in
+    /// the SDK, but the attribute is real and writing false leaves full screen.
+    static let fullScreenAttribute = "AXFullScreen"
+
+    static func setBool(_ value: Bool, _ attribute: String, of element: AXUIElement) {
+        AXUIElementSetAttributeValue(
+            element, attribute as CFString, value ? kCFBooleanTrue : kCFBooleanFalse
+        )
+    }
+
     static func frame(of element: AXUIElement) -> CGRect? {
         guard let origin = point(kAXPositionAttribute as String, of: element),
               let size = size(kAXSizeAttribute as String, of: element)

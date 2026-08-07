@@ -127,3 +127,71 @@ final class QuarterTests: XCTestCase {
         XCTAssertEqual(keys[.bottomRightQuarter], CGKeyCode(kVK_ANSI_K))
     }
 }
+
+/// `⌃⌥↩` on a window that already fills puts it back where it was.
+final class FillToggleTests: XCTestCase {
+    private let area = CGRect(x: 0, y: 0, width: 1600, height: 1000)
+
+    private func outcome(
+        _ arrangement: WindowArrangement, _ window: CGRect, remembered: CGRect? = nil
+    ) -> WindowArranger.Outcome {
+        WindowArranger.outcome(for: arrangement, window: window, in: area, remembered: remembered)
+    }
+
+    func testFillingRemembersWhereTheWindowWas() {
+        let before = CGRect(x: 120, y: 90, width: 700, height: 480)
+        let result = outcome(.maximize, before)
+
+        XCTAssertEqual(result.target, area)
+        XCTAssertEqual(result.restore, before)
+    }
+
+    func testFillingAgainPutsItBackAndForgets() {
+        let before = CGRect(x: 120, y: 90, width: 700, height: 480)
+        let result = outcome(.maximize, area, remembered: before)
+
+        XCTAssertEqual(result.target, before)
+        XCTAssertNil(result.restore, "a restored window has nothing left to go back to")
+    }
+
+    func testTheToggleSurvivesAWindowThatCannotHitTheEdgesExactly() {
+        // A terminal resizes in whole character cells and stops a few points short.
+        let snapped = CGRect(x: 4, y: 7, width: 1591, height: 994)
+        let before = CGRect(x: 120, y: 90, width: 700, height: 480)
+
+        XCTAssertEqual(outcome(.maximize, snapped, remembered: before).target, before)
+    }
+
+    func testAWindowMerelyCloseToFullStillFills() {
+        let large = CGRect(x: 60, y: 40, width: 1480, height: 920)
+        let before = CGRect(x: 120, y: 90, width: 700, height: 480)
+
+        XCTAssertEqual(outcome(.maximize, large, remembered: before).target, area)
+    }
+
+    /// After a restart, or for a window that opened filled, there is nothing to
+    /// go back to. Refusing to move would look exactly like the bug this fixes.
+    func testWithNothingRememberedItFallsBackToSomethingCentred() {
+        let result = outcome(.maximize, area)
+        let target = try? XCTUnwrap(result.target)
+
+        XCTAssertEqual(target?.width, area.width * 0.6)
+        XCTAssertEqual(target?.height, area.height * 0.6)
+        XCTAssertEqual(target?.midX, area.midX)
+        XCTAssertEqual(target?.midY, area.midY)
+        XCTAssertNil(result.restore)
+    }
+
+    func testEveryOtherArrangementIsOneWayAndForgets() {
+        for arrangement in WindowArrangement.allCases
+        where arrangement != .maximize && arrangement != .nextDisplay && arrangement != .previousDisplay {
+            let before = CGRect(x: 120, y: 90, width: 700, height: 480)
+            let result = outcome(arrangement, area, remembered: before)
+
+            XCTAssertEqual(
+                result.target, WindowArranger.frame(for: arrangement, in: area), "\(arrangement)"
+            )
+            XCTAssertNil(result.restore, "\(arrangement)")
+        }
+    }
+}

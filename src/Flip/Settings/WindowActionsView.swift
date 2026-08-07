@@ -8,7 +8,8 @@ struct WindowActionsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Move and resize the window you are working in.")
                     .font(.callout)
-                Text("Halves and filling stop at the menu bar and the Dock.")
+                Text("Halves and filling stop at the menu bar and the Dock. Filling a "
+                     + "window that already fills puts it back where it was.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
