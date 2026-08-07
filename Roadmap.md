@@ -85,6 +85,5 @@ the catch is usually the reason something is not done yet.
       the stable designated requirement means an update keeps its privacy grants.
 - [ ] **Notarisation.** The blocker for installing on any Mac but this one. Needs an
       Apple Developer ID, then one more step in the pipeline.
-- [ ] **Pushes do not trigger the pipeline.** Only `workflow_dispatch` runs. The
-      workflow, the repository settings and the push events all check out, so the
-      cause is in the account's Actions settings.
+- [x] **Pushes trigger the pipeline.** Fixed in the account's Actions settings;
+      a push now builds and runs the tests without a manual dispatch.
