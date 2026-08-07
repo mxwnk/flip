@@ -76,7 +76,10 @@ h1 {
 .install .prompt { color: var(--ink-faint); user-select: none; }
 
 button.copy {
-    font: inherit;
+    font-family: var(--sans);
+    /* Pushed to the right edge so the buttons line up whatever the command's
+       length, rather than trailing each one at a different place. */
+    margin-left: auto;
     font-size: 12px;
     color: var(--ink-dim);
     background: var(--tile);

@@ -23,8 +23,7 @@
 
     <div class="install">
       <span class="prompt">$</span>
-      <code id="command">brew install --cask mxwnk/tap/flip</code>
-      <button class="copy" id="copy" type="button">Copy</button>
+      <code>brew install --cask mxwnk/tap/flip</code>
     </div>
 
     <p class="secondary">
@@ -225,14 +224,24 @@
 </footer>
 
 <script>
-// The install line is the whole call to action, so copying it should not mean
-// selecting text by hand.
-const copy = document.getElementById("copy");
-copy.addEventListener("click", async () => {
-    await navigator.clipboard.writeText(document.getElementById("command").textContent);
-    copy.textContent = "Copied";
-    setTimeout(() => { copy.textContent = "Copy"; }, 1600);
-});
+// Every command on the page gets a copy button, added here rather than written
+// into the markup: a button that does nothing without JavaScript is worse than no
+// button at all.
+for (const block of document.querySelectorAll(".install")) {
+    const command = block.querySelector("code");
+    if (!command || !navigator.clipboard) continue;
+
+    const button = document.createElement("button");
+    button.className = "copy";
+    button.type = "button";
+    button.textContent = "Copy";
+    button.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(command.textContent);
+        button.textContent = "Copied";
+        setTimeout(() => { button.textContent = "Copy"; }, 1600);
+    });
+    block.appendChild(button);
+}
 
 // Asked of GitHub rather than written in, so the page cannot claim a version that
 // is no longer the latest. It simply stays quiet if the request fails.
