@@ -132,12 +132,7 @@ final class KeyRouter {
             return nil
         }
 
-        // Apple keyboards set the fn bit for the whole F-row even when the keys are
-        // configured as plain function keys, so a binding with no modifier has to
-        // tolerate it. Nobody binds fn as a leader.
-        if base.subtracting(.maskSecondaryFn).isEmpty,
-           let bundleID = bundleID(for: code, withLeader: false)
-        {
+        if base.isEmpty, let bundleID = bundleID(for: code, withLeader: false) {
             if !isRepeat { onMain { $0.reachApplication(bundleID) } }
             return nil
         }
