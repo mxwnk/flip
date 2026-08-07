@@ -55,7 +55,7 @@ final class MenuBarItem: NSObject {
         }
 
         menu.addItem(.separator())
-        let pause = action(isPaused ? "Resume Flip" : "Pause Flip", #selector(togglePause))
+        let pause = action(isPaused ? "Resume" : "Pause", #selector(togglePause))
         pause.state = isPaused ? .on : .off
         menu.addItem(pause)
         menu.addItem(action("Settings…", #selector(showSettings), keyEquivalent: ","))
