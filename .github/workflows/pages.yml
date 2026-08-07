@@ -1,0 +1,51 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/*.png"
+      - "docs/*.gif"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one halfway: a half-published site is
+# worse than an old one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Assemble the site
+        # The pictures live in docs/ because the readme uses them too. Copying them
+        # in beats keeping a second copy of a two megabyte animation in the tree.
+        run: |
+          set -euo pipefail
+          mkdir -p build/site
+          cp -R site/. build/site/
+          cp docs/icon.png docs/overlay.png docs/demo.gif build/site/
+          ls -la build/site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

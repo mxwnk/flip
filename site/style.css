@@ -1,0 +1,199 @@
+/* The palette is Theme.swift, converted: the page and the overlay are the same
+   thing seen twice. */
+:root {
+    --plate-top: #33363d;
+    --plate-bottom: #17171c;
+    --panel: #1c1c1f;
+    --tile: rgba(255, 255, 255, 0.05);
+    --hairline: rgba(255, 255, 255, 0.1);
+    --blue: #0a85ff;
+    --ink: rgba(255, 255, 255, 0.92);
+    --ink-dim: rgba(255, 255, 255, 0.55);
+    --ink-faint: rgba(255, 255, 255, 0.38);
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--plate-bottom);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+/* The same gradient the application icon is drawn with. */
+header {
+    background: linear-gradient(180deg, var(--plate-top) 0%, var(--plate-bottom) 100%);
+    border-bottom: 1px solid var(--hairline);
+    padding: 72px 0 56px;
+    text-align: center;
+}
+
+header img.icon { width: 104px; height: 104px; }
+
+h1 {
+    font-size: 44px;
+    font-weight: 600;
+    margin: 16px 0 8px;
+    letter-spacing: -0.02em;
+}
+
+.tagline { font-size: 18px; color: var(--ink-dim); margin: 0 0 4px; }
+.tagline strong { color: var(--ink); font-weight: 500; }
+
+.version {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 20px;
+}
+
+/* The install line is the call to action; there is nothing to click but this. */
+.install {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 12px 12px 12px 18px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    text-align: left;
+}
+
+.install code { color: var(--ink); }
+.install .prompt { color: var(--ink-faint); user-select: none; }
+
+button.copy {
+    font: inherit;
+    font-size: 12px;
+    color: var(--ink-dim);
+    background: var(--tile);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+button.copy:hover { color: var(--ink); border-color: var(--blue); }
+
+.secondary { margin-top: 14px; font-size: 13px; color: var(--ink-faint); }
+
+section { padding: 64px 0; border-bottom: 1px solid var(--hairline); }
+
+h2 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 28px;
+}
+
+h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px; }
+
+p { margin: 0 0 16px; color: var(--ink-dim); }
+p.lead { font-size: 17px; color: var(--ink); }
+
+figure { margin: 0; }
+
+figure img {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--hairline);
+    display: block;
+}
+
+figcaption {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    text-align: center;
+}
+
+/* Measurements are the thing no comparable page shows, so they get the room. */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.stat { background: var(--panel); padding: 24px; }
+
+.stat .value {
+    font-family: var(--mono);
+    font-size: 30px;
+    color: var(--blue);
+    letter-spacing: -0.02em;
+}
+
+.stat .what { font-size: 14px; color: var(--ink); margin-top: 6px; }
+.stat .note { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 22px;
+}
+
+.card p { margin: 0; font-size: 14px; }
+
+/* Keys are drawn as keys — the same treatment the settings window gives them. */
+.keys { width: 100%; border-collapse: collapse; }
+.keys td { padding: 11px 0; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+.keys tr:last-child td { border-bottom: none; }
+.keys td:last-child { color: var(--ink-dim); font-size: 14px; padding-left: 24px; }
+
+kbd {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--tile);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 4px 9px;
+    white-space: nowrap;
+}
+
+kbd + kbd { margin-left: 6px; }
+
+.how { display: grid; gap: 28px; }
+.how h3 { color: var(--ink); }
+.how p { margin: 0; font-size: 15px; }
+
+footer {
+    padding: 40px 0 64px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-faint);
+}
+
+@media (max-width: 620px) {
+    header { padding: 48px 0 40px; }
+    h1 { font-size: 34px; }
+    .install { flex-direction: column; align-items: stretch; gap: 10px; }
+    .keys td:last-child { padding-left: 12px; }
+}

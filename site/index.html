@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flip — a window switcher for macOS that gets out of the way</title>
+<meta name="description" content="Hold Option, tap Tab. Let go before you can see it and it never draws at all. A fast, native window switcher for macOS.">
+<meta property="og:title" content="Flip">
+<meta property="og:description" content="A window switcher for macOS that gets out of the way.">
+<meta property="og:image" content="https://mxwnk.github.io/flip/overlay.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <img class="icon" src="icon.png" alt="">
+    <h1>Flip</h1>
+    <p class="tagline">A window switcher for macOS that gets out of the way.</p>
+    <p class="tagline"><strong>Hold Option, tap Tab.</strong> Let go before you can see it and it never draws at all.</p>
+
+    <div class="install">
+      <span class="prompt">$</span>
+      <code id="command">brew install --cask mxwnk/tap/flip</code>
+      <button class="copy" id="copy" type="button">Copy</button>
+    </div>
+
+    <p class="secondary">
+      or <a id="download" href="https://github.com/mxwnk/flip/releases/latest">take the disk image</a>
+      · <a href="https://github.com/mxwnk/flip">source on GitHub</a>
+    </p>
+    <p class="version" id="version">macOS 14 or newer · MIT</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <figure>
+      <img src="demo.gif" alt="Switching windows, jumping to an application, and moving a window across the screen">
+      <figcaption>Switching, jumping to an application by key, and moving a window across the screen.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Measured, not claimed</h2>
+    <p class="lead">Nothing is asked for at the moment you press the key. Every number
+      below comes from the log of a real run, nine windows open on a two-monitor
+      machine.</p>
+    <div class="stats">
+      <div class="stat">
+        <div class="value">6–10 ms</div>
+        <div class="what">Opening the grid</div>
+        <div class="note">thumbnails already captured</div>
+      </div>
+      <div class="stat">
+        <div class="value">~1 ms</div>
+        <div class="what">Resolving the window list</div>
+        <div class="note">no accessibility calls</div>
+      </div>
+      <div class="stat">
+        <div class="value">0 ms</div>
+        <div class="what">Drawing, on a quick tap</div>
+        <div class="note">released inside 150 ms, nothing appears</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What it does</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Windows, not applications</h3>
+        <p>Every window on the space, most recently used first. Two documents in
+          the same app are two entries.</p>
+      </div>
+      <div class="card">
+        <h3>Invisible when you are quick</h3>
+        <p>Let go inside 150 ms and it switches without drawing anything. The
+          selection is made either way; only showing it waits.</p>
+      </div>
+      <div class="card">
+        <h3>One key per application</h3>
+        <p><kbd>⌥ S</kbd> for Spotify, <kbd>⌥ T</kbd> for the terminal. Press it
+          again to walk that application's windows.</p>
+      </div>
+      <div class="card">
+        <h3>Moves windows too</h3>
+        <p>Halves, quarters, filling and across to the other display, from the
+          keyboard. Filling is a toggle.</p>
+      </div>
+      <div class="card">
+        <h3>Keyboard or mouse</h3>
+        <p>Hover to pick, click to confirm — but only once you actually move the
+          pointer, so a resting mouse never steals the choice.</p>
+      </div>
+      <div class="card">
+        <h3>Every display, if you like</h3>
+        <p>The grid follows the active window, sticks to the main display, or
+          appears on all of them at once. Your call.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <figure>
+      <img src="overlay.png" alt="The Flip overlay: a grid of window thumbnails, one selected">
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Switching</h2>
+    <table class="keys">
+      <tr><td><kbd>⌥ Tab</kbd></td><td>every window on the current space, most recently used first</td></tr>
+      <tr><td><kbd>⌘ Tab</kbd></td><td>the windows of whichever application is in front</td></tr>
+      <tr><td><kbd>⌥ S</kbd></td><td>jump straight to Spotify — one key per application, yours to choose</td></tr>
+      <tr><td><kbd>⌥</kbd> then a key</td><td>narrow the open grid to that application</td></tr>
+      <tr><td><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>esc</kbd></td><td>move the selection, or give up</td></tr>
+      <tr><td>let go of <kbd>⌥</kbd></td><td>focus what is selected, out of the Dock if it was minimised</td></tr>
+    </table>
+    <p class="secondary">Add <kbd>⇧</kbd> to any of those to go backwards.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Moving windows</h2>
+    <table class="keys">
+      <tr><td><kbd>⌃⌥←</kbd><kbd>⌃⌥→</kbd></td><td>left or right half</td></tr>
+      <tr><td><kbd>⌃⌥↑</kbd><kbd>⌃⌥↓</kbd></td><td>top or bottom half</td></tr>
+      <tr><td><kbd>⌃⌥U</kbd><kbd>⌃⌥I</kbd><kbd>⌃⌥J</kbd><kbd>⌃⌥K</kbd></td><td>the four quarters</td></tr>
+      <tr><td><kbd>⌃⌥↩</kbd></td><td>fill the screen, or put it back if it already fills</td></tr>
+      <tr><td><kbd>⇧⌥←</kbd><kbd>⇧⌥→</kbd></td><td>previous or next display, keeping the window's place on it</td></tr>
+    </table>
+    <p class="secondary">The corners are <kbd>u i j k</kbd> rather than the vim keys,
+      because those four sit as a square on a German keyboard too.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>How it stays out of the way</h2>
+    <div class="how">
+      <div>
+        <h3>The window list is maintained, not queried</h3>
+        <p><code>AXObserver</code> notifications keep it current on a thread of its
+          own, with a half-second messaging timeout per application — so an
+          unresponsive app becomes a missing window rather than a frozen switcher.
+          Opening the grid costs one lock and one window server call.</p>
+      </div>
+      <div>
+        <h3>The event tap owns a thread and a runloop</h3>
+        <p>macOS quietly disables a tap whose callback misses its deadline, and the
+          main thread is where rendering and window server round trips live. The
+          callback itself compares a keycode.</p>
+      </div>
+      <div>
+        <h3>Panels are built once at launch</h3>
+        <p>One per screen, ordered in and out rather than created. Thumbnails are
+          captured ahead of time: at startup, and then for each window as it loses
+          focus — which is when its contents are final and nobody is waiting.</p>
+      </div>
+      <div>
+        <h3>The signature is pinned</h3>
+        <p>macOS keys a privacy grant to an application's designated requirement.
+          Flip's is pinned to one certificate and checked on every release, so
+          Accessibility and Screen Recording survive updates instead of having to be
+          granted again.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Installing</h2>
+    <div class="install">
+      <span class="prompt">$</span>
+      <code>brew install --cask mxwnk/tap/flip</code>
+    </div>
+    <p style="margin-top:20px">Flip asks for Accessibility on first run, and for
+      Screen Recording only if you want thumbnails — turn them off and it never
+      asks. It is signed with its own certificate rather than notarised, so a copy
+      installed by hand has to be allowed once under System Settings › Privacy &amp;
+      Security. Homebrew clears that for you.</p>
+    <p>Everything it stores is readable JSON in
+      <code>~/Library/Application&nbsp;Support/Flip/</code>. The only request it ever
+      makes is a daily check for a newer release, and that can be turned off.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a href="https://github.com/mxwnk/flip">GitHub</a> ·
+    <a href="https://github.com/mxwnk/flip/blob/main/CHANGELOG.md">Changelog</a> ·
+    <a href="https://github.com/mxwnk/flip/issues">Issues</a> ·
+    <a href="https://github.com/mxwnk/flip/blob/main/LICENSE">MIT</a>
+  </div>
+</footer>
+
+<script>
+// The install line is the whole call to action, so copying it should not mean
+// selecting text by hand.
+const copy = document.getElementById("copy");
+copy.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(document.getElementById("command").textContent);
+    copy.textContent = "Copied";
+    setTimeout(() => { copy.textContent = "Copy"; }, 1600);
+});
+
+// Asked of GitHub rather than written in, so the page cannot claim a version that
+// is no longer the latest. It simply stays quiet if the request fails.
+fetch("https://api.github.com/repos/mxwnk/flip/releases/latest")
+    .then(response => response.ok ? response.json() : Promise.reject())
+    .then(release => {
+        const version = release.tag_name.replace(/^v/, "");
+        document.getElementById("version").textContent =
+            `${version} · macOS 14 or newer · MIT`;
+        const asset = release.assets.find(a => a.name.endsWith(".dmg"));
+        if (asset) document.getElementById("download").href = asset.browser_download_url;
+    })
+    .catch(() => {});
+</script>
+
+</body>
+</html>
