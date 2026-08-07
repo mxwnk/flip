@@ -23,7 +23,7 @@ final class SettingsWindow {
 
     private func build() -> NSWindow {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 440),
+            contentRect: NSRect(x: 0, y: 0, width: 660, height: 620),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -36,9 +36,15 @@ final class SettingsWindow {
         host.sizingOptions = []
         window.contentView = host
 
-        window.contentMinSize = NSSize(width: 500, height: 360)
-        window.setContentSize(NSSize(width: 560, height: 440))
+        // Tall enough for the longest tab without clipping: the window actions are
+        // a fixed list of eleven and have no scroll view to fall back on.
+        window.contentMinSize = NSSize(width: 560, height: 600)
+        window.setContentSize(NSSize(width: 660, height: 620))
         window.center()
+
+        // Remembers a size you dragged to. Without it every launch snaps back.
+        window.setFrameAutosaveName("Settings")
+        window.setFrameUsingName("Settings")
 
         window.isReleasedWhenClosed = false
 
