@@ -97,13 +97,54 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --title "Flip $VERSION" \
             --generate-notes \
-            --notes "Signed with a self-signed certificate and not notarised, so
-          macOS blocks the first launch: right-click the app and choose Open, once.
+            --notes "    brew install --cask mxwnk/flip/flip
+
+          Flip is signed with its own certificate rather than notarised, so
+          Gatekeeper blocks the first launch of a hand-installed copy: open
+          System Settings › Privacy & Security and allow it there, once. The
+          cask does that for you.
 
           Flip needs Accessibility and Screen Recording. Both are asked for on
           first run, and both survive later updates — the signature is pinned to
           the same certificate on every release, which the pipeline checks." \
             "build/Flip-$VERSION.dmg"
+
+      - name: Point the Homebrew tap at the new version
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          # A release is still a release without the tap bump, so a missing token
+          # warns rather than fails. The cask simply keeps pointing at the
+          # previous version until someone updates it.
+          if [ -z "${TAP_TOKEN:-}" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set — the cask still points at the previous version"
+            exit 0
+          fi
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA="$(shasum -a 256 "build/Flip-$VERSION.dmg" | cut -d ' ' -f 1)"
+
+          git clone --depth 1 \
+            "https://x-access-token:$TAP_TOKEN@github.com/mxwnk/homebrew-flip.git" "$RUNNER_TEMP/tap"
+          cd "$RUNNER_TEMP/tap"
+
+          # Anchored to the start of the line so nothing in the comments or the
+          # url can match. Both substitutions must land, hence the count check.
+          /usr/bin/sed -i '' \
+            -e "s|^  version \".*\"$|  version \"$VERSION\"|" \
+            -e "s|^  sha256 \".*\"$|  sha256 \"$SHA\"|" \
+            Casks/flip.rb
+          grep -qx "  version \"$VERSION\"" Casks/flip.rb
+          grep -qx "  sha256 \"$SHA\"" Casks/flip.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/flip.rb
+          git diff --cached --quiet && { echo "Cask already at $VERSION"; exit 0; }
+          git commit -m "chore: update flip to $VERSION"
+          git push
 
       - name: Keep the unsigned bundle for inspection
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}

@@ -111,6 +111,18 @@ made by hand are picked up while Flip runs.
 **Pause** in the menu bar disables the event tap itself, so macOS gets `⌘ Tab`
 back for as long as a screen share lasts. It is not remembered across restarts.
 
+## Install
+
+```sh
+brew install --cask mxwnk/flip/flip
+```
+
+Flip is signed with its own certificate rather than notarised, so Gatekeeper
+would otherwise block the first launch. The cask clears the quarantine flag for
+you; a disk image downloaded [from the
+releases](https://github.com/mxwnk/flip/releases) has to be allowed by hand in
+System Settings › Privacy & Security.
+
 ## Requirements
 
 macOS 14 or newer. Flip needs Accessibility to read windows and install the tap,
@@ -147,16 +159,18 @@ package a build where it has drifted.
 
 ## Releasing
 
-Every push builds and tests. Pushing a `v*` tag also signs, packages and
-publishes a release with the disk image attached:
+Every push builds and tests. Pushing a `v*` tag also signs, packages, publishes a
+release with the disk image attached, and points the Homebrew cask at it:
 
 ```sh
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
-Gatekeeper will not like that image on another Mac: it is signed with a
-self-signed certificate and not notarised, so it opens via right-click › Open,
-once.
+The cask lives in [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip)
+and is never edited by hand. Bumping it needs a `HOMEBREW_TAP_TOKEN` secret — a
+fine-grained token with contents write on that repository and nothing else.
+Without it the release still goes out and the cask stays where it was, with a
+warning in the run.
 
 ## Roadmap
 
