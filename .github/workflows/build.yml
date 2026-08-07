@@ -112,22 +112,28 @@ jobs:
       - name: Point the Homebrew tap at the new version
         if: startsWith(github.ref, 'refs/tags/v')
         env:
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
         run: |
           set -euo pipefail
-          # A release is still a release without the tap bump, so a missing token
+          # A release is still a release without the tap bump, so a missing key
           # warns rather than fails. The cask simply keeps pointing at the
           # previous version until someone updates it.
-          if [ -z "${TAP_TOKEN:-}" ]; then
-            echo "::warning::HOMEBREW_TAP_TOKEN is not set — the cask still points at the previous version"
+          if [ -z "${TAP_DEPLOY_KEY:-}" ]; then
+            echo "::warning::HOMEBREW_TAP_DEPLOY_KEY is not set — the cask still points at the previous version"
             exit 0
           fi
 
           VERSION="${GITHUB_REF_NAME#v}"
           SHA="$(shasum -a 256 "build/Flip-$VERSION.dmg" | cut -d ' ' -f 1)"
 
-          git clone --depth 1 \
-            "https://x-access-token:$TAP_TOKEN@github.com/mxwnk/homebrew-flip.git" "$RUNNER_TEMP/tap"
+          # A deploy key rather than a personal token: it can write to the tap and
+          # to nothing else, so a leaked runner cannot reach the rest of the account.
+          KEY="$RUNNER_TEMP/tap-deploy-key"
+          printf '%s\n' "$TAP_DEPLOY_KEY" > "$KEY"
+          chmod 600 "$KEY"
+          export GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+
+          git clone --depth 1 git@github.com:mxwnk/homebrew-flip.git "$RUNNER_TEMP/tap"
           cd "$RUNNER_TEMP/tap"
 
           # Anchored to the start of the line so nothing in the comments or the

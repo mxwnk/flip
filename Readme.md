@@ -167,8 +167,8 @@ git tag v0.2.0 && git push origin v0.2.0
 ```
 
 The cask lives in [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip)
-and is never edited by hand. Bumping it needs a `HOMEBREW_TAP_TOKEN` secret — a
-fine-grained token with contents write on that repository and nothing else.
+and is never edited by hand. Bumping it uses a deploy key held as
+`HOMEBREW_TAP_DEPLOY_KEY`, which can write to the tap and to nothing else.
 Without it the release still goes out and the cask stays where it was, with a
 warning in the run.
 
