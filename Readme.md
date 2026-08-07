@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Docs/icon.png" width="120" alt="">
+  <img src="docs/icon.png" width="120" alt="">
 </p>
 
 <h1 align="center">Flip</h1>
@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <img src="Docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
+  <img src="docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
 </p>
 
 <p align="center">
-  <img src="Docs/demo.gif" width="820" alt="Switching windows, jumping to an application, and moving a window across the screen">
+  <img src="docs/demo.gif" width="820" alt="Switching windows, jumping to an application, and moving a window across the screen">
 </p>
 
 ## Keys
@@ -154,7 +154,7 @@ would have to be granted again after every install.
 
 Signing against a certificate pins the requirement to the bundle identifier and
 the certificate instead. `make verify` checks it against
-`Resources/designated-requirement.txt`, and the release pipeline refuses to
+`resources/designated-requirement.txt`, and the release pipeline refuses to
 package a build where it has drifted.
 
 ## Releasing

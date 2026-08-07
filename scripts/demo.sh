@@ -148,5 +148,5 @@ swift "$HERE/demo-choreography.swift" ${SCENE:+"$SCENE"}
 if $RECORD; then
     wait $RECORDER 2>/dev/null || true
     echo "==> Recorded. Turn it into a GIF with:"
-    echo "    ffmpeg -i build/demo.mov -vf 'fps=15,scale=1200:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse' -loop 0 Docs/demo.gif"
+    echo "    ffmpeg -i build/demo.mov -vf 'fps=15,scale=1200:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse' -loop 0 docs/demo.gif"
 fi

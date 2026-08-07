@@ -1,4 +1,4 @@
-// Draws Flip's application icon and packs it into Resources/Flip.icns.
+// Draws Flip's application icon and packs it into resources/Flip.icns.
 //
 // A generator rather than a checked-in image, so the icon can be adjusted by
 // changing numbers instead of round-tripping through a drawing program — and so
@@ -148,7 +148,7 @@ for (points, scale) in [(16, 1), (16, 2), (32, 1), (32, 2), (128, 1), (128, 2),
     try render(at: points * scale).write(to: iconset.appendingPathComponent(name))
 }
 
-let icns = root.appendingPathComponent("Resources/Flip.icns")
+let icns = root.appendingPathComponent("resources/Flip.icns")
 let iconutil = Process()
 iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
 iconutil.arguments = ["-c", "icns", iconset.path, "-o", icns.path]

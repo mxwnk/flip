@@ -5,7 +5,7 @@ VERSION   := 0.1.0
 
 BINARY    := .build/release/$(APP_NAME)
 BUNDLE      := build/$(APP_NAME).app
-REQUIREMENT := Resources/designated-requirement.txt
+REQUIREMENT := resources/designated-requirement.txt
 STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
@@ -37,12 +37,12 @@ bundle: build
 		$(BUNDLE)/Contents/Library/LaunchAgents
 	cp $(BINARY) $(BUNDLE)/Contents/MacOS/$(APP_NAME)
 	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' \
-		Resources/Info.plist > $(BUNDLE)/Contents/Info.plist
+		resources/Info.plist > $(BUNDLE)/Contents/Info.plist
 	# Registered by the app through SMAppService, not installed by this Makefile,
 	# which is why it ships inside the bundle.
-	sed -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' Resources/LaunchAgent.plist \
+	sed -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' resources/LaunchAgent.plist \
 		> $(BUNDLE)/Contents/Library/LaunchAgents/$(BUNDLE_ID).login.plist
-	cp Resources/$(APP_NAME).icns $(BUNDLE)/Contents/Resources/
+	cp resources/$(APP_NAME).icns $(BUNDLE)/Contents/Resources/
 	printf 'APPL????' > $(BUNDLE)/Contents/PkgInfo
 
 ## test: run the unit tests
@@ -51,7 +51,7 @@ bundle: build
 test:
 	DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
-## icon: redraw Resources/Flip.icns from scripts/make-icon.swift
+## icon: redraw resources/Flip.icns from scripts/make-icon.swift
 # Committed rather than generated during a build: CI has to package the same icon
 # without redrawing it, and an .icns is small enough to keep in the repository.
 icon:

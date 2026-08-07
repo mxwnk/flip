@@ -23,7 +23,7 @@ These break silently. Nothing crashes, nothing logs, and the app looks fine.
 
 - **The designated requirement must not change.** TCC keys Accessibility and
   Screen Recording to it, so a drift revokes them on every installed copy.
-  `Resources/designated-requirement.txt` records it and CI fails on a mismatch.
+  `resources/designated-requirement.txt` records it and CI fails on a mismatch.
 - **No accessibility call on the hot path.** The window model is maintained by
   `AXObserver` notifications on `RunLoopThread`, with a 0.5 s messaging timeout
   per app. Opening the switcher must cost one lock and one window server call.
@@ -46,7 +46,7 @@ These break silently. Nothing crashes, nothing logs, and the app looks fine.
 - Few comments. Simple code gets none. Comment only what the code cannot show:
   macOS or private-API behaviour, measured timings, and why something that looks
   removable is not. Never narrate history or reverted approaches.
-- Files are grouped by feature under `Sources/Flip/`.
+- Files are grouped by feature under `src/Flip/`.
 
 # Verifying
 

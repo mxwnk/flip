@@ -90,7 +90,7 @@ the catch is usually the reason something is not done yet.
 ## Showing it off
 
 - [~] **A GIF of Flip in use, for the readme.** `scripts/demo.sh` stages the scene
-      and performs the sequence; the recording is in `Docs/demo.gif`. Still missing
+      and performs the sequence; the recording is in `docs/demo.gif`. Still missing
       the keystroke overlay, so the film shows what happens but not what was
       pressed — which is half of what it is for.
   - **Keystrokes on screen: KeyCastr** (`brew install --cask keycastr`), open
@@ -116,7 +116,7 @@ the catch is usually the reason something is not done yet.
 
 - [x] **LICENSE.** MIT.
 - [x] **Application icon.** Drawn by `scripts/make-icon.swift` and committed as
-      `Resources/Flip.icns`, so CI packages the same icon without redrawing it.
+      `resources/Flip.icns`, so CI packages the same icon without redrawing it.
       The motif is the overlay's own: two offset window tiles, the front one
       carrying the same blue selection ring.
 - [ ] **Documentation.** The Readme carries everything today and is getting long;
