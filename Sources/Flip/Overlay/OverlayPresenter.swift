@@ -14,9 +14,12 @@ final class OverlayPresenter: SwitcherPresenting {
 
     private let model = OverlayModel()
     private let panel: NSPanel
+    /// A session is running. The panel may not be on screen yet: a tap released
+    /// inside the delay commits without ever showing anything.
     private var isVisible = false
     private var currentSource: Source?
     private var lifetime: Timer?
+    private var reveal: Timer?
 
     var onUnexpectedClose: (() -> Void)?
 
@@ -180,19 +183,14 @@ final class OverlayPresenter: SwitcherPresenting {
         model.thumbnails = alreadyCaptured(windows)
 
         panel.setFrame(screen.frame, display: false)
-        panel.orderFront(nil)
+        let wasRunning = isVisible
         isVisible = true
         currentSource = source
 
-        log.debug("""
-        panel \(NSStringFromRect(self.panel.frame), privacy: .public) \
-        visible=\(self.panel.isVisible, privacy: .public) \
-        onActiveSpace=\(self.panel.isOnActiveSpace, privacy: .public) \
-        alpha=\(self.panel.alphaValue, privacy: .public) \
-        screen=\(NSStringFromRect(screen.frame), privacy: .public)
-        """)
-
-        requestMissingThumbnails(for: windows)
+        // Narrowing keeps whatever the session already decided, so holding the
+        // leader and pressing a key does not restart the wait.
+        if !wasRunning { scheduleReveal() }
+        if panel.isVisible { requestMissingThumbnails(for: windows) }
 
         lifetime = Timer.scheduledTimer(withTimeInterval: Configuration.maxOverlayLifetime, repeats: false) { _ in
             MainActor.assumeIsolated { [weak self] in
@@ -205,7 +203,31 @@ final class OverlayPresenter: SwitcherPresenting {
         }
     }
 
+    /// Waiting means the selection exists but nothing has been drawn. Releasing
+    /// the leader from here is the fast path the delay is for.
+    private func scheduleReveal() {
+        let delay = settings.settings.overlayDelay.seconds
+        guard delay > 0 else { return show() }
+
+        reveal = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+            MainActor.assumeIsolated { [weak self] in
+                guard let self, isVisible else { return }
+
+                show()
+            }
+        }
+    }
+
+    private func show() {
+        panel.orderFront(nil)
+        requestMissingThumbnails(for: model.windows)
+
+        log.debug("overlay shown on \(NSStringFromRect(self.panel.frame), privacy: .public)")
+    }
+
     private func hide() {
+        reveal?.invalidate()
+        reveal = nil
         lifetime?.invalidate()
         lifetime = nil
 

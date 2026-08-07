@@ -32,9 +32,9 @@ the catch is usually the reason something is not done yet.
 - [ ] **Close a window or quit an application from the overlay.** Select and press
       W or Q. The natural companion to a switcher, and the accessibility calls are
       already in place.
-- [ ] **No overlay for a quick tap.** Show the grid only once the leader has been
-      held for ~150 ms. A fast Alt-Tab then switches with no visual at all, which
-      is how the muscle memory actually works.
+- [x] **No overlay for a quick tap.** The selection is made immediately and only
+      drawing waits, so a release inside the delay commits without the panel ever
+      appearing. Configurable in Settings › General; 150 ms by default.
 - [ ] **Jump by number.** 1–9 selects the nth tile directly while the overlay is up.
 - [ ] **Windows on other spaces.** Currently filtered out, which is right for
       Alt-Tab and wrong when you know the window exists somewhere. Worth a modifier

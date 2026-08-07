@@ -25,6 +25,18 @@ struct GeneralView: View {
             }
 
             Section {
+                Picker("Show the overlay", selection: $settings.settings.overlayDelay) {
+                    ForEach(OverlayDelay.allCases) { choice in
+                        Text(choice.label).tag(choice)
+                    }
+                }
+            } footer: {
+                Text("A shorter tap switches windows without drawing anything.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Toggle("Show window thumbnails", isOn: $settings.settings.showThumbnails)
             } footer: {
                 Text(settings.settings.showThumbnails

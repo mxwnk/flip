@@ -92,8 +92,10 @@ broken keyboard.
 **Settings…** in the menu bar, or ⌘, — three tabs, and every change applies as you
 make it. There is nothing to save.
 
-**General** carries the two hotkeys, whether tiles show thumbnails or only icons,
-and whether Flip starts at login. Turning thumbnails off drops the Screen
+**General** carries the two hotkeys, how long the leader must be held before the
+overlay appears, whether tiles show thumbnails or only icons, and whether Flip
+starts at login. The delay is what makes a quick Alt-Tab switch with nothing drawn
+at all: the selection is made immediately, only showing it waits. Turning thumbnails off drops the Screen
 Recording requirement entirely rather than merely hiding the images.
 
 **Excluded** keeps applications out of the window list. A key bound directly to one
