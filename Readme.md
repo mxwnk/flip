@@ -182,3 +182,7 @@ make verify     # prints the designated requirement; must not change on rebuild
 The certificate is trusted only for code signing, and the key is scoped to
 `codesign` rather than imported with `-A`: anything signed as `dev.mxwnk.Flip`
 would inherit Flip's Accessibility grant.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

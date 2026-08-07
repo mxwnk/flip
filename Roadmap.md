@@ -65,7 +65,7 @@ the catch is usually the reason something is not done yet.
 
 ## Project
 
-- [ ] **LICENSE.** Nothing yet, which means all rights reserved by default.
+- [x] **LICENSE.** MIT.
 - [x] **Application icon.** Drawn by `scripts/make-icon.swift` and committed as
       `Resources/Flip.icns`, so CI packages the same icon without redrawing it.
       The motif is the overlay's own: two offset window tiles, the front one
