@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://mxwnk.github.io/flip/"><strong>mxwnk.github.io/flip</strong></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/mxwnk/flip/releases/latest"><img src="https://img.shields.io/github/v/release/mxwnk/flip?color=0a84ff&label=release" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-lightgrey" alt="macOS 14 or newer">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/mxwnk/flip?color=lightgrey" alt="MIT licence"></a>

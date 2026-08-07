@@ -61,6 +61,14 @@ Measured with nine windows open on a two-monitor machine:
 | Resolving the window list | ~1 ms, no accessibility calls |
 | Warming every thumbnail at startup | ~200 ms for nine, in parallel |
 
+## The site
+
+`site/` is plain HTML and CSS with no build step, published to
+[mxwnk.github.io/flip](https://mxwnk.github.io/flip/) by `.github/workflows/pages.yml`
+whenever it or the pictures in `docs/` change. The pictures are copied in at
+deploy time rather than kept twice in the tree. Its palette is `Theme.swift`
+converted to hex, so the page and the overlay stay the same thing seen twice.
+
 ## Releasing
 
 Every push builds and tests. Pushing a `v*` tag also signs, packages, publishes a
