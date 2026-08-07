@@ -11,7 +11,7 @@ Alt is the leader key:
 | `Cmd-Tab` | cycle the windows of the frontmost application |
 | `Alt-<letter>` | jump to a bound application, e.g. `Alt-S` for Spotify |
 | `Alt` held, `<letter>` | narrow the open overlay to that application |
-| release `Alt` | focus the selection |
+| release `Alt` | focus the selection, restoring it from the Dock if minimised |
 
 ## Status
 

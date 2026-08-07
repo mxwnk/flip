@@ -144,7 +144,7 @@ final class OverlayPresenter: SwitcherPresenting {
         case .allWindows:
             // Exclusions apply here only: naming an application by key is explicit.
             let excluded = Set(settings.settings.excludedBundleIDs)
-            return store.currentSpaceWindows().filter { window in
+            return store.currentSpaceWindows(includingMinimized: true).filter { window in
                 window.bundleID.map { !excluded.contains($0) } ?? true
             }
         case .application(let bundleID):

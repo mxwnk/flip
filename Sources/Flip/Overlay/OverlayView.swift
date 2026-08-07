@@ -67,6 +67,7 @@ private struct TileView: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Theme.thumbnailBackground)
                 .overlay(preview)
+                .overlay(alignment: .bottomTrailing) { minimizedBadge }
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .frame(height: layout.thumbnailHeight - Theme.tilePadding / 2)
 
@@ -96,6 +97,18 @@ private struct TileView: View {
                         .strokeBorder(isSelected ? Theme.selectedStroke : .clear, lineWidth: 2)
                 )
         )
+    }
+
+    /// Without it a minimised window is indistinguishable from one whose capture
+    /// has not arrived yet — both are just an icon.
+    @ViewBuilder
+    private var minimizedBadge: some View {
+        if window.isMinimized {
+            Image(systemName: "arrow.down.right.and.arrow.up.left")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.title.opacity(0.7))
+                .padding(6)
+        }
     }
 
     /// A minimised window never gets past the icon: nothing to capture.
