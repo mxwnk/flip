@@ -10,6 +10,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mxwnk/flip/releases/latest"><img src="https://img.shields.io/github/v/release/mxwnk/flip?color=0a84ff&label=release" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-lightgrey" alt="macOS 14 or newer">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/mxwnk/flip?color=lightgrey" alt="MIT licence"></a>
+</p>
+
+<p align="center">
   <img src="docs/demo.gif" width="820" alt="Switching windows, jumping to an application, and moving a window across the screen">
 </p>
 
@@ -19,16 +25,25 @@
 brew install --cask mxwnk/flip/flip
 ```
 
-Or download the disk image from the [latest
+Or take the disk image from the [latest
 release](https://github.com/mxwnk/flip/releases/latest) and drag Flip into
 Applications.
 
-Flip is signed with its own certificate rather than notarised. Homebrew takes care
-of that; with the disk image, macOS blocks the first launch and you have to allow
-Flip once under System Settings › Privacy & Security.
+Needs macOS 14 or newer.
 
-Needs macOS 14 or newer. Flip asks for Accessibility on first run, and for Screen
-Recording only if you want thumbnails rather than icons.
+## What it does
+
+- **Switches windows, not applications.** Every window on the space, most recently
+  used first, so two documents in the same app are two entries.
+- **Stays out of the way.** Let go inside 150 ms and it switches without drawing
+  anything at all.
+- **One key per application.** `⌥ S` for Spotify, `⌥ T` for the terminal, yours to
+  choose.
+- **Moves and resizes windows** from the keyboard — halves, quarters, filling, and
+  across to the other display.
+- **Keyboard or mouse.** Hover to pick, click to confirm, if your hand is already
+  there.
+- **Brings minimised windows back.** Choosing one lifts it out of the Dock.
 
 ## Switching windows
 
@@ -42,22 +57,7 @@ Recording only if you want thumbnails rather than icons.
 | the mouse | hover to select, click to confirm; click beside the grid to give up |
 | let go of `⌥` | focus what is selected, out of the Dock if it was minimised |
 
-Add `⇧` to any of those to go backwards. Let go within 150 ms and Flip switches
-without ever drawing the grid.
-
-The mouse only takes over once you actually move it, so a grid that opens under a
-resting pointer still does what the keyboard told it to.
-
-The grid opens on the display holding the active window. On a desk with two of
-them that can be the one you are not looking at, so Settings › General offers the
-main display instead, or every display at once — the same grid on each, always
-where you are looking. A panel per screen is built at launch like the first one,
-so showing three costs no more than showing one.
-
-By default the grid holds the space you are on. Settings › General widens it to
-every space; choosing a window there switches to it. Flip learns a space's windows
-the first time you visit it, because accessibility only ever admits to the windows
-in front of you.
+Add `⇧` to any of those to go backwards.
 
 <p align="center">
   <img src="docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
@@ -73,114 +73,54 @@ in front of you.
 | `⌃⌥↩` | fill the screen, or put it back if it already fills |
 | `⇧⌥←` `⇧⌥→` | previous or next display, keeping the window's place on it |
 
-Everything is measured against the visible frame, so filling the screen stops at
-the menu bar and the Dock. Filling is a toggle: press it on a window that already
-fills and it goes back where it was, and on a window in macOS's own full screen it
-leaves full screen.
-
-The corners are `u i j k` rather than the vim keys because those four sit as a
-square on a German keyboard too, which `y u h j` does not.
+Everything stops at the menu bar and the Dock. Filling is a toggle: press it on a
+window that already fills and it goes back where it was.
 
 ## Settings
 
 **Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.
 
-- **General** — whether Flip starts at login, the two hotkeys, which display the
-  grid appears on, how long Option must be held before it does, thumbnails or
-  plain icons, whether to list windows from every space, and whether to check for
-  updates.
+- **General** — start at login, the two hotkeys, which display the grid opens on,
+  how long Option must be held before it does, thumbnails or plain icons, windows
+  from every space, and the update check.
 - **Shortcuts** — one key per application. The editor warns when a key would
   shadow a character you need to type.
-- **Windows** — the keys above, listed so they can be found without this file.
+- **Windows** — the keys above, listed so you can find them without this page.
 - **Excluded** — applications kept out of the grid. A key bound directly to one
   still reaches it.
 
-Flip asks GitHub once a day whether a newer release exists and says so in the
-menu. It never downloads or installs anything — updating is `brew upgrade --cask
-flip`, or the disk image from the release it points at. That is the only request
-Flip ever makes, and it can be turned off.
+**Pause** in the menu bar hands `⌘ Tab` back to macOS for as long as a screen
+share lasts.
 
-**Pause** hands `⌘ Tab` back to macOS for as long as a screen share lasts.
-**About Flip** has the version and the licence, and **Copy Diagnostics** puts the
-version, both grants, every setting and Flip's recent log on the clipboard — enough
-to report a problem without opening a terminal.
+## Questions
 
-Everything is readable JSON in `~/Library/Application Support/Flip/`, and edits
-made by hand are picked up while Flip runs.
+**Why does a window switcher want Screen Recording?** Only for the thumbnails.
+Turn them off in Settings and Flip shows application icons instead — and stops
+asking for it.
 
-## Why it is quick
+**macOS says it cannot verify Flip.** It is signed with its own certificate rather
+than notarised through Apple's paid programme. Homebrew clears that for you; a
+copy installed by hand has to be allowed once under System Settings › Privacy &
+Security.
 
-Nothing is asked for at the moment you press the key.
+**Do I have to grant the permissions again after every update?** No. The signature
+is pinned to the same certificate on every release, and the pipeline refuses to
+publish one where it has drifted.
 
-The window list is not queried but **maintained** — `AXObserver` notifications keep
-it current on a thread of its own, so opening the grid costs one lock and one
-window server call. The **event tap owns a thread and a runloop**, because macOS
-quietly disables a tap whose callback misses its deadline. The **panel is built
-once at launch** and only ordered in and out, and thumbnails are captured ahead of
-time: at startup, and then for each window as it loses focus, which is when its
-contents are final and nobody is waiting.
+**Where do my settings live?** As readable JSON in `~/Library/Application
+Support/Flip/`. Edits to `bindings.json` are picked up while Flip runs; changes to
+`settings.json` need a restart.
 
-Measured with nine windows open on a two-monitor machine:
-
-| | |
-| --- | --- |
-| Opening the grid, thumbnails already there | **6–10 ms** |
-| Resolving the window list | ~1 ms, no accessibility calls |
-| Warming every thumbnail at startup | ~200 ms for nine, in parallel |
-
-## Building it yourself
-
-```sh
-make cert       # once, interactive: creates the signing identity
-make run        # build, sign, install to ~/Applications, launch
-make test       # 81 unit tests
-make smoke      # 24 checks against a running copy, before a release
-make logs       # follow along; almost everything interesting is logged
-```
-
-`make test` covers the arithmetic. `make smoke` covers the border with macOS,
-which is where every real bug in this project has been: it drives the keyboard and
-the mouse through synthetic events, reads back what Flip decided from its log, and
-measures windows it moved. Hands off the keyboard while it runs — a real keystroke
-releases the modifier holding the switcher open.
-
-SwiftPM compiles and the Makefile assembles the bundle, so Xcode is needed only
-for the tests. Nothing is ever started straight from a shell: that would make the
-terminal the responsible process for TCC and attribute the privacy grants to it
-rather than to Flip.
-
-`make cert` is not ceremony. TCC keys a privacy grant to the app's designated
-requirement, and for an ad-hoc signature that requirement contains a hash that
-changes on every build — Accessibility and Screen Recording would have to be
-granted again after every install. Signing against a certificate pins the
-requirement to the bundle identifier instead. `make verify` checks it against
-`resources/designated-requirement.txt`, and the release pipeline refuses to
-package a build where it has drifted.
-
-## Releasing
-
-Every push builds and tests. Pushing a `v*` tag also signs, packages, publishes a
-release with the disk image attached, and points the Homebrew cask at it:
-
-```sh
-git tag v1.1.0 && git push origin v1.1.0
-```
-
-Release notes come from the section in [CHANGELOG.md](CHANGELOG.md) matching the
-tag, so they are written and reviewed with the change rather than assembled from
-commit subjects afterwards. A tag with no section still releases, with a warning.
-
-The cask lives in [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip)
-and is never edited by hand. Bumping it uses a deploy key held as
-`HOMEBREW_TAP_DEPLOY_KEY`, which can write to the tap and to nothing else. Without
-it the release still goes out and the cask stays where it was, with a warning in
-the run.
+**Something is wrong and I want to report it.** **Copy Diagnostics** in the menu
+puts the version, both permissions, every setting and Flip's recent log on the
+clipboard — enough for an issue without opening a terminal.
 
 ## Contributing
 
 Open work and known gaps live in
-[issues](https://github.com/mxwnk/flip/issues). Conventions and the invariants
-that break silently are in [AGENTS.md](AGENTS.md).
+[issues](https://github.com/mxwnk/flip/issues). Building, testing and releasing
+are in [docs/development.md](docs/development.md); what changed in each release is
+in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
