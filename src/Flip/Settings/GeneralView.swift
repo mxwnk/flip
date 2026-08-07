@@ -40,6 +40,18 @@ struct GeneralView: View {
             }
 
             Section {
+                Picker("Show the grid on", selection: $settings.settings.overlayPlacement) {
+                    ForEach(OverlayPlacement.allCases) { choice in
+                        Text(choice.label).tag(choice)
+                    }
+                }
+            } footer: {
+                Caption(settings.settings.overlayPlacement == .everyDisplay
+                    ? "The same grid on each one, so it is always where you are looking."
+                    : "With two displays the grid can open on the one you are not looking at.")
+            }
+
+            Section {
                 Picker("Show the overlay", selection: $settings.settings.overlayDelay) {
                     ForEach(OverlayDelay.allCases) { choice in
                         Text(choice.label).tag(choice)

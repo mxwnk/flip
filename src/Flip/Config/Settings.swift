@@ -61,6 +61,25 @@ enum OverlayDelay: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Which screen the grid appears on. A two monitor desk is where this matters:
+/// the grid can open on the display you are not looking at, and it looks for a
+/// moment as though the key did nothing.
+enum OverlayPlacement: String, Codable, CaseIterable, Identifiable {
+    case activeWindow
+    case primaryDisplay
+    case everyDisplay
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .activeWindow: return "The display with the active window"
+        case .primaryDisplay: return "The main display"
+        case .everyDisplay: return "Every display"
+        }
+    }
+}
+
 struct Settings: Codable, Equatable {
     var leader: ModifierChoice = .option
 
@@ -75,6 +94,8 @@ struct Settings: Codable, Equatable {
 
     /// Off lists only what is on the space you are looking at.
     var showWindowsFromEverySpace = false
+
+    var overlayPlacement: OverlayPlacement = .activeWindow
 
     /// The only thing Flip ever sends a request for.
     var checkForUpdates = true
@@ -104,6 +125,9 @@ struct Settings: Codable, Equatable {
         showWindowsFromEverySpace = try container
             .decodeIfPresent(Bool.self, forKey: .showWindowsFromEverySpace)
             ?? defaults.showWindowsFromEverySpace
+        overlayPlacement = try container
+            .decodeIfPresent(OverlayPlacement.self, forKey: .overlayPlacement)
+            ?? defaults.overlayPlacement
         checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates)
             ?? defaults.checkForUpdates
         excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)

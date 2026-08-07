@@ -2,8 +2,9 @@ import AppKit
 import OSLog
 import SwiftUI
 
-/// The overlay. The panel is built once at launch and never torn down: showing
-/// it is an `orderFront`, hiding it an `orderOut`.
+/// The overlay. Panels are built once at launch and never torn down: showing one
+/// is an `orderFront`, hiding it an `orderOut`. There is one per screen, because
+/// the placement setting can ask for the grid on every display at once.
 @MainActor
 final class OverlayPresenter: SwitcherPresenting {
     private let log = Logger(subsystem: Bundle.identifier, category: "switcher")
@@ -13,7 +14,10 @@ final class OverlayPresenter: SwitcherPresenting {
     private let settings: SettingsStore
 
     private let model = OverlayModel()
-    private let panel: NSPanel
+    /// One per screen, all drawing the same model. Only the first `inUse` of them
+    /// are positioned and shown for a given session.
+    private var panels: [NSPanel] = []
+    private var inUse = 0
     /// A session is running. The panel may not be on screen yet: a tap released
     /// inside the delay commits without ever showing anything.
     private var isVisible = false
@@ -37,7 +41,18 @@ final class OverlayPresenter: SwitcherPresenting {
         self.thumbnails = thumbnails
         self.settings = settings
 
-        panel = NSPanel(
+        // Every screen gets its own now rather than on the first keypress: the
+        // panel and its SwiftUI machinery are the expensive part, and not paying
+        // for them at ⌥Tab is what the whole design is arranged around.
+        ensurePanels(max(NSScreen.screens.count, 1))
+    }
+
+    private func ensurePanels(_ count: Int) {
+        while panels.count < count { panels.append(makePanel(index: panels.count)) }
+    }
+
+    private func makePanel(index: Int) -> NSPanel {
+        let panel = NSPanel(
             contentRect: NSScreen.main?.frame ?? .zero,
             // Non-activating: the switcher must not become the application it is
             // about to switch away from.
@@ -68,8 +83,25 @@ final class OverlayPresenter: SwitcherPresenting {
         // Build SwiftUI's machinery now, not on the first Alt-Tab.
         host.layoutSubtreeIfNeeded()
 
-        host.onPointerMoved = { [weak self] point in self?.hover(at: point) }
-        host.onClick = { [weak self] point in self?.click(at: point) }
+        // The index is captured so a point can be resolved against the panel it
+        // came from; with the grid on three screens they are three coordinate
+        // spaces holding the same picture.
+        host.onPointerMoved = { [weak self] point in self?.hover(at: point, on: index) }
+        host.onClick = { [weak self] point in self?.click(at: point, on: index) }
+
+        return panel
+    }
+
+    /// Where the grid belongs, per the setting.
+    private func targetScreens() -> [NSScreen] {
+        switch settings.settings.overlayPlacement {
+        case .activeWindow:
+            return [ActiveScreen.current()]
+        case .primaryDisplay:
+            return [ScreenGeometry.primary ?? ActiveScreen.current()]
+        case .everyDisplay:
+            return NSScreen.screens.isEmpty ? [ActiveScreen.current()] : NSScreen.screens
+        }
     }
 
     // MARK: - SwitcherPresenting
@@ -151,22 +183,23 @@ final class OverlayPresenter: SwitcherPresenting {
     /// Hovering does not take over until the pointer has actually moved. A grid
     /// opening under a resting pointer must not discard the selection the keyboard
     /// just made, and the same applies after every arrow key.
-    private func hover(at point: CGPoint) {
-        guard isVisible, panel.isVisible else { return }
+    private func hover(at point: CGPoint, on panelIndex: Int) {
+        guard isVisible, panelIndex < inUse, panels[panelIndex].isVisible else { return }
 
         if let anchor = pointerAnchor {
-            guard hypot(point.x - anchor.x, point.y - anchor.y) > 2 else { return }
+            let mouse = NSEvent.mouseLocation
+            guard hypot(mouse.x - anchor.x, mouse.y - anchor.y) > 2 else { return }
 
             pointerAnchor = nil
         }
 
-        guard let index = tile(at: point), index != model.selected else { return }
+        guard let tile = tile(at: point, on: panelIndex), tile != model.selected else { return }
 
-        model.selected = index
+        model.selected = tile
     }
 
-    private func click(at point: CGPoint) {
-        guard isVisible, panel.isVisible else { return }
+    private func click(at point: CGPoint, on panelIndex: Int) {
+        guard isVisible, panelIndex < inUse, panels[panelIndex].isVisible else { return }
 
         // The router decides synchronously and has no idea a click happened, so it
         // would keep swallowing keys until the leader is let go. Both paths end the
@@ -175,21 +208,24 @@ final class OverlayPresenter: SwitcherPresenting {
 
         // Outside the grid is the dimmed backdrop rather than a tile: give up,
         // instead of committing whatever happened to be selected.
-        guard let index = tile(at: point) else { return cancel() }
+        guard let tile = tile(at: point, on: panelIndex) else { return cancel() }
 
-        model.selected = index
+        model.selected = tile
         commit()
     }
 
-    private func tile(at point: CGPoint) -> Int? {
-        model.layout.index(at: point, in: panel.frame.size, count: model.windows.count)
+    /// The grid is centred in whichever panel the point came from, so the panel's
+    /// own size is the container the hit test needs.
+    private func tile(at point: CGPoint, on panelIndex: Int) -> Int? {
+        model.layout.index(
+            at: point, in: panels[panelIndex].frame.size, count: model.windows.count
+        )
     }
 
-    /// `NSEvent.mouseLocation` is screen coordinates counting upwards; the layout
-    /// counts rows down from the panel's top left.
+    /// Kept in screen coordinates, so it holds however many displays the grid is
+    /// drawn on and whichever one the pointer happens to be over.
     private func anchorPointer() {
-        let mouse = NSEvent.mouseLocation
-        pointerAnchor = CGPoint(x: mouse.x - panel.frame.minX, y: panel.frame.maxY - mouse.y)
+        pointerAnchor = NSEvent.mouseLocation
     }
 
     // MARK: - Internals
@@ -253,14 +289,23 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func present(_ windows: [WindowInfo], from source: Source) {
-        let screen = ActiveScreen.current()
+        let screens = targetScreens()
+        ensurePanels(screens.count)
+
+        // Laid out for the narrowest of them, so one grid fits every screen it is
+        // drawn on rather than spilling off the small one.
+        let narrowest = screens.min { $0.frame.width < $1.frame.width } ?? screens[0]
 
         model.windows = windows
         model.selected = 0
-        model.layout = OverlayLayout(count: windows.count, screen: screen.frame.size)
+        model.layout = OverlayLayout(count: windows.count, screen: narrowest.frame.size)
         model.thumbnails = alreadyCaptured(windows)
 
-        panel.setFrame(screen.frame, display: false)
+        for (index, screen) in screens.enumerated() {
+            panels[index].setFrame(screen.frame, display: false)
+        }
+        inUse = screens.count
+
         let wasRunning = isVisible
         isVisible = true
         currentSource = source
@@ -269,7 +314,9 @@ final class OverlayPresenter: SwitcherPresenting {
         // Narrowing keeps whatever the session already decided, so holding the
         // leader and pressing a key does not restart the wait.
         if !wasRunning { scheduleReveal() }
-        if panel.isVisible { requestMissingThumbnails(for: windows) }
+        if panels.prefix(inUse).contains(where: \.isVisible) {
+            requestMissingThumbnails(for: windows)
+        }
 
         lifetime = Timer.scheduledTimer(withTimeInterval: Configuration.maxOverlayLifetime, repeats: false) { _ in
             MainActor.assumeIsolated { [weak self] in
@@ -298,10 +345,10 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func show() {
-        panel.orderFront(nil)
+        for panel in panels.prefix(inUse) { panel.orderFront(nil) }
         requestMissingThumbnails(for: model.windows)
 
-        log.debug("overlay shown on \(NSStringFromRect(self.panel.frame), privacy: .public)")
+        log.debug("overlay shown on \(self.inUse, privacy: .public) display(s)")
     }
 
     private func hide() {
@@ -310,7 +357,8 @@ final class OverlayPresenter: SwitcherPresenting {
         lifetime?.invalidate()
         lifetime = nil
 
-        panel.orderOut(nil)
+        for panel in panels { panel.orderOut(nil) }
+        inUse = 0
         isVisible = false
         currentSource = nil
         model.windows = []

@@ -48,6 +48,12 @@ without ever drawing the grid.
 The mouse only takes over once you actually move it, so a grid that opens under a
 resting pointer still does what the keyboard told it to.
 
+The grid opens on the display holding the active window. On a desk with two of
+them that can be the one you are not looking at, so Settings › General offers the
+main display instead, or every display at once — the same grid on each, always
+where you are looking. A panel per screen is built at launch like the first one,
+so showing three costs no more than showing one.
+
 By default the grid holds the space you are on. Settings › General widens it to
 every space; choosing a window there switches to it. Flip learns a space's windows
 the first time you visit it, because accessibility only ever admits to the windows
@@ -79,9 +85,10 @@ square on a German keyboard too, which `y u h j` does not.
 
 **Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.
 
-- **General** — whether Flip starts at login, the two hotkeys, how long Option
-  must be held before the grid appears, thumbnails or plain icons, whether to list
-  windows from every space, and whether to check for updates.
+- **General** — whether Flip starts at login, the two hotkeys, which display the
+  grid appears on, how long Option must be held before it does, thumbnails or
+  plain icons, whether to list windows from every space, and whether to check for
+  updates.
 - **Shortcuts** — one key per application. The editor warns when a key would
   shadow a character you need to type.
 - **Windows** — the keys above, listed so they can be found without this file.
