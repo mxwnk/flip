@@ -146,6 +146,44 @@ fi
 "$DRIVER" release wait 400
 stop_log
 
+# ---------------------------------------------------------------------- raising
+
+# AltTab's most reported bug is selecting a window whose application then never
+# comes forward, and Electron applications are the usual culprits. Flip logs what
+# it meant to focus, so this compares intent against what actually happened and
+# needs no idea of the grid's order beforehand.
+echo
+echo "Raising"
+start_log
+"$DRIVER" hold option wait 300 key tab wait 900 key escape release wait 500
+COUNT=$(grep -oE "opened to [0-9]+ windows" "$LOG" | tail -1 | grep -oE "[0-9]+")
+stop_log
+
+RAISE_MISMATCH=0
+RAISE_TRIED=0
+if [ -n "${COUNT:-}" ] && [ "$COUNT" -ge 2 ]; then
+    for _ in $(seq 1 "$COUNT"); do
+        start_log
+        # Always the least recently used tile, so committing it rotates the walk
+        # through every application. COUNT-2 presses, because the grid opens on
+        # index 1 and moving wraps: COUNT-1 would land back on the one just taken.
+        ARGS=(hold option wait 300 key tab wait 700)
+        for _ in $(seq 3 "$COUNT"); do ARGS+=(key right wait 200); done
+        ARGS+=(release wait 1500)
+        "$DRIVER" "${ARGS[@]}"
+        sleep 1
+        INTENDED=$(grep -oE "focusing [^—]+ —" "$LOG" | tail -1 | sed 's/^focusing //; s/ —$//' | xargs)
+        stop_log
+        [ -z "$INTENDED" ] && continue
+        RAISE_TRIED=$((RAISE_TRIED + 1))
+        if [ "$INTENDED" != "$("$DRIVER" frontmost)" ]; then
+            RAISE_MISMATCH=$((RAISE_MISMATCH + 1))
+            printf '      %s was chosen but did not come forward\n' "$INTENDED"
+        fi
+    done
+fi
+check "Every window chosen comes to the front ($RAISE_TRIED tried)" "0" "$RAISE_MISMATCH"
+
 # ------------------------------------------------------------------ window actions
 
 echo

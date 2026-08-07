@@ -127,7 +127,7 @@ Measured with nine windows open on a two-monitor machine:
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
 make test       # 81 unit tests
-make smoke      # 23 checks against a running copy, before a release
+make smoke      # 24 checks against a running copy, before a release
 make logs       # follow along; almost everything interesting is logged
 ```
 
