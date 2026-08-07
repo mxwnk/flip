@@ -13,6 +13,15 @@ final class ThumbnailStore: @unchecked Sendable {
         height: (Theme.tileWidth * Theme.thumbnailRatio).rounded(.down) * 2
     )
 
+    /// What accessibility reports the window measures, which Stage Manager does
+    /// not distort. Without it every capture is taken at face value.
+    var expectedSize: (@Sendable (CGWindowID) -> CGSize?)?
+
+    /// Below this a capture is a Stage Manager miniature rather than a window.
+    /// The parked strip is around two hundred points wide; a window somebody
+    /// wants a preview of is not.
+    private static let smallestRealWindow: CGFloat = 400
+
     /// Still shown while stale; only capture is triggered.
     private static let refreshAfter: TimeInterval = 30
 
@@ -89,6 +98,21 @@ final class ThumbnailStore: @unchecked Sendable {
         let rect = filter.contentRect
         guard rect.width > 0, rect.height > 0 else { return nil }
 
+        // Stage Manager parks a window as a shrunken, tilted miniature against the
+        // edge of the screen, and the window server reports that miniature as the
+        // window itself. Capturing it produces a picture of nothing anybody asked
+        // for. Accessibility goes on reporting the real size throughout, so the two
+        // disagreeing is the tell — measured at 200 wide against 2497.
+        //
+        // Returning nothing keeps whatever was captured before the window was
+        // parked, and leaves the tile on its icon if there was nothing.
+        if rect.width < Self.smallestRealWindow,
+           let expected = expectedSize?(id), expected.width > 0,
+           rect.width < expected.width / 2 {
+            log.debug("parked \(id, privacy: .public): \(Int(rect.width), privacy: .public) wide, accessibility says \(Int(expected.width), privacy: .public)")
+            return nil
+        }
+
         let configuration = SCStreamConfiguration()
         let scale = min(Self.target.width / rect.width, Self.target.height / rect.height, 1)
         configuration.width = Int(rect.width * scale)
@@ -102,7 +126,13 @@ final class ThumbnailStore: @unchecked Sendable {
                 configuration: configuration
             )
             let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
-            log.debug("  capture \(id, privacy: .public): \(String(format: "%.1f", elapsed), privacy: .public)ms")
+            log.debug("""
+              capture \(id, privacy: .public): \
+            \(String(format: "%.1f", elapsed), privacy: .public)ms \
+            rect \(Int(rect.width), privacy: .public)x\(Int(rect.height), privacy: .public) \
+            asked \(configuration.width, privacy: .public)x\(configuration.height, privacy: .public) \
+            got \(image.width, privacy: .public)x\(image.height, privacy: .public)
+            """)
 
             return image
         } catch {

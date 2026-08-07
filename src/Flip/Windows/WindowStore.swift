@@ -51,6 +51,15 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
+    /// What accessibility thinks the window measures. Read from the published
+    /// snapshot, so it costs a lock and no accessibility traffic.
+    func size(of id: CGWindowID) -> CGSize? {
+        lock.lock()
+        defer { lock.unlock() }
+
+        return snapshot.first { $0.id == id }?.frame.size
+    }
+
     // MARK: - Focusing
 
     func focus(_ window: WindowInfo) {
@@ -289,6 +298,7 @@ final class WindowStore: @unchecked Sendable {
             applicationName: watcher.name,
             title: AXBridge.string(kAXTitleAttribute as String, of: element) ?? "",
             isMinimized: AXBridge.bool(kAXMinimizedAttribute as String, of: element) ?? false,
+            frame: AXBridge.frame(of: element) ?? .zero,
             focusOrder: 0
         )
 

@@ -134,6 +134,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         storeIsRunning = true
         store.onWindowDefocused = { [weak self] id in self?.thumbnails.warm([id]) }
+        thumbnails.expectedSize = { [weak store] id in store?.size(of: id) }
         store.start()
 
         // Nothing has lost focus yet, so the first Alt-Tab would find empty tiles.

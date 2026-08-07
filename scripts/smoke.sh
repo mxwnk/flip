@@ -152,12 +152,15 @@ echo
 echo "Window actions"
 open ~ >/dev/null 2>&1
 sleep 3
+# Measured through accessibility: with Stage Manager on, the window server
+# reports a parked window as a 200 point miniature and the arrangement cannot be
+# measured at all. Flip writes the geometry through accessibility anyway.
 "$DRIVER" chord control+option left wait 1200
-read -r _ _ _ half_w _ <<<"$("$DRIVER" window Finder 200)"
+read -r _ _ half_w _ <<<"$("$DRIVER" axwindow Finder)"
 "$DRIVER" chord control+option return wait 1200
-read -r _ _ _ full_w _ <<<"$("$DRIVER" window Finder 200)"
+read -r _ _ full_w _ <<<"$("$DRIVER" axwindow Finder)"
 "$DRIVER" chord control+option return wait 1200
-read -r _ _ _ back_w _ <<<"$("$DRIVER" window Finder 200)"
+read -r _ _ back_w _ <<<"$("$DRIVER" axwindow Finder)"
 
 if [ -n "${half_w:-}" ] && [ -n "${full_w:-}" ] && [ "$full_w" -gt "$half_w" ]; then
     pass "Filling the screen widens the window"

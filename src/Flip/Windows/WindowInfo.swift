@@ -12,6 +12,10 @@ struct WindowInfo: Identifiable {
     var title: String
     var isMinimized: Bool
 
+    /// As accessibility reports it, which is not what the window server reports
+    /// once Stage Manager has parked the window — see `ThumbnailStore`.
+    var frame: CGRect
+
     /// Higher is more recent. macOS exposes no per-window focus history.
     var focusOrder: UInt64
 }

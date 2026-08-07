@@ -167,6 +167,34 @@ while !arguments.isEmpty {
             + Double(column) * (w + tilePad) + w / 2
         let y = py + (ph - gridH) / 2 + panelPad + Double(row) * (h + tilePad) + h / 2
         print(Int(x), Int(y))
+    case "axwindow":
+        // Through accessibility, not the window server. Stage Manager parks a
+        // window as a 200 point miniature and the window server reports that as
+        // the window — which makes measuring an arrangement impossible. AX keeps
+        // reporting the real geometry throughout.
+        let name = next()
+        var printed = false
+        if let app = NSWorkspace.shared.runningApplications.first(where: {
+            $0.localizedName == name
+        }) {
+            let element = AXUIElementCreateApplication(app.processIdentifier)
+            AXUIElementSetMessagingTimeout(element, 2)
+            var raw: CFTypeRef?
+            AXUIElementCopyAttributeValue(element, kAXWindowsAttribute as CFString, &raw)
+            if let first = (raw as? [AXUIElement])?.first {
+                var positionValue: CFTypeRef?
+                var sizeValue: CFTypeRef?
+                AXUIElementCopyAttributeValue(first, kAXPositionAttribute as CFString, &positionValue)
+                AXUIElementCopyAttributeValue(first, kAXSizeAttribute as CFString, &sizeValue)
+                var origin = CGPoint.zero
+                var size = CGSize.zero
+                if let positionValue { AXValueGetValue(positionValue as! AXValue, .cgPoint, &origin) }
+                if let sizeValue { AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) }
+                print(Int(origin.x), Int(origin.y), Int(size.width), Int(size.height))
+                printed = true
+            }
+        }
+        if !printed { print("") }
     case "frontmost":
         print(NSWorkspace.shared.frontmostApplication?.localizedName ?? "?")
     default:
