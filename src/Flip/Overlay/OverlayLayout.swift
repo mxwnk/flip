@@ -40,6 +40,36 @@ struct OverlayLayout {
         )
     }
 
+    /// Which tile is under `point`, given in a space whose origin is the top left
+    /// of the screen the overlay covers and whose y counts downwards.
+    ///
+    /// Nil for the gaps between tiles and for the dimmed area around the grid, so
+    /// that hovering nothing leaves the selection alone rather than snapping it to
+    /// the nearest tile.
+    func index(at point: CGPoint, in container: CGSize, count: Int) -> Int? {
+        let x = point.x - (container.width - panelSize.width) / 2 - Theme.panelPadding
+        let y = point.y - (container.height - panelSize.height) / 2 - Theme.panelPadding
+        guard x >= 0, y >= 0 else { return nil }
+
+        let row = Int(y / (tileHeight + Theme.tilePadding))
+        guard row < rows, y - CGFloat(row) * (tileHeight + Theme.tilePadding) <= tileHeight
+        else { return nil }
+
+        // A last row with gaps is centred by the stack that draws it, so its tiles
+        // do not line up with the ones above and cannot share their column maths.
+        let inRow = min(count - row * columns, columns)
+        guard inRow > 0 else { return nil }
+        let indent = CGFloat(columns - inRow) * (tileWidth + Theme.tilePadding) / 2
+        let offset = x - indent
+        guard offset >= 0 else { return nil }
+
+        let column = Int(offset / (tileWidth + Theme.tilePadding))
+        guard column < inRow, offset - CGFloat(column) * (tileWidth + Theme.tilePadding) <= tileWidth
+        else { return nil }
+
+        return row * columns + column
+    }
+
     /// Stepping `columns` places through the flat list only preserves the column
     /// when the last row is full, so this walks rows and skips gaps.
     func index(movingRowBy step: Int, from selected: Int, count: Int) -> Int {

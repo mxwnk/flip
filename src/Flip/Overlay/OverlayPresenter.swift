@@ -20,6 +20,9 @@ final class OverlayPresenter: SwitcherPresenting {
     private var currentSource: Source?
     private var lifetime: Timer?
     private var reveal: Timer?
+    /// Where the pointer was when the keyboard last had its say. Hovering is
+    /// ignored until it has moved away from here — see `hover`.
+    private var pointerAnchor: CGPoint?
 
     var onUnexpectedClose: (() -> Void)?
 
@@ -54,14 +57,19 @@ final class OverlayPresenter: SwitcherPresenting {
         // overlay sits at level 3 — under the menu bar and full-screen windows.
         panel.isFloatingPanel = true
         panel.level = .screenSaver
-        // Keyboard only for now; the router owns every interaction.
-        panel.ignoresMouseEvents = true
+        // The panel covers the whole screen, so accepting mouse events means it
+        // also swallows clicks on the dimmed backdrop. Those cancel; see `click`.
+        panel.ignoresMouseEvents = false
+        panel.acceptsMouseMovedEvents = true
 
-        let host = NSHostingView(rootView: OverlayView(model: model))
+        let host = OverlayHostingView(rootView: OverlayView(model: model))
         panel.contentView = host
 
         // Build SwiftUI's machinery now, not on the first Alt-Tab.
         host.layoutSubtreeIfNeeded()
+
+        host.onPointerMoved = { [weak self] point in self?.hover(at: point) }
+        host.onClick = { [weak self] point in self?.click(at: point) }
     }
 
     // MARK: - SwitcherPresenting
@@ -102,6 +110,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
         let count = model.windows.count
         model.selected = (model.selected + step % count + count) % count
+        anchorPointer()
     }
 
     func moveRow(by step: Int) {
@@ -112,6 +121,7 @@ final class OverlayPresenter: SwitcherPresenting {
             from: model.selected,
             count: model.windows.count
         )
+        anchorPointer()
     }
 
     func commit() {
@@ -132,6 +142,52 @@ final class OverlayPresenter: SwitcherPresenting {
         guard isVisible else { return }
 
         hide()
+    }
+
+    // MARK: - Mouse
+
+    /// Hovering does not take over until the pointer has actually moved. A grid
+    /// opening under a resting pointer must not discard the selection the keyboard
+    /// just made, and the same applies after every arrow key.
+    private func hover(at point: CGPoint) {
+        guard isVisible, panel.isVisible else { return }
+
+        if let anchor = pointerAnchor {
+            guard hypot(point.x - anchor.x, point.y - anchor.y) > 2 else { return }
+
+            pointerAnchor = nil
+        }
+
+        guard let index = tile(at: point), index != model.selected else { return }
+
+        model.selected = index
+    }
+
+    private func click(at point: CGPoint) {
+        guard isVisible, panel.isVisible else { return }
+
+        // The router decides synchronously and has no idea a click happened, so it
+        // would keep swallowing keys until the leader is let go. Both paths end the
+        // session, so both have to tell it.
+        defer { onUnexpectedClose?() }
+
+        // Outside the grid is the dimmed backdrop rather than a tile: give up,
+        // instead of committing whatever happened to be selected.
+        guard let index = tile(at: point) else { return cancel() }
+
+        model.selected = index
+        commit()
+    }
+
+    private func tile(at point: CGPoint) -> Int? {
+        model.layout.index(at: point, in: panel.frame.size, count: model.windows.count)
+    }
+
+    /// `NSEvent.mouseLocation` is screen coordinates counting upwards; the layout
+    /// counts rows down from the panel's top left.
+    private func anchorPointer() {
+        let mouse = NSEvent.mouseLocation
+        pointerAnchor = CGPoint(x: mouse.x - panel.frame.minX, y: panel.frame.maxY - mouse.y)
     }
 
     // MARK: - Internals
@@ -203,6 +259,7 @@ final class OverlayPresenter: SwitcherPresenting {
         let wasRunning = isVisible
         isVisible = true
         currentSource = source
+        anchorPointer()
 
         // Narrowing keeps whatever the session already decided, so holding the
         // leader and pressing a key does not restart the wait.

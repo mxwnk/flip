@@ -39,10 +39,14 @@ Recording only if you want thumbnails rather than icons.
 | `⌥ S` | jump straight to Spotify — one key per application, yours to choose |
 | `⌥` held, then a key | narrow the open grid to that application |
 | arrows, `esc` | move the selection, or give up |
+| the mouse | hover to select, click to confirm; click beside the grid to give up |
 | let go of `⌥` | focus what is selected, out of the Dock if it was minimised |
 
 Add `⇧` to any of those to go backwards. Let go within 150 ms and Flip switches
 without ever drawing the grid.
+
+The mouse only takes over once you actually move it, so a grid that opens under a
+resting pointer still does what the keyboard told it to.
 
 <p align="center">
   <img src="docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">

@@ -41,10 +41,13 @@ the catch is usually the reason something is not done yet.
       badge, since a window in the Dock cannot be captured. Committing one
       restores it.
 
-- [ ] **Mouse: hover to select, click to confirm.** The panel sets
-      `ignoresMouseEvents = true` today, so this is a deliberate reversal rather
-      than an addition. Careful with the non-activating panel: clicking must not
-      make Flip the active application.
+- [x] **Mouse: hover to select, click to confirm.** Hovering is handled in AppKit
+      rather than with SwiftUI's `onHover`, whose tracking area is only live while
+      its own application is active — and Flip never activates. It takes over only
+      once the pointer has actually moved, so a grid opening under a resting
+      pointer keeps the selection the keyboard just made, and so does every arrow
+      key afterwards. A click beside the grid gives up rather than committing
+      whatever happened to be under the ring.
 - [ ] **Close a window or quit an application from the overlay.** Select and press
       W or Q. The natural companion to a switcher, and the accessibility calls are
       already in place.
