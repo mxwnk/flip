@@ -65,14 +65,41 @@ final class RowMovementTests: XCTestCase {
         XCTAssertEqual(full.index(movingRowBy: -1, from: 2, count: 15), 12)
     }
 
-    /// Thirteen windows fill rows of 5, 5 and 3, so columns 3 and 4 have no tile
-    /// in the last row.
-    func testAGapInTheShortLastRowIsSkipped() {
-        XCTAssertEqual(ragged.index(movingRowBy: 1, from: 9, count: 13), 4)
-    }
-
     func testAColumnThatReachesTheShortRowUsesIt() {
         XCTAssertEqual(ragged.index(movingRowBy: 1, from: 7, count: 13), 12)
+    }
+
+    /// Thirteen windows fill rows of 5, 5 and 3, so columns 3 and 4 have no tile
+    /// in the last row. Landing on its last tile beats refusing to move: the row
+    /// is plainly there, and the nearest thing in it is where the eye goes.
+    func testAColumnPastTheShortRowLandsOnItsLastTile() {
+        XCTAssertEqual(ragged.index(movingRowBy: 1, from: 9, count: 13), 12)
+        XCTAssertEqual(ragged.index(movingRowBy: 1, from: 8, count: 13), 12)
+    }
+
+    /// Seven windows are a row of four above a row of three. Down from the end of
+    /// the top row has nothing beneath it, and used to stay put.
+    func testDownFromTheEndOfAnUnevenFirstRow() {
+        let uneven = OverlayLayout(count: 7, screen: screen)
+        XCTAssertEqual(uneven.columns, 4)
+
+        XCTAssertEqual(uneven.index(movingRowBy: 1, from: 3, count: 7), 6)
+    }
+
+    /// The same on the way back: wrapping upwards onto a short row clamps too.
+    func testUpOntoAShortRowClampsAsWell() {
+        let uneven = OverlayLayout(count: 7, screen: screen)
+
+        XCTAssertEqual(uneven.index(movingRowBy: -1, from: 3, count: 7), 6)
+        XCTAssertEqual(ragged.index(movingRowBy: -1, from: 4, count: 13), 12)
+    }
+
+    /// Clamping must not drag a column that does fit. Only the missing ones move.
+    func testAColumnThatFitsIsLeftAlone() {
+        let uneven = OverlayLayout(count: 7, screen: screen)
+
+        XCTAssertEqual(uneven.index(movingRowBy: 1, from: 1, count: 7), 5)
+        XCTAssertEqual(uneven.index(movingRowBy: -1, from: 5, count: 7), 1)
     }
 
     func testASingleRowHasNowhereToGo() {

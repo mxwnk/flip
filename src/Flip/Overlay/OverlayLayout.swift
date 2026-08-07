@@ -71,17 +71,21 @@ struct OverlayLayout {
     }
 
     /// Stepping `columns` places through the flat list only preserves the column
-    /// when the last row is full, so this walks rows and skips gaps.
+    /// when the last row is full, so this works in rows.
     func index(movingRowBy step: Int, from selected: Int, count: Int) -> Int {
+        guard count > 0 else { return selected }
+
         let column = selected % columns
-        var row = selected / columns
+        let row = selected / columns
+        let target = (row + step % rows + rows) % rows
+        let first = target * columns
+        guard first < count else { return selected }
 
-        for _ in 0..<rows {
-            row = (row + step % rows + rows) % rows
-            let candidate = row * columns + column
-            if candidate < count { return candidate }
-        }
+        // A short last row has no tile under the rightmost columns. Landing on
+        // its end beats skipping the row: the row is plainly there, so a key that
+        // does nothing reads as broken.
+        let last = min(first + columns, count) - 1
 
-        return selected
+        return min(first + column, last)
     }
 }
