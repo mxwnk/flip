@@ -58,7 +58,7 @@ bundle: build
 test:
 	DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
-## icon: redraw resources/Flip.icns from scripts/make-icon.swift
+## icon: redraw resources/Flip.icns and docs/icon.png
 # Committed rather than generated during a build: CI has to package the same icon
 # without redrawing it, and an .icns is small enough to keep in the repository.
 icon:

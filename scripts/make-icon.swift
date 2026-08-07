@@ -1,4 +1,5 @@
-// Draws Flip's application icon and packs it into resources/Flip.icns.
+// Draws Flip's application icon: resources/Flip.icns for the bundle and
+// docs/icon.png for the readme.
 //
 // A generator rather than a checked-in image, so the icon can be adjusted by
 // changing numbers instead of round-tripping through a drawing program — and so
@@ -159,5 +160,9 @@ guard iconutil.terminationStatus == 0 else {
     FileHandle.standardError.write(Data("iconutil failed\n".utf8))
     exit(1)
 }
+
+// The readme shows the same drawing. Written from here rather than exported by
+// hand, which is exactly how it came to be a version behind the application.
+try render(at: 512).write(to: root.appendingPathComponent("docs/icon.png"))
 
 print("wrote \(icns.path)")
