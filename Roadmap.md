@@ -126,10 +126,16 @@ the catch is usually the reason something is not done yet.
       silently. `CLAUDE.md` is one `@AGENTS.md` import, the way alt-tab-macos does
       it, so there is only ever one copy.
 - [ ] **German localisation.** The interface is English on a German machine.
-- [ ] **Update check.** The release pipeline exists; the app does not know about it.
-      Polling the GitHub releases API and offering the new disk image is small, and
+- [ ] **Update check.** `brew upgrade --cask flip` works, but the app itself does
+      not know a new version exists. Polling the GitHub releases API is small, and
       the stable designated requirement means an update keeps its privacy grants.
-- [ ] **Notarisation.** The blocker for installing on any Mac but this one. Needs an
-      Apple Developer ID, then one more step in the pipeline.
+- [ ] **Notarisation.** The cask strips the quarantine flag, which is fine for a
+      tap you chose to trust and not fine for anything wider — the official
+      homebrew-cask will not take an app that needs it. Needs an Apple Developer
+      ID, and re-signing changes the designated requirement, so every existing
+      install loses Accessibility and Screen Recording once.
+- [x] **Installable with Homebrew.** `brew install --cask mxwnk/flip/flip`, from
+      [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip). The release
+      pipeline bumps the cask through a deploy key scoped to that repository.
 - [x] **Pushes trigger the pipeline.** Fixed in the account's Actions settings;
       a push now builds and runs the tests without a manual dispatch.
