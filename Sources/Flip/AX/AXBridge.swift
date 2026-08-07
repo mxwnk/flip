@@ -49,6 +49,56 @@ enum AXBridge {
         return (raw as! AXUIElement)
     }
 
+    static func frame(of element: AXUIElement) -> CGRect? {
+        guard let origin = point(kAXPositionAttribute as String, of: element),
+              let size = size(kAXSizeAttribute as String, of: element)
+        else { return nil }
+
+        return CGRect(origin: origin, size: size)
+    }
+
+    /// Position, then size, then position again: a window moved to a display it
+    /// does not fit on gets clamped, and the second pass corrects for that.
+    static func setFrame(_ frame: CGRect, of element: AXUIElement) {
+        setPosition(frame.origin, of: element)
+        setSize(frame.size, of: element)
+        setPosition(frame.origin, of: element)
+    }
+
+    private static func point(_ attribute: String, of element: AXUIElement) -> CGPoint? {
+        guard let raw = value(attribute, of: element), CFGetTypeID(raw) == AXValueGetTypeID()
+        else { return nil }
+
+        var point = CGPoint.zero
+        guard AXValueGetValue(raw as! AXValue, .cgPoint, &point) else { return nil }
+
+        return point
+    }
+
+    private static func size(_ attribute: String, of element: AXUIElement) -> CGSize? {
+        guard let raw = value(attribute, of: element), CFGetTypeID(raw) == AXValueGetTypeID()
+        else { return nil }
+
+        var size = CGSize.zero
+        guard AXValueGetValue(raw as! AXValue, .cgSize, &size) else { return nil }
+
+        return size
+    }
+
+    private static func setPosition(_ point: CGPoint, of element: AXUIElement) {
+        var point = point
+        guard let wrapped = AXValueCreate(.cgPoint, &point) else { return }
+
+        AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, wrapped)
+    }
+
+    private static func setSize(_ size: CGSize, of element: AXUIElement) {
+        var size = size
+        guard let wrapped = AXValueCreate(.cgSize, &size) else { return }
+
+        AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, wrapped)
+    }
+
     /// Panels, sheets and popovers carry a different subrole.
     static func isStandardWindow(_ element: AXUIElement) -> Bool {
         string(kAXSubroleAttribute as String, of: element) == (kAXStandardWindowSubrole as String)

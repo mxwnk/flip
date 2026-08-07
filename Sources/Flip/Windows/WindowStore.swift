@@ -72,6 +72,31 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
+    /// Reads the window on the accessibility thread, works out the target on the
+    /// main one where NSScreen lives, then applies it back on the accessibility
+    /// thread. Two hops, but neither framework is touched from the wrong place.
+    func arrange(_ arrangement: WindowArrangement) {
+        thread.perform { [self] in
+            guard let element = focusedElement(), let current = AXBridge.frame(of: element)
+            else { return }
+
+            DispatchQueue.main.async { [self] in
+                guard let cocoa = ScreenGeometry.cocoa(fromTopLeft: current),
+                      let target = WindowArranger.target(for: arrangement, window: cocoa),
+                      let topLeft = ScreenGeometry.topLeft(fromCocoa: target)
+                else { return }
+
+                thread.perform { AXBridge.setFrame(topLeft, of: element) }
+            }
+        }
+    }
+
+    private func focusedElement() -> AXUIElement? {
+        if let id = lastFocusedID, let window = windows[id] { return window.element }
+
+        return windows.values.max { $0.focusOrder < $1.focusOrder }?.element
+    }
+
     // MARK: - Lifecycle
 
     @MainActor

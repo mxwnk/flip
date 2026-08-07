@@ -14,6 +14,10 @@ protocol SwitcherPresenting: AnyObject {
     /// Brings an application forward without opening the overlay.
     func reachApplication(_ bundleID: String)
 
+    /// Moves or resizes the focused window. Nothing to do with the overlay, but
+    /// the router speaks to one collaborator.
+    func arrangeWindow(_ arrangement: WindowArrangement)
+
     func move(by step: Int)
     func moveRow(by step: Int)
 

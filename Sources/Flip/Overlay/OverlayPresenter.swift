@@ -93,6 +93,10 @@ final class OverlayPresenter: SwitcherPresenting {
         store.focus(target)
     }
 
+    func arrangeWindow(_ arrangement: WindowArrangement) {
+        store.arrange(arrangement)
+    }
+
     func move(by step: Int) {
         guard isVisible, !model.windows.isEmpty else { return }
 

@@ -23,6 +23,15 @@ the catch is usually the reason something is not done yet.
 - [x] **Exclude applications.** Some applications are never worth switching to and
       only make the grid wider.
 
+## Moving windows
+
+- [x] **Halves, fill, and moving between displays.** Fixed keys for now, matching
+      what Rectangle's alternate set uses, so there is nothing to relearn.
+- [ ] **Configurable keys for the window actions.** The modifier is hard-coded;
+      it belongs in Settings next to the switcher's.
+- [ ] **Quarters, thirds, centre, and restore.** The obvious next helpings once the
+      geometry is trusted.
+
 ## Switcher behaviour
 
 - [x] **Minimised windows in Alt-Tab.** Listed with the application icon and a
