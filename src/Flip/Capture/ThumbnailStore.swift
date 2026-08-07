@@ -5,7 +5,13 @@ import ScreenCaptureKit
 
 /// Window thumbnails, captured concurrently and scaled by the GPU during capture.
 final class ThumbnailStore: @unchecked Sendable {
-    private static let target = CGSize(width: 600, height: 348)
+    /// Twice the tile, so a capture is still sharp on a retina display — and
+    /// derived rather than written out, because a tile that grew past a target
+    /// left behind would go soft with nothing to show for it.
+    private static let target = CGSize(
+        width: Theme.tileWidth * 2,
+        height: (Theme.tileWidth * Theme.thumbnailRatio).rounded(.down) * 2
+    )
 
     /// Still shown while stale; only capture is triggered.
     private static let refreshAfter: TimeInterval = 30

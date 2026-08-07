@@ -5,8 +5,11 @@ enum Theme {
     /// One row up to the first threshold, one more past each further one.
     static let rowThresholds = [5, 12]
 
-    static let tileWidth: CGFloat = 300
-    /// Thumbnail height relative to tile width.
+    /// A ceiling, not a size: tiles shrink below it as soon as the columns stop
+    /// fitting. It binds with few windows on a wide screen, which is exactly when
+    /// there is room to spare, so it is set generously.
+    static let tileWidth: CGFloat = 420
+    /// Thumbnail height relative to tile width. Near 16:9, which most windows are.
     static let thumbnailRatio: CGFloat = 0.58
     static let titleHeight: CGFloat = 34
     static let iconSize: CGFloat = 20

@@ -113,13 +113,13 @@ once at launch** and only ordered in and out, and thumbnails are captured ahead 
 time: at startup, and then for each window as it loses focus, which is when its
 contents are final and nobody is waiting.
 
-Measured with five windows open on a two-monitor machine:
+Measured with nine windows open on a two-monitor machine:
 
 | | |
 | --- | --- |
-| Opening the grid, thumbnails already there | **1.5–6 ms** |
+| Opening the grid, thumbnails already there | **6–10 ms** |
 | Resolving the window list | ~1 ms, no accessibility calls |
-| One capture | 67 ms for the first, ~8 ms for each after |
+| Warming every thumbnail at startup | ~230 ms for nine, in parallel |
 
 ## Building it yourself
 
