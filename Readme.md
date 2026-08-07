@@ -1,191 +1,131 @@
-# Flip
+<p align="center">
+  <img src="Docs/icon.png" width="120" alt="">
+</p>
 
-A window and application switcher for macOS. Agent app, no Dock icon, driven by
-a keyboard event tap.
+<h1 align="center">Flip</h1>
 
-Alt is the leader key:
+<p align="center">
+  A window switcher for macOS that gets out of the way.<br>
+  Hold Option, tap Tab. Let go before you can see it and it never draws at all.
+</p>
 
-| Keys | Effect |
-| --- | --- |
-| `Alt-Tab` | cycle every window on the current space |
-| `Cmd-Tab` | cycle the windows of the frontmost application |
-| `Alt-<letter>` | jump to a bound application, e.g. `Alt-S` for Spotify |
-| `Alt` held, `<letter>` | narrow the open overlay to that application |
-| release `Alt` | focus the selection, restoring it from the Dock if minimised |
+<p align="center">
+  <img src="Docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
+</p>
 
-## Status
-
-Working and in daily use. Hotkeys, shortcuts and exclusions are configurable from
-the menu bar; the rest is in [Roadmap.md](Roadmap.md).
-
-- [x] Signed with a stable identity, so TCC grants survive an update
-- [x] Event tap and key router, including Cmd-Tab ahead of the Dock
-- [x] Window model driven by `AXObserver`, most-recently-used order
-- [x] Overlay panel with thumbnails, on whichever screen is active
-- [x] Menu bar item, settings window, signed disk image
-- [ ] Minimised windows and fullscreen spaces still to check
-
-### Numbers
-
-Measured on a two-monitor machine with five windows open:
+## Keys
 
 | | |
 | --- | --- |
-| Opening the overlay, thumbnails present | **1.5–6 ms** |
+| `⌥ Tab` | every window on the current space, most recently used first |
+| `⌘ Tab` | the windows of whichever application is in front |
+| `⌥ S` | jump straight to Spotify — one key per application, yours to choose |
+| `⌥` held, then a key | narrow the open grid to that application |
+| arrows, `esc` | move the selection, or give up |
+| let go of `⌥` | focus what is selected, out of the Dock if it was minimised |
+
+Add `⇧` to any of those to go backwards.
+
+## Why it is quick
+
+Nothing is asked for at the moment you press the key.
+
+The window list is not queried but **maintained** — `AXObserver` notifications keep
+it current on a thread of its own, with a half-second messaging timeout per
+application, so an unresponsive app becomes a missing window rather than a frozen
+switcher. Opening the grid costs one lock and one window server call.
+
+The **event tap owns a thread and a runloop**. macOS quietly disables a tap whose
+callback misses its deadline, and the main thread is where rendering and window
+server round trips live. The callback itself compares a keycode.
+
+The **panel is built once at launch** and only ordered in and out. Thumbnails are
+captured through ScreenCaptureKit ahead of time — at startup, and then for each
+window as it loses focus, which is when its contents are final and nobody is
+waiting.
+
+Measured with five windows open on a two-monitor machine:
+
+| | |
+| --- | --- |
+| Opening the grid, thumbnails already there | **1.5–6 ms** |
 | Resolving the window list | ~1 ms, no accessibility calls |
-| One thumbnail capture | 67 ms for the first, then ~8 ms each |
-| Five captures from cold | ~170 ms, none of it on the main thread |
+| One capture | 67 ms for the first, ~8 ms for each after |
 
-The capture numbers only matter when the cache is cold, which it rarely is: it is
-warmed at startup and then for each window as it loses focus — the moment its
-contents are final and nobody is waiting. By the time the overlay opens the
-images are already there, which is the first row.
+## Settings
 
-## Design
+**Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.
 
-Three decisions carry most of the behaviour:
+**General** — the two hotkeys, how long Option must be held before the grid
+appears, thumbnails or plain icons, and whether Flip starts at login. Turning
+thumbnails off removes the Screen Recording requirement entirely rather than
+merely hiding the images.
 
-- **The window model is maintained, not queried.** `AXObserver` notifications
-  keep it current on a thread of its own, with a 0.5 s messaging timeout per
-  application, so an unresponsive app degrades into a missing window rather than
-  a frozen switcher. Opening the switcher costs one lock and one window server
-  call.
-- **The event tap owns a thread and a runloop.** macOS quietly disables a tap
-  whose callback misses its deadline, and the main thread is where rendering and
-  window server round trips live. The callback itself is a keycode comparison.
-- **The overlay panel is built once and kept.** Showing it is an `orderFront`,
-  hiding it an `orderOut`; nothing is allocated on the hot path.
+**Shortcuts** — one key per application. The editor warns when a key would shadow
+a character you need: on a German layout every alphanumeric key produces something
+with Option, but only nine produce printable ASCII — `[ ] { } | @ ~ ' .` — and
+those are the ones worth protecting.
+
+**Excluded** — applications kept out of the grid. A key bound directly to one
+still reaches it.
+
+Both live as readable JSON in `~/Library/Application Support/Flip/`, and edits
+made by hand are picked up while Flip runs.
+
+**Pause** in the menu bar disables the event tap itself, so macOS gets `⌘ Tab`
+back for as long as a screen share lasts. It is not remembered across restarts.
 
 ## Requirements
 
-macOS 14 or newer, and the Swift toolchain from the Command Line Tools. Xcode is
-not needed — SwiftPM compiles, the Makefile assembles the bundle.
+macOS 14 or newer. Flip needs Accessibility to read windows and install the tap,
+and Screen Recording only for thumbnails.
 
 ## Build
 
 ```sh
 make cert       # once, interactive: creates the signing identity
-make run        # build, install, launch
-make logs       # follow along
-make verify     # check the designated requirement has not drifted
+make run        # build, sign, install to ~/Applications, launch
+make test       # 30 unit tests
+make logs       # follow along; almost everything interesting is logged
 ```
 
-Starting at login is a switch in Settings › General, not a Makefile target. The
-launch agent ships inside the app bundle and the app registers it through
-`SMAppService`, which puts it under System Settings › Login Items and resolves the
-executable against the bundle, so moving Flip cannot leave an agent pointing at
-nothing. Its `KeepAlive` is deliberately `SuccessfulExit: false` rather than
-`true`: a crash should bring Flip back, quitting on purpose should not.
+SwiftPM compiles and the Makefile assembles the bundle, so Xcode is needed only
+for the tests.
 
-Nothing is ever started straight from a shell. Launching the binary from a
-terminal makes the terminal the responsible process for TCC, and the privacy
-grants get attributed to it rather than to Flip, which is why `make run` goes
-through `open`.
+Nothing is ever started straight from a shell: that would make the terminal the
+responsible process for TCC and attribute the privacy grants to it rather than to
+Flip.
 
-The menu bar item is the only visible surface: it reports both privacy grants,
-offers the privacy pane when one is missing, pauses, opens Settings, and quits.
-Pausing disables the event tap itself rather than ignoring events, so macOS gets
-Cmd-Tab back for as long as it lasts. It is not remembered across restarts. Its icon turns into a warning triangle when a grant goes away, which is
-worth having — a switcher that has lost Accessibility is indistinguishable from a
-broken keyboard.
+### The signing identity
 
-## Settings
+`make cert` creates a self-signed certificate and trusts it for code signing.
+This is not ceremony. TCC keys a privacy grant to the app's designated
+requirement, and for an ad-hoc signature that requirement contains the code
+directory hash — which changes on every build. Accessibility and Screen Recording
+would have to be granted again after every install.
 
-**Settings…** in the menu bar, or ⌘, — three tabs, and every change applies as you
-make it. There is nothing to save.
-
-**General** carries the two hotkeys, how long the leader must be held before the
-overlay appears, whether tiles show thumbnails or only icons, and whether Flip
-starts at login. The delay is what makes a quick Alt-Tab switch with nothing drawn
-at all: the selection is made immediately, only showing it waits. Turning thumbnails off drops the Screen
-Recording requirement entirely rather than merely hiding the images.
-
-**Excluded** keeps applications out of the window list. A key bound directly to one
-still reaches it: naming an application is an explicit request, and refusing that
-would be surprising.
-
-**Shortcuts** edits the application bindings. They live in `~/Library/Application Support/Flip/bindings.json`, seeded from
-`DefaultBindings` on first run and readable enough to keep with your dotfiles:
-
-```json
-{ "bundleID": "com.spotify.client", "key": "s", "usesLeader": true }
-```
-
-`usesLeader: false` means the key reaches the application with no modifier at
-all — that is how F1 gets to Ghostty, and it takes F1 away from every other
-application. Keys that no character can type, the function keys, can only be
-written by name and only in the file.
-
-Edits made by hand are picked up while Flip runs. Watching for them needs both a
-file watch and a directory watch in effect: an editor that overwrites in place
-leaves the directory untouched, while an atomic save replaces the inode and
-strands a file watch — so the file is watched and the watch is rebuilt whenever it
-is replaced. Settings are not watched; they are only read at launch.
-
-### The warning about shadowed characters
-
-A binding swallows its key globally, so binding one that Option already uses
-takes that character away everywhere. Warning about "this key produces a
-character" would be useless — on a German layout every alphanumeric key does, 40
-out of 40, but they produce ç, €, ƒ, © and other things nobody types.
-
-The nine that matter are the ones whose Option layer is printable ASCII: on this
-layout `[ ] { } | @ ~ ' .`, which is exactly the set a programmer needs. Those
-are what the editor warns about, and only those.
-
-## Installing on another Mac
-
-```sh
-make dmg        # build/Flip-<version>.dmg
-```
-
-Gatekeeper will not like it. The bundle is signed with the self-signed identity
-from `make cert`, which is trusted only on the machine that created it, and it is
-not notarised — so on any other Mac it opens only via right-click > Open, once.
-Distributing it properly means an Apple Developer ID and notarisation.
-
+Signing against a certificate pins the requirement to the bundle identifier and
+the certificate instead. `make verify` checks it against
+`Resources/designated-requirement.txt`, and the release pipeline refuses to
+package a build where it has drifted.
 
 ## Releasing
 
-Every push builds. Pushing a `v*` tag additionally signs, packages and publishes
-a GitHub release with the disk image attached:
+Every push builds and tests. Pushing a `v*` tag also signs, packages and
+publishes a release with the disk image attached:
 
 ```sh
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
-The pipeline signs with the same certificate as a local build, held as the
-repository secrets `SIGNING_CERTIFICATE_P12` (base64 of the `.p12`) and
-`SIGNING_CERTIFICATE_PASSWORD`. That is what makes an update an update rather
-than a new application as far as TCC is concerned — and `make verify` asserts it
-before anything is packaged, comparing the bundle's designated requirement
-against `Resources/designated-requirement.txt`. A drifted requirement fails the
-release instead of silently revoking everyone's privacy grants.
+Gatekeeper will not like that image on another Mac: it is signed with a
+self-signed certificate and not notarised, so it opens via right-click › Open,
+once.
 
-Worth knowing about that key: anything able to use it can sign as
-`dev.mxwnk.Flip`, and macOS will hand that signature Flip's Accessibility grant.
-Keep the secrets to this repository. If they ever leak, `make uncert`, a fresh
-`make cert`, an updated `designated-requirement.txt` and one round of re-granting
-in System Settings is the whole recovery.
+## Roadmap
 
-## The signing identity
-
-`make cert` creates a self-signed certificate and trusts it for code signing.
-This is not ceremony. TCC keys a privacy grant to the app's designated
-requirement, and for an ad-hoc signature that requirement contains the code
-directory hash — which changes on every build. Accessibility and Screen
-Recording would have to be granted again after each `make install`.
-
-Signing against a certificate pins the requirement to the bundle identifier and
-the certificate instead. Check that it holds:
-
-```sh
-make verify     # prints the designated requirement; must not change on rebuild
-```
-
-The certificate is trusted only for code signing, and the key is scoped to
-`codesign` rather than imported with `-A`: anything signed as `dev.mxwnk.Flip`
-would inherit Flip's Accessibility grant.
+Open ideas and known gaps live in [Roadmap.md](Roadmap.md); conventions for
+working on this in [AGENTS.md](AGENTS.md).
 
 ## License
 
