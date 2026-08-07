@@ -1,7 +1,7 @@
 # Flip
 
 A native window and application switcher. Agent app, no Dock icon, driven by a
-CGEventTap. macOS 14+, SwiftPM, no Xcode.
+CGEventTap. macOS 14+, built with SwiftPM; Xcode is needed only for the tests.
 
 # Build
 
