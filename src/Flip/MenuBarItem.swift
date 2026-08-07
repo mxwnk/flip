@@ -6,18 +6,22 @@ final class MenuBarItem: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
     private var isPaused = false
+    private var availableUpdate: String?
     private let onShowSettings: () -> Void
+    private let onShowUpdate: () -> Void
     private let onShowAbout: () -> Void
     private let onCopyDiagnostics: () -> Void
     private let onTogglePause: () -> Void
 
     init(
         onShowSettings: @escaping () -> Void,
+        onShowUpdate: @escaping () -> Void,
         onShowAbout: @escaping () -> Void,
         onCopyDiagnostics: @escaping () -> Void,
         onTogglePause: @escaping () -> Void
     ) {
         self.onShowSettings = onShowSettings
+        self.onShowUpdate = onShowUpdate
         self.onShowAbout = onShowAbout
         self.onCopyDiagnostics = onCopyDiagnostics
         self.onTogglePause = onTogglePause
@@ -54,6 +58,14 @@ final class MenuBarItem: NSObject {
         let header = NSMenuItem(title: "Flip \(Bundle.main.shortVersion)", action: nil, keyEquivalent: "")
         header.isEnabled = false
         menu.addItem(header)
+
+        // Directly under the version, which is where anyone wondering whether
+        // they are current would look. The menu bar icon is left alone: it means
+        // something is wrong, and an update is not that.
+        if let availableUpdate {
+            menu.addItem(action("Update to \(availableUpdate)…", #selector(openReleasePage)))
+        }
+
         menu.addItem(.separator())
 
         menu.addItem(grant("Accessibility", status.accessibility))
@@ -103,6 +115,17 @@ final class MenuBarItem: NSObject {
 
     @objc private func showSettings() {
         onShowSettings()
+    }
+
+    /// Rebuilt rather than mutated: the menu is cheap and rebuilding it is how
+    /// every other change here already works.
+    func showUpdate(available version: String?) {
+        availableUpdate = version
+        item.menu = buildMenu()
+    }
+
+    @objc private func openReleasePage() {
+        onShowUpdate()
     }
 
     @objc private func showAbout() {

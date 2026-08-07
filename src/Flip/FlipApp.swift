@@ -30,6 +30,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private let bindings = BindingStore()
     private let settings = SettingsStore()
     private lazy var settingsWindow = SettingsWindow(settings: settings, bindings: bindings)
+    private lazy var updates = UpdateChecker(settings: settings)
     private lazy var aboutWindow = AboutWindow(
         onCopyDiagnostics: { [weak self] in self?.diagnostics() ?? "" }
     )
@@ -60,6 +61,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         menuBar = MenuBarItem(
             onShowSettings: { [weak self] in self?.settingsWindow.show() },
+            onShowUpdate: { NSWorkspace.shared.open(UpdateChecker.releases) },
             onShowAbout: { [weak self] in self?.aboutWindow.show() },
             onCopyDiagnostics: { [weak self] in
                 guard let self else { return }
@@ -70,6 +72,13 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             onTogglePause: { [weak self] in self?.togglePause() }
         )
         menuBar?.update(for: status, paused: isPaused)
+
+        updates.onFound = { [weak self] in
+            guard let self else { return }
+
+            menuBar?.showUpdate(available: updates.available)
+        }
+        updates.start()
 
         frontmost.startObserving()
         startWindowStoreIfPermitted()

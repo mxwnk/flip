@@ -206,3 +206,48 @@ final class BindingStoreTests: XCTestCase {
         XCTAssertEqual(store.bindings.count, before - 1)
     }
 }
+
+final class VersionComparisonTests: XCTestCase {
+    /// The one that a string comparison gets wrong, and the reason this is not
+    /// simply `latest > current`.
+    func testTenIsNewerThanNine() {
+        XCTAssertTrue(UpdateChecker.isNewer("0.10.0", than: "0.9.0"))
+        XCTAssertFalse(UpdateChecker.isNewer("0.9.0", than: "0.10.0"))
+    }
+
+    func testTheLeadingVOfATagIsIgnored() {
+        XCTAssertTrue(UpdateChecker.isNewer("v0.3.0", than: "0.2.0"))
+        XCTAssertFalse(UpdateChecker.isNewer("v0.2.0", than: "0.2.0"))
+    }
+
+    func testTheSameVersionIsNotAnUpdate() {
+        for version in ["0.2.0", "1.0", "3.4.5"] {
+            XCTAssertFalse(UpdateChecker.isNewer(version, than: version), version)
+        }
+    }
+
+    /// A development build running ahead of the last release must stay quiet.
+    func testABuildAheadOfTheReleaseSeesNothing() {
+        XCTAssertFalse(UpdateChecker.isNewer("0.2.0", than: "0.3.0"))
+    }
+
+    func testMissingComponentsCountAsZero() {
+        XCTAssertTrue(UpdateChecker.isNewer("0.3", than: "0.2.9"))
+        XCTAssertFalse(UpdateChecker.isNewer("0.2", than: "0.2.1"))
+        XCTAssertFalse(UpdateChecker.isNewer("1.0.0", than: "1"))
+    }
+
+    /// Anything unparseable reads as zero, so a mangled tag can never look like
+    /// an upgrade and pester everyone into clicking it.
+    func testAMangledTagIsNotAnUpgrade() {
+        for tag in ["", "latest", "v", "nightly-build"] {
+            XCTAssertFalse(UpdateChecker.isNewer(tag, than: "0.2.0"), tag)
+        }
+    }
+
+    func testAFileMissingTheUpdateKeyStillChecks() throws {
+        let json = Data(#"{"leader":"option"}"#.utf8)
+
+        XCTAssertTrue(try JSONDecoder().decode(Settings.self, from: json).checkForUpdates)
+    }
+}

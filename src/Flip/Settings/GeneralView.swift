@@ -60,6 +60,14 @@ struct GeneralView: View {
             }
 
             Section {
+                Toggle("Check for updates", isOn: $settings.settings.checkForUpdates)
+            } footer: {
+                Text("Asks GitHub once a day whether a newer release exists, and says so in the menu. Nothing is downloaded or installed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Toggle("Start Flip at login", isOn: $startsAtLogin)
                     .onChange(of: startsAtLogin) { _, enabled in
                         LoginItem.setEnabled(enabled)

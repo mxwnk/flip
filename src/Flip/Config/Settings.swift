@@ -76,6 +76,9 @@ struct Settings: Codable, Equatable {
     /// Off lists only what is on the space you are looking at.
     var showWindowsFromEverySpace = false
 
+    /// The only thing Flip ever sends a request for.
+    var checkForUpdates = true
+
     /// Kept out of the all-windows list. A key bound directly still reaches them.
     var excludedBundleIDs: [String] = []
 
@@ -101,6 +104,8 @@ struct Settings: Codable, Equatable {
         showWindowsFromEverySpace = try container
             .decodeIfPresent(Bool.self, forKey: .showWindowsFromEverySpace)
             ?? defaults.showWindowsFromEverySpace
+        checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates)
+            ?? defaults.checkForUpdates
         excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)
             ?? defaults.excludedBundleIDs
     }

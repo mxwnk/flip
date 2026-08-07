@@ -81,12 +81,17 @@ square on a German keyboard too, which `y u h j` does not.
 
 - **General** — the two hotkeys, how long Option must be held before the grid
   appears, thumbnails or plain icons, whether to list windows from every space,
-  and whether Flip starts at login.
+  whether to check for updates, and whether Flip starts at login.
 - **Shortcuts** — one key per application. The editor warns when a key would
   shadow a character you need to type.
 - **Windows** — the keys above, listed so they can be found without this file.
 - **Excluded** — applications kept out of the grid. A key bound directly to one
   still reaches it.
+
+Flip asks GitHub once a day whether a newer release exists and says so in the
+menu. It never downloads or installs anything — updating is `brew upgrade --cask
+flip`, or the disk image from the release it points at. That is the only request
+Flip ever makes, and it can be turned off.
 
 **Pause** hands `⌘ Tab` back to macOS for as long as a screen share lasts.
 **About Flip** has the version and the licence, and **Copy Diagnostics** puts the
@@ -121,7 +126,7 @@ Measured with five windows open on a two-monitor machine:
 ```sh
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
-make test       # 70 unit tests
+make test       # 78 unit tests
 make logs       # follow along; almost everything interesting is logged
 ```
 

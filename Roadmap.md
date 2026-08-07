@@ -90,7 +90,7 @@ the catch is usually the reason something is not done yet.
 
 ## Quality
 
-- [x] **Unit tests.** 70 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
+- [x] **Unit tests.** 78 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
       `AppBinding`, `Modifiers` and `WindowArrangement` — the logic that does not
       need a running Mac, including the overlay's hit test.
       They found one bug immediately: synthesised `Codable` requires every key, so
@@ -158,9 +158,18 @@ the catch is usually the reason something is not done yet.
       silently. `CLAUDE.md` is one `@AGENTS.md` import, the way alt-tab-macos does
       it, so there is only ever one copy.
 - [ ] **German localisation.** The interface is English on a German machine.
-- [ ] **Update check.** `brew upgrade --cask flip` works, but the app itself does
-      not know a new version exists. Polling the GitHub releases API is small, and
-      the stable designated requirement means an update keeps its privacy grants.
+- [x] **Update check.** Once a day against the GitHub releases API, and the answer
+      is one menu item. Deliberately no self-installing: Homebrew owns the copy it
+      installed, and an application that replaced itself underneath would leave the
+      cask stale and get downgraded by the next `brew upgrade` — the way around
+      that is `auto_updates true`, which hands the whole job to the app forever.
+      Not worth it for a check that takes eighty lines.
+- [ ] **Installing the update too.** Everything needed is already here: the disk
+      image is on the release, and the designated requirement is pinned and checked
+      in CI, so a downloaded bundle can be verified against exactly the requirement
+      TCC keys its grants to — no second signing key, which is most of what Sparkle
+      would be for. What it costs is the Homebrew arrangement above and an
+      application that replaces itself while running.
 - [ ] **Notarisation.** The cask strips the quarantine flag, which is fine for a
       tap you chose to trust and not fine for anything wider — the official
       homebrew-cask will not take an app that needs it. Needs an Apple Developer
