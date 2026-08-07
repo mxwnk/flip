@@ -36,6 +36,7 @@ Add `⇧` to any of those to go backwards.
 | --- | --- |
 | `⌃⌥←` `⌃⌥→` | left or right half |
 | `⌃⌥↑` `⌃⌥↓` | top or bottom half |
+| `⌃⌥U` `⌃⌥I` `⌃⌥J` `⌃⌥K` | the four quarters |
 | `⌃⌥↩` | fill the screen |
 | `⇧⌥←` `⇧⌥→` | previous or next display, keeping the window's place on it |
 
@@ -48,6 +49,11 @@ Command is beginning and end of line in every text field there is.
 
 Moving between displays takes `⇧⌥` and the arrows, which macOS otherwise uses to
 extend a selection by word. A deliberate trade.
+
+Corners take letters because four corners need four keys and arrows only offer two
+axes. `u i j k` sit as a square on the keyboard; the obvious vim choice does not —
+`y u / h j` looks square on a US layout but types `z u / h j` on a German one,
+which would put the top left corner on the wrong key.
 
 `fn` is ignored throughout. Apple keyboards set it for whole groups of keys — the
 F-row and the arrows both carry it — so treating it as meaningful would mean no
@@ -115,7 +121,7 @@ and Screen Recording only for thumbnails.
 ```sh
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
-make test       # 52 unit tests
+make test       # 59 unit tests
 make logs       # follow along; almost everything interesting is logged
 ```
 

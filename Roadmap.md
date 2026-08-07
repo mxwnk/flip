@@ -29,11 +29,9 @@ the catch is usually the reason something is not done yet.
       what Rectangle's alternate set uses, so there is nothing to relearn.
 - [ ] **Configurable keys for the window actions.** The modifier is hard-coded;
       it belongs in Settings next to the switcher's.
-- [ ] **Quarters, addressed with letters rather than arrows.** Four corners need
-      four keys, and arrows only offer two axes. Either `h j k l` in the vim sense,
-      or the `u i j k` block Rectangle uses, whose physical layout already forms the
-      2×2 the action describes. `⌃⌥` with letters is free — the leader is Option on
-      its own.
+- [x] **Quarters on `⌃⌥` and `u i j k`.** Letters rather than arrows, because four
+      corners need four keys. Not the vim four: `y u / h j` is only a square on a US
+      layout, and types `z u / h j` on a German one.
 - [ ] **Thirds, centre, and restore.** The rest of the usual set, once quarters
       have settled which key scheme wins.
 

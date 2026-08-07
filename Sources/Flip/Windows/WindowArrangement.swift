@@ -7,6 +7,10 @@ enum WindowArrangement: CaseIterable {
     case rightHalf
     case topHalf
     case bottomHalf
+    case topLeftQuarter
+    case topRightQuarter
+    case bottomLeftQuarter
+    case bottomRightQuarter
     case maximize
     case previousDisplay
     case nextDisplay
@@ -36,6 +40,12 @@ extension WindowArrangement {
     /// Fixed for now. Every single modifier is already spoken for with the arrow
     /// keys — Option moves by word, Control switches spaces, fn is Home and End,
     /// and Command is start and end of line — so two of them is what is left.
+    ///
+    /// Corners take letters rather than arrows: four corners need four keys and
+    /// arrows only offer two axes. `u i j k` because those four sit as a square on
+    /// the keyboard, which the obvious vim choice does not — `y u / h j` looks like
+    /// a square on a US layout but types `z u / h j` on a German one, putting the
+    /// top left corner on the wrong key.
     static let shortcuts: [WindowShortcut] = {
         let halves: CGEventFlags = [.maskControl, .maskAlternate]
         let displays: CGEventFlags = [.maskShift, .maskAlternate]
@@ -49,6 +59,14 @@ extension WindowArrangement {
                            keyCode: CGKeyCode(kVK_UpArrow), name: "Top half", keys: "⌃⌥↑"),
             WindowShortcut(arrangement: .bottomHalf, modifiers: halves,
                            keyCode: CGKeyCode(kVK_DownArrow), name: "Bottom half", keys: "⌃⌥↓"),
+            WindowShortcut(arrangement: .topLeftQuarter, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_ANSI_U), name: "Top left quarter", keys: "⌃⌥U"),
+            WindowShortcut(arrangement: .topRightQuarter, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_ANSI_I), name: "Top right quarter", keys: "⌃⌥I"),
+            WindowShortcut(arrangement: .bottomLeftQuarter, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_ANSI_J), name: "Bottom left quarter", keys: "⌃⌥J"),
+            WindowShortcut(arrangement: .bottomRightQuarter, modifiers: halves,
+                           keyCode: CGKeyCode(kVK_ANSI_K), name: "Bottom right quarter", keys: "⌃⌥K"),
             WindowShortcut(arrangement: .maximize, modifiers: halves,
                            keyCode: CGKeyCode(kVK_Return), name: "Fill the screen", keys: "⌃⌥↩"),
             WindowShortcut(arrangement: .previousDisplay, modifiers: displays,
@@ -88,6 +106,14 @@ enum WindowArranger {
             return CGRect(x: area.minX, y: area.midY, width: area.width, height: area.height / 2)
         case .bottomHalf:
             return CGRect(x: area.minX, y: area.minY, width: area.width, height: area.height / 2)
+        case .topLeftQuarter:
+            return CGRect(x: area.minX, y: area.midY, width: area.width / 2, height: area.height / 2)
+        case .topRightQuarter:
+            return CGRect(x: area.midX, y: area.midY, width: area.width / 2, height: area.height / 2)
+        case .bottomLeftQuarter:
+            return CGRect(x: area.minX, y: area.minY, width: area.width / 2, height: area.height / 2)
+        case .bottomRightQuarter:
+            return CGRect(x: area.midX, y: area.minY, width: area.width / 2, height: area.height / 2)
         case .maximize:
             return area
         case .nextDisplay, .previousDisplay:
