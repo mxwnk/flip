@@ -117,7 +117,7 @@ jobs:
           ### Installing
 
           ```sh
-          brew install --cask mxwnk/flip/flip
+          brew install --cask mxwnk/tap/flip
           ```
 
           Or take the disk image below. Flip is signed with its own certificate
@@ -163,7 +163,7 @@ jobs:
           chmod 600 "$KEY"
           export GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 
-          git clone --depth 1 git@github.com:mxwnk/homebrew-flip.git "$RUNNER_TEMP/tap"
+          git clone --depth 1 git@github.com:mxwnk/homebrew-tap.git "$RUNNER_TEMP/tap"
           cd "$RUNNER_TEMP/tap"
 
           # Anchored to the start of the line so nothing in the comments or the

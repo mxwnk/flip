@@ -75,7 +75,7 @@ the tag, so they are written and reviewed with the change rather than assembled
 from commit subjects afterwards. A tag with no section still releases, with a
 warning.
 
-The cask lives in [mxwnk/homebrew-flip](https://github.com/mxwnk/homebrew-flip)
+The cask lives in [mxwnk/homebrew-tap](https://github.com/mxwnk/homebrew-tap)
 and is never edited by hand. Bumping it uses a deploy key held as
 `HOMEBREW_TAP_DEPLOY_KEY`, which can write to the tap and to nothing else. Without
 it the release still goes out and the cask stays where it was, with a warning in

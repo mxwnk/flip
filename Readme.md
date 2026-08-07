@@ -22,7 +22,7 @@
 ## Install
 
 ```sh
-brew install --cask mxwnk/flip/flip
+brew install --cask mxwnk/tap/flip
 ```
 
 Or take the disk image from the [latest
