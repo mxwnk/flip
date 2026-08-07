@@ -81,6 +81,9 @@ square on a German keyboard too, which `y u h j` does not.
   still reaches it.
 
 **Pause** hands `⌘ Tab` back to macOS for as long as a screen share lasts.
+**About Flip** has the version and the licence, and **Copy Diagnostics** puts the
+version, both grants, every setting and Flip's recent log on the clipboard — enough
+to report a problem without opening a terminal.
 
 Everything is readable JSON in `~/Library/Application Support/Flip/`, and edits
 made by hand are picked up while Flip runs.
@@ -110,7 +113,7 @@ Measured with five windows open on a two-monitor machine:
 ```sh
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
-make test       # 59 unit tests
+make test       # 64 unit tests
 make logs       # follow along; almost everything interesting is logged
 ```
 

@@ -72,8 +72,9 @@ the catch is usually the reason something is not done yet.
 
 ## Quality
 
-- [x] **Unit tests.** 30 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
-      `AppBinding` and `Modifiers` — the logic that does not need a running Mac.
+- [x] **Unit tests.** 64 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
+      `AppBinding`, `Modifiers` and `WindowArrangement` — the logic that does not
+      need a running Mac, including the overlay's hit test.
       They found one bug immediately: synthesised `Codable` requires every key, so
       adding a setting made existing files unreadable and reset them.
 - [ ] **Fullscreen spaces.** Untested. A full-screen application is its own space
@@ -87,8 +88,12 @@ the catch is usually the reason something is not done yet.
       the Dock gets Cmd-Tab back. Not persisted: pausing is for the length of a
       screen share, and a switcher that silently does nothing after a restart would
       be worse than one that resumed.
-- [ ] **Diagnostics.** A menu item that copies versions, grants, binding count and
-      recent log lines, so a problem can be reported without a terminal.
+- [x] **Diagnostics.** **Copy Diagnostics** in the menu puts version, bundle path,
+      macOS build, both grants, every setting, the shortcut count and Flip's last
+      ten minutes of log on the clipboard. Read through `OSLogStore` scoped to the
+      current process, which needs no entitlement — `OSLogStore.local()` would want
+      one Flip has no business holding. The bundle path is in there because a
+      Homebrew install and a `make run` build answer to the same name.
 
 ## Showing it off
 
@@ -117,7 +122,13 @@ the catch is usually the reason something is not done yet.
 
 ## Project
 
-- [x] **LICENSE.** MIT.
+- [x] **LICENSE.** MIT. The year is read out of `LICENSE` by the Makefile and
+      written into `Info.plist`, so the about window cannot drift from the document
+      that actually grants anything.
+- [x] **About window.** Version, repository, licence and copyright. The local
+      version now comes from the latest tag rather than a constant in the Makefile,
+      because a diagnostic report claiming a version it is nowhere near is worse
+      than no report.
 - [x] **Application icon.** Drawn by `scripts/make-icon.swift` and committed as
       `resources/Flip.icns`, so CI packages the same icon without redrawing it.
       The motif is the overlay's own: two offset window tiles, the front one

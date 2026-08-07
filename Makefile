@@ -1,7 +1,13 @@
 APP_NAME  := Flip
 BUNDLE_ID := dev.mxwnk.Flip
 IDENTITY  := Flip Local Signing
-VERSION   := 0.1.0
+# The latest tag, so a local build does not report a version it is nowhere near
+# and a diagnostic report can be believed. The pipeline passes VERSION from the
+# tag being released, which overrides this.
+VERSION   := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo 0.0.0)
+# Read rather than repeated: LICENSE is the document that actually grants
+# anything, so the year belongs there and nowhere else.
+COPYRIGHT := $(shell grep -m1 '^Copyright' LICENSE)
 
 BINARY    := .build/release/$(APP_NAME)
 BUNDLE      := build/$(APP_NAME).app
@@ -37,6 +43,7 @@ bundle: build
 		$(BUNDLE)/Contents/Library/LaunchAgents
 	cp $(BINARY) $(BUNDLE)/Contents/MacOS/$(APP_NAME)
 	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' \
+		-e 's|@COPYRIGHT@|$(COPYRIGHT)|g' \
 		resources/Info.plist > $(BUNDLE)/Contents/Info.plist
 	# Registered by the app through SMAppService, not installed by this Makefile,
 	# which is why it ships inside the bundle.

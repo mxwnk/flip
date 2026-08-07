@@ -30,6 +30,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private let bindings = BindingStore()
     private let settings = SettingsStore()
     private lazy var settingsWindow = SettingsWindow(settings: settings, bindings: bindings)
+    private lazy var aboutWindow = AboutWindow(
+        onCopyDiagnostics: { [weak self] in self?.diagnostics() ?? "" }
+    )
 
     static func main() {
         let delegate = FlipApp()
@@ -57,6 +60,13 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         menuBar = MenuBarItem(
             onShowSettings: { [weak self] in self?.settingsWindow.show() },
+            onShowAbout: { [weak self] in self?.aboutWindow.show() },
+            onCopyDiagnostics: { [weak self] in
+                guard let self else { return }
+
+                Diagnostics.copyToPasteboard(diagnostics())
+                log.notice("diagnostics copied to the clipboard")
+            },
             onTogglePause: { [weak self] in self?.togglePause() }
         )
         menuBar?.update(for: status, paused: isPaused)
@@ -82,6 +92,16 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         // Accessibility usually arrives after the first launch.
         startWindowStoreIfPermitted()
         startInputIfPermitted()
+    }
+
+    private func diagnostics() -> String {
+        Diagnostics.report(
+            status: status,
+            isPaused: isPaused,
+            settings: settings.settings,
+            bindingCount: bindings.bindings.count,
+            windowCount: store.currentSpaceWindows(includingMinimized: true).count
+        )
     }
 
     private func togglePause() {

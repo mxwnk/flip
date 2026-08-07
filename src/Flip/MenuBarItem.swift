@@ -7,10 +7,19 @@ final class MenuBarItem: NSObject {
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
     private var isPaused = false
     private let onShowSettings: () -> Void
+    private let onShowAbout: () -> Void
+    private let onCopyDiagnostics: () -> Void
     private let onTogglePause: () -> Void
 
-    init(onShowSettings: @escaping () -> Void, onTogglePause: @escaping () -> Void) {
+    init(
+        onShowSettings: @escaping () -> Void,
+        onShowAbout: @escaping () -> Void,
+        onCopyDiagnostics: @escaping () -> Void,
+        onTogglePause: @escaping () -> Void
+    ) {
         self.onShowSettings = onShowSettings
+        self.onShowAbout = onShowAbout
+        self.onCopyDiagnostics = onCopyDiagnostics
         self.onTogglePause = onTogglePause
         super.init()
 
@@ -61,6 +70,12 @@ final class MenuBarItem: NSObject {
         menu.addItem(action("Settings…", #selector(showSettings), keyEquivalent: ","))
 
         menu.addItem(.separator())
+        menu.addItem(action("About Flip", #selector(showAbout)))
+        let diagnostics = action("Copy Diagnostics", #selector(copyDiagnostics))
+        diagnostics.toolTip = "Version, grants, settings and Flip's recent log, as text"
+        menu.addItem(diagnostics)
+
+        menu.addItem(.separator())
         menu.addItem(action("Quit Flip", #selector(quit), keyEquivalent: "q"))
 
         return menu
@@ -88,6 +103,14 @@ final class MenuBarItem: NSObject {
 
     @objc private func showSettings() {
         onShowSettings()
+    }
+
+    @objc private func showAbout() {
+        onShowAbout()
+    }
+
+    @objc private func copyDiagnostics() {
+        onCopyDiagnostics()
     }
 
     @objc private func openPrivacySettings() {
