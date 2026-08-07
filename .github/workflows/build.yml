@@ -30,6 +30,9 @@ jobs:
       - name: Build
         run: swift build -c release
 
+      - name: Test
+        run: swift test
+
       - name: Assemble the bundle
         run: make bundle
 

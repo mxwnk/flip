@@ -11,17 +11,17 @@ final class BindingStore: ObservableObject {
 
     private let log = Logger(subsystem: Bundle.identifier, category: "bindings")
 
-    private static let file = FileManager.default
-        .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("Flip", isDirectory: true)
-        .appendingPathComponent("bindings.json")
+    /// Injectable so tests cannot write over the real configuration.
+    let fileURL: URL
 
-    var fileURL: URL { Self.file }
+    init(file: URL = ApplicationSupport.file("bindings.json")) {
+        self.fileURL = file
+    }
 
     // MARK: - Loading and saving
 
     func load() {
-        guard let data = try? Data(contentsOf: Self.file) else {
+        guard let data = try? Data(contentsOf: fileURL) else {
             log.notice("no bindings file yet, seeding from the defaults")
             bindings = DefaultBindings.all
             save()
@@ -44,11 +44,11 @@ final class BindingStore: ObservableObject {
 
         do {
             try FileManager.default.createDirectory(
-                at: Self.file.deletingLastPathComponent(),
+                at: fileURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
             let data = try encoder.encode(bindings)
-            try data.write(to: Self.file, options: .atomic)
+            try data.write(to: fileURL, options: .atomic)
             lastWritten = data
         } catch {
             log.error("could not save bindings: \(error.localizedDescription, privacy: .public)")
@@ -66,7 +66,7 @@ final class BindingStore: ObservableObject {
     func watchForExternalEdits() {
         watcher?.cancel()
 
-        let descriptor = open(Self.file.path, O_EVTONLY)
+        let descriptor = open(fileURL.path, O_EVTONLY)
         guard descriptor >= 0 else { return }
 
         let source = DispatchSource.makeFileSystemObjectSource(
@@ -96,7 +96,7 @@ final class BindingStore: ObservableObject {
     /// Compares content, not timestamps: every save is itself a write, and
     /// reacting to those would loop.
     private func reloadIfChangedOnDisk() {
-        guard let data = try? Data(contentsOf: Self.file), data != lastWritten,
+        guard let data = try? Data(contentsOf: fileURL), data != lastWritten,
               let decoded = try? JSONDecoder().decode([AppBinding].self, from: data)
         else { return }
 

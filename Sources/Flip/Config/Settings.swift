@@ -77,4 +77,25 @@ struct Settings: Codable, Equatable {
     var excludedBundleIDs: [String] = []
 
     var isValid: Bool { leader != appSwitcher }
+
+    init() {}
+
+    /// Every field falls back instead of failing. Swift's synthesised decoding
+    /// requires all keys, so adding one would make an existing file unreadable and
+    /// silently reset everything the user had configured.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Settings()
+
+        leader = try container.decodeIfPresent(ModifierChoice.self, forKey: .leader)
+            ?? defaults.leader
+        appSwitcher = try container.decodeIfPresent(ModifierChoice.self, forKey: .appSwitcher)
+            ?? defaults.appSwitcher
+        showThumbnails = try container.decodeIfPresent(Bool.self, forKey: .showThumbnails)
+            ?? defaults.showThumbnails
+        overlayDelay = try container.decodeIfPresent(OverlayDelay.self, forKey: .overlayDelay)
+            ?? defaults.overlayDelay
+        excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)
+            ?? defaults.excludedBundleIDs
+    }
 }

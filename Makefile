@@ -10,7 +10,7 @@ STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs icon dmg verify settings login clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs test icon dmg verify settings login clean
 
 all: install
 
@@ -44,6 +44,12 @@ bundle: build
 		> $(BUNDLE)/Contents/Library/LaunchAgents/$(BUNDLE_ID).login.plist
 	cp Resources/$(APP_NAME).icns $(BUNDLE)/Contents/Resources/
 	printf 'APPL????' > $(BUNDLE)/Contents/PkgInfo
+
+## test: run the unit tests
+# XCTest ships with Xcode, not the Command Line Tools, so the toolchain is
+# pointed at Xcode for this one command rather than changing xcode-select.
+test:
+	DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 ## icon: redraw Resources/Flip.icns from scripts/make-icon.swift
 # Committed rather than generated during a build: CI has to package the same icon

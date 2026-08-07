@@ -19,5 +19,10 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v5)],
             linkerSettings: [.linkedFramework("ApplicationServices")]
         ),
+        .testTarget(
+            name: "FlipTests",
+            dependencies: ["Flip"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )

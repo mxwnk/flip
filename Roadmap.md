@@ -50,11 +50,10 @@ the catch is usually the reason something is not done yet.
 
 ## Quality
 
-- [ ] **Unit tests.** Worth being specific so the target is not theatre. Genuinely
-      testable without a running Mac: `OverlayLayout` grid maths and its
-      column-preserving row movement, `BindingStore` JSON round-trip and its issue
-      detection, `Modifiers` exact matching, `AppBinding` decoding of older files.
-      Not testable: anything behind the accessibility API or the window server.
+- [x] **Unit tests.** 30 of them, over `OverlayLayout`, `BindingStore`, `Settings`,
+      `AppBinding` and `Modifiers` — the logic that does not need a running Mac.
+      They found one bug immediately: synthesised `Codable` requires every key, so
+      adding a setting made existing files unreadable and reset them.
 - [ ] **Fullscreen spaces.** Untested. A full-screen application is its own space
       and the overlay's `fullScreenAuxiliary` behaviour has never been exercised.
 - [ ] **Minimised windows that no longer exist.** If an application swallows the

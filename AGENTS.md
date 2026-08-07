@@ -8,6 +8,8 @@ CGEventTap. macOS 14+, SwiftPM, no Xcode.
 - `make run` builds, signs, installs to `~/Applications` and launches
 - `make logs` streams the app's log; almost everything interesting is logged
 - `make verify` checks the designated requirement has not drifted
+- `make test` runs the unit tests. XCTest needs Xcode, so the target points
+  `DEVELOPER_DIR` at it rather than changing `xcode-select`
 - `make icon` redraws the app icon
 - Never launch the binary from a shell. TCC would attribute the privacy grants to
   the terminal instead of to Flip.
