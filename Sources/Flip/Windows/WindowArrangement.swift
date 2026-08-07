@@ -25,6 +25,14 @@ struct WindowShortcut: Identifiable {
 }
 
 extension WindowArrangement {
+    /// The lookup the router performs, on the table rather than inside it, so both
+    /// the router and its tests ask the same question.
+    static func matching(keyCode: CGKeyCode, modifiers: CGEventFlags) -> WindowArrangement? {
+        shortcuts
+            .first { $0.keyCode == keyCode && $0.modifiers == Modifiers.significant(in: modifiers) }?
+            .arrangement
+    }
+
     /// Fixed for now. Every single modifier is already spoken for with the arrow
     /// keys — Option moves by word, Control switches spaces, fn is Home and End,
     /// and Command is start and end of line — so two of them is what is left.
@@ -87,16 +95,19 @@ enum WindowArranger {
         }
     }
 
-    /// Keeps the window where it was on the display it leaves, proportionally, so
-    /// a left half stays a left half rather than landing somewhere arbitrary.
     private static func moved(_ window: CGRect, from screen: NSScreen, by step: Int) -> CGRect? {
         let screens = NSScreen.screens
         guard screens.count > 1, let index = screens.firstIndex(of: screen) else { return nil }
 
         let target = screens[(index + step % screens.count + screens.count) % screens.count]
-        let from = screen.visibleFrame
-        let to = target.visibleFrame
 
+        return mapped(window, from: screen.visibleFrame, to: target.visibleFrame)
+    }
+
+    /// Keeps the window where it was on the display it leaves, proportionally, so a
+    /// left half stays a left half rather than landing somewhere arbitrary. Pure,
+    /// so it can be checked without a second monitor.
+    nonisolated static func mapped(_ window: CGRect, from: CGRect, to: CGRect) -> CGRect {
         let scaleX = to.width / from.width
         let scaleY = to.height / from.height
 

@@ -12,7 +12,11 @@ enum Modifiers {
     ]
 
     static func held(in event: CGEvent) -> CGEventFlags {
-        event.flags.intersection(significant)
+        significant(in: event.flags)
+    }
+
+    static func significant(in flags: CGEventFlags) -> CGEventFlags {
+        flags.intersection(significant)
     }
 
     static func anyHeld(in event: CGEvent) -> Bool {

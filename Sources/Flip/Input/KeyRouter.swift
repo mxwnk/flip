@@ -124,7 +124,7 @@ final class KeyRouter {
 
         // Matched against the flags as pressed, not `base`: shift is part of a
         // window binding, where the switcher only ever reads it as "backwards".
-        if let arrangement = arrangement(for: code, modifiers: flags) {
+        if let arrangement = WindowArrangement.matching(keyCode: code, modifiers: flags) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil
         }
@@ -150,12 +150,6 @@ final class KeyRouter {
         onMain { $0.commit() }
 
         return event
-    }
-
-    private func arrangement(for code: CGKeyCode, modifiers: CGEventFlags) -> WindowArrangement? {
-        WindowArrangement.shortcuts
-            .first { $0.keyCode == code && $0.modifiers == modifiers }?
-            .arrangement
     }
 
     // MARK: - Actions

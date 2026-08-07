@@ -111,7 +111,7 @@ and Screen Recording only for thumbnails.
 ```sh
 make cert       # once, interactive: creates the signing identity
 make run        # build, sign, install to ~/Applications, launch
-make test       # 37 unit tests
+make test       # 52 unit tests
 make logs       # follow along; almost everything interesting is logged
 ```
 
