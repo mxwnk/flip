@@ -16,7 +16,7 @@ STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs test icon dmg verify settings login clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs test icon icon-background dmg dmg-layout verify settings login clean
 
 all: install
 
@@ -107,16 +107,17 @@ logs:
 # self-signed identity and not notarised, so on any Mac other than the one that
 # created the certificate it opens only via right-click > Open.
 dmg: sign
-	rm -rf $(STAGING)
-	mkdir -p $(STAGING)
-	cp -R $(BUNDLE) $(STAGING)/
-	ln -s /Applications $(STAGING)/Applications
-	rm -f $(DMG)
-	hdiutil create -volname "$(APP_NAME)" -srcfolder $(STAGING) \
-		-format UDZO -quiet $(DMG)
-	codesign --force --sign "$(IDENTITY)" $(DMG)
-	@rm -rf $(STAGING)
-	@echo "Packaged $(DMG)"
+	@scripts/make-dmg.sh "$(VERSION)" "$(IDENTITY)"
+
+## dmg-layout: redraw the disk image window and commit how it looks
+# Needs a desktop session, so it is never part of a release build. Run it after
+# changing the backdrop or the icon positions.
+dmg-layout: sign icon-background
+	@scripts/make-dmg.sh "$(VERSION)" "$(IDENTITY)" --layout
+
+## icon-background: redraw resources/dmg-background.tiff
+icon-background:
+	@swift scripts/make-dmg-background.swift
 
 ## verify: assert the designated requirement has not drifted
 # The whole reason for signing against a certificate. This requirement is what
