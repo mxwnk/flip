@@ -5,11 +5,32 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.2.0
 
-The disk image says which version it is installing, and warns you about the
-permission dialog before it appears rather than after. A permission nobody was
-expecting is the moment an unsigned application starts to look like malware.
+Nothing in the application itself changed — this release is about everything
+around it. The binary is byte for byte the one in 1.1.0.
 
-Flip also has a page now: [mxwnk.github.io/flip](https://mxwnk.github.io/flip/).
+**The install command is shorter.** The tap moved to the name personal taps
+usually carry, so it reads `brew install --cask mxwnk/tap/flip` rather than
+stuttering. An existing install keeps working; `brew upgrade --cask flip` was
+already short and still is.
+
+**The disk image says which version it is installing** — the backdrop is redrawn
+for every release with the number stamped in — and it warns about the permission
+dialog before it appears rather than after. A permission nobody was expecting is
+the moment an unsigned application starts to look like malware.
+
+**"Apple cannot check it for malicious software" now has an answer.** Downloading
+the disk image by hand runs into Gatekeeper, and the workaround every guide on the
+internet repeats — Control-click, Open — stopped working on macOS 26. The readme
+and the site both spell out the three clicks that do work, and the one line that
+skips them. Homebrew has always cleared this for you; this is for everyone who
+takes the disk image instead.
+
+**Flip has a page:** [mxwnk.github.io/flip](https://mxwnk.github.io/flip/). It
+leads with the measurements, because everyone claims to be fast and nobody shows
+the number.
+
+The readme is half its old length and now about using Flip rather than building
+it; that moved to `docs/development.md`.
 
 ## 1.1.0
 
