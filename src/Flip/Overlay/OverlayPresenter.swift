@@ -89,7 +89,9 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     func reachApplication(_ bundleID: String) {
-        let windows = store.currentSpaceWindows(ofBundleID: bundleID, includingMinimized: true)
+        let windows = store.windows(
+            ofBundleID: bundleID, includingMinimized: true, fromEverySpace: everySpace
+        )
 
         // NSRunningApplication.activate() brings the application forward but leaves
         // its windows in the Dock, so one with nothing but minimised windows would
@@ -204,13 +206,16 @@ final class OverlayPresenter: SwitcherPresenting {
         case .allWindows:
             // Exclusions apply here only: naming an application by key is explicit.
             let excluded = Set(settings.settings.excludedBundleIDs)
-            return store.currentSpaceWindows(includingMinimized: true).filter { window in
-                window.bundleID.map { !excluded.contains($0) } ?? true
-            }
+            return store.windows(includingMinimized: true, fromEverySpace: everySpace)
+                .filter { window in window.bundleID.map { !excluded.contains($0) } ?? true }
         case .application(let bundleID):
-            return store.currentSpaceWindows(ofBundleID: bundleID, includingMinimized: true)
+            return store.windows(
+                ofBundleID: bundleID, includingMinimized: true, fromEverySpace: everySpace
+            )
         }
     }
+
+    private var everySpace: Bool { settings.settings.showWindowsFromEverySpace }
 
     private func open(_ source: Source, step: Int) {
         // Same question: walk the list rather than rebuild it under the selection.

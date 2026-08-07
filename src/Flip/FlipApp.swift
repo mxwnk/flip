@@ -100,7 +100,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             isPaused: isPaused,
             settings: settings.settings,
             bindingCount: bindings.bindings.count,
-            windowCount: store.currentSpaceWindows(includingMinimized: true).count
+            windowCount: store.windows(
+                includingMinimized: true,
+                fromEverySpace: settings.settings.showWindowsFromEverySpace
+            ).count
         )
     }
 

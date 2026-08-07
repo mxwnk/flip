@@ -47,6 +47,19 @@ struct GeneralView: View {
             }
 
             Section {
+                Toggle(
+                    "Show windows from every space",
+                    isOn: $settings.settings.showWindowsFromEverySpace
+                )
+            } footer: {
+                Text(settings.settings.showWindowsFromEverySpace
+                    ? "Choosing one switches to its space. A space's windows are learned the first time you visit it."
+                    : "Only the space you are looking at. Minimised windows are listed either way.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Toggle("Start Flip at login", isOn: $startsAtLogin)
                     .onChange(of: startsAtLogin) { _, enabled in
                         LoginItem.setEnabled(enabled)

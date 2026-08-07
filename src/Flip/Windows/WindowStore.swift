@@ -28,13 +28,16 @@ final class WindowStore: @unchecked Sendable {
 
     // MARK: - Reading
 
-    /// Minimised windows are absent from the window server listing, so they are
-    /// added back from the AX model rather than filtered in.
-    func currentSpaceWindows(
+    /// Minimised windows are absent from both window server listings, so they are
+    /// added back from the AX model rather than filtered in — which is why they
+    /// have never obeyed the space filter in either direction.
+    func windows(
         ofBundleID bundleID: String? = nil,
-        includingMinimized: Bool = false
+        includingMinimized: Bool = false,
+        fromEverySpace: Bool = false
     ) -> [WindowInfo] {
-        let onScreen = Set(ScreenWindows.onCurrentSpace().map(\.id))
+        let listing = fromEverySpace ? ScreenWindows.everySpace() : ScreenWindows.onCurrentSpace()
+        let onScreen = Set(listing.map(\.id))
 
         lock.lock()
         let all = snapshot
@@ -183,6 +186,17 @@ final class WindowStore: @unchecked Sendable {
             self?.thread.perform { self?.drop(pid); self?.publish() }
         }
 
+        // Accessibility only lists the windows on the space you are looking at, so
+        // everything elsewhere is invisible until it has been seen once. A held
+        // element stays valid afterwards — raising one switches spaces by itself —
+        // so learning the set as you move around is enough, and needs no private
+        // call for which space a window is on.
+        center.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.thread.perform { self?.adoptWindowsRevealedByTheCurrentSpace() }
+        }
+
         // Activation reorders the list even when no window notification fires.
         center.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
@@ -216,6 +230,23 @@ final class WindowStore: @unchecked Sendable {
         for element in watcher.windows() {
             insert(element, from: watcher)
         }
+    }
+
+    /// Only windows that are new. Re-inserting a known one would reset its place
+    /// in the most-recently-used order, which is the whole point of the model.
+    private func adoptWindowsRevealedByTheCurrentSpace() {
+        var found = 0
+        for watcher in watchers.values {
+            for element in watcher.windows() {
+                guard let id = AXBridge.windowID(of: element), windows[id] == nil else { continue }
+                if insert(element, from: watcher) { found += 1 }
+            }
+        }
+
+        guard found > 0 else { return }
+
+        log.notice("this space revealed \(found, privacy: .public) windows not seen before")
+        publish()
     }
 
     private func drop(_ pid: pid_t) {

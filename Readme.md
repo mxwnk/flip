@@ -48,6 +48,11 @@ without ever drawing the grid.
 The mouse only takes over once you actually move it, so a grid that opens under a
 resting pointer still does what the keyboard told it to.
 
+By default the grid holds the space you are on. Settings › General widens it to
+every space; choosing a window there switches to it. Flip learns a space's windows
+the first time you visit it, because accessibility only ever admits to the windows
+in front of you.
+
 <p align="center">
   <img src="docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
 </p>
@@ -75,7 +80,8 @@ square on a German keyboard too, which `y u h j` does not.
 **Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.
 
 - **General** — the two hotkeys, how long Option must be held before the grid
-  appears, thumbnails or plain icons, and whether Flip starts at login.
+  appears, thumbnails or plain icons, whether to list windows from every space,
+  and whether Flip starts at login.
 - **Shortcuts** — one key per application. The editor warns when a key would
   shadow a character you need to type.
 - **Windows** — the keys above, listed so they can be found without this file.

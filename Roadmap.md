@@ -63,13 +63,23 @@ the catch is usually the reason something is not done yet.
       drawing waits, so a release inside the delay commits without the panel ever
       appearing. Configurable in Settings › General; 150 ms by default.
 - [ ] **Jump by number.** 1–9 selects the nth tile directly while the overlay is up.
-- [ ] **A switch for windows on every space.** Off keeps today's behaviour; on
-      lists everything Flip knows about. Two things make this more than a filter
-      change. Minimised windows already bypass the space check, because they are
-      absent from the window server's on-screen listing and there is nothing to
-      compare them against — so the current behaviour is inconsistent rather than
-      strict. And doing it properly, in either direction, needs the private
-      SkyLight call for a window's space, the way AltTab and yabai do it.
+- [x] **A switch for windows on every space.** Settings › General. The private
+      SkyLight call this entry used to demand turns out not to be needed: nothing
+      here has to know *which* space a window is on, only that it exists, and the
+      window server lists them all without `optionOnScreenOnly`.
+      The real obstacle was elsewhere. Accessibility only enumerates the windows on
+      the space in front of you — measured: Ghostty had one window through AX and
+      six through the window server — so a filter alone had nothing to let through.
+      What makes it work is that an element already held stays valid: raising one
+      plus activating its application switches spaces on its own. So Flip rescans
+      every watched application on `activeSpaceDidChangeNotification` and keeps
+      what it finds, rather than trying to find windows on demand.
+      The gap that remains: a space never visited in this run is still unknown.
+- [ ] **Windows on spaces never visited.** The one case the rescan cannot reach.
+      Discovery is easy — the window server lists them — but a window off-space has
+      no accessibility element, so there is nothing to raise. Resolving one after
+      activating its application, by matching the window id through the existing
+      `_AXUIElementGetWindow` shim, is the thread to pull.
 - [ ] **Per-monitor filtering.** The overlay follows the active monitor, but lists
       windows from both. Deliberate — but it should be a choice.
 - [ ] **Sort order as a setting.** Most recently used today. Alphabetical is the

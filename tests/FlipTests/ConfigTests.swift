@@ -49,6 +49,21 @@ final class SettingsTests: XCTestCase {
         XCTAssertTrue(decoded.showThumbnails)
         XCTAssertEqual(decoded.overlayDelay, .short)
         XCTAssertTrue(decoded.excludedBundleIDs.isEmpty)
+        XCTAssertFalse(decoded.showWindowsFromEverySpace)
+    }
+
+    /// The default has to stay off: turning it on for everyone who upgrades would
+    /// silently widen the grid to windows they have never seen in it.
+    func testWindowsFromEverySpaceIsOffUntilAsked() throws {
+        XCTAssertFalse(Settings().showWindowsFromEverySpace)
+
+        var settings = Settings()
+        settings.showWindowsFromEverySpace = true
+        let round = try JSONDecoder().decode(
+            Settings.self, from: JSONEncoder().encode(settings)
+        )
+
+        XCTAssertTrue(round.showWindowsFromEverySpace)
     }
 
     func testEveryModifierChoiceHasDistinctFlags() {

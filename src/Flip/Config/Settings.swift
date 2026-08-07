@@ -73,6 +73,9 @@ struct Settings: Codable, Equatable {
     /// made either way; only showing it waits.
     var overlayDelay: OverlayDelay = .short
 
+    /// Off lists only what is on the space you are looking at.
+    var showWindowsFromEverySpace = false
+
     /// Kept out of the all-windows list. A key bound directly still reaches them.
     var excludedBundleIDs: [String] = []
 
@@ -95,6 +98,9 @@ struct Settings: Codable, Equatable {
             ?? defaults.showThumbnails
         overlayDelay = try container.decodeIfPresent(OverlayDelay.self, forKey: .overlayDelay)
             ?? defaults.overlayDelay
+        showWindowsFromEverySpace = try container
+            .decodeIfPresent(Bool.self, forKey: .showWindowsFromEverySpace)
+            ?? defaults.showWindowsFromEverySpace
         excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)
             ?? defaults.excludedBundleIDs
     }
