@@ -13,9 +13,18 @@ let package = Package(
         // Declares one private accessibility symbol that Swift cannot reach on
         // its own. See the header for what it is and why it is needed.
         .target(name: "CAXShim", path: "src/CAXShim"),
+        // The wire format between the application and the `flip` command. Shared
+        // rather than written twice: the two ship together but build separately,
+        // so this is the one thing that must not be able to drift.
+        .target(name: "FlipControl", path: "src/FlipControl"),
+        .executableTarget(
+            name: "FlipCLI",
+            dependencies: ["FlipControl"],
+            path: "src/FlipCLI"
+        ),
         .executableTarget(
             name: "Flip",
-            dependencies: ["CAXShim"],
+            dependencies: ["CAXShim", "FlipControl"],
             path: "src/Flip",
             // AXObserver callbacks are bare C function pointers with no captured
             // context, which Swift 6 strict concurrency has no way to reason
@@ -26,7 +35,7 @@ let package = Package(
         ),
         .testTarget(
             name: "FlipTests",
-            dependencies: ["Flip"],
+            dependencies: ["Flip", "FlipControl"],
             path: "tests/FlipTests",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),

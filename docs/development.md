@@ -69,6 +69,19 @@ whenever it or the pictures in `docs/` change. The pictures are copied in at
 deploy time rather than kept twice in the tree. Its palette is `Theme.swift`
 converted to hex, so the page and the overlay stay the same thing seen twice.
 
+## The `flip` command
+
+`src/FlipCLI` builds a second executable that ships inside the bundle at
+`Contents/Helpers/flip` — not `Contents/MacOS/`, because macOS volumes are
+case-insensitive by default and `flip` there is the same file as `Flip`.
+
+It talks to the running application over a unix socket in Application Support.
+The wire format lives in `src/FlipControl`, shared by both so it cannot drift;
+`ControlTests` holds the arrangement names on the two sides to each other.
+
+`make link` symlinks it into `/usr/local/bin`, `make unlink` removes it. The
+Homebrew cask does the same with a `binary` stanza.
+
 ## Releasing
 
 Every push builds and tests. Pushing a `v*` tag also signs, packages, publishes a

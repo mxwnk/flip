@@ -5,6 +5,20 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.4.0
 
+**Flip has a command line.** `flip list` prints every window it knows as JSON,
+`flip focus <id>` brings one forward, `flip arrange left-half` moves the focused
+one, and `flip switch`, `flip pause` and `flip resume` do what they say. Homebrew
+puts it on your PATH; a disk image install gets it with `make link`.
+
+It drives the running application over a socket rather than reaching into
+accessibility itself, so it sees exactly the windows the switcher sees rather
+than a second opinion. The window-title search Flip does not have is now a
+pipeline: `flip list | jq` and `flip focus`.
+
+Opening the switcher from a script left it with no way out, because nothing was
+holding a modifier to release. **Return now commits the selection** — bare or
+with the leader held, so `⌃⌥↩` still fills the window behind the grid.
+
 **A fresh install now ships one shortcut instead of fourteen.** The old seed was
 one person's habits — a file manager most people have never installed, a
 particular Chrome web app, three editors — and every key it claimed was one a new

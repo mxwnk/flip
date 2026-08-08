@@ -10,13 +10,21 @@ VERSION   := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' |
 COPYRIGHT := $(shell grep -m1 '^Copyright' LICENSE)
 
 BINARY    := .build/release/$(APP_NAME)
+CLI       := .build/release/FlipCLI
 BUNDLE      := build/$(APP_NAME).app
+# Helpers/ rather than MacOS/: macOS volumes are case-insensitive by default, so
+# `flip` beside `Flip` is the same file and the copy silently replaces the
+# application with its own command line tool. Measured the hard way.
+#
+# Homebrew's `binary` stanza links from here, and `make link` does the same for a
+# disk image install. Inside the bundle so it cannot drift from the app it drives.
+CLI_IN_BUNDLE := $(BUNDLE)/Contents/Helpers/flip
 REQUIREMENT := resources/designated-requirement.txt
 STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs test smoke icon dmg dmg-layout verify settings login clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs test smoke icon dmg dmg-layout verify settings login link unlink clean
 
 all: install
 
@@ -40,8 +48,9 @@ build:
 bundle: build
 	rm -rf $(BUNDLE)
 	mkdir -p $(BUNDLE)/Contents/MacOS $(BUNDLE)/Contents/Resources \
-		$(BUNDLE)/Contents/Library/LaunchAgents
+		$(BUNDLE)/Contents/Helpers $(BUNDLE)/Contents/Library/LaunchAgents
 	cp $(BINARY) $(BUNDLE)/Contents/MacOS/$(APP_NAME)
+	cp $(CLI) $(CLI_IN_BUNDLE)
 	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' \
 		-e 's|@COPYRIGHT@|$(COPYRIGHT)|g' \
 		resources/Info.plist > $(BUNDLE)/Contents/Info.plist
@@ -58,6 +67,19 @@ bundle: build
 test:
 	DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
+## link: put the `flip` command on the PATH (Homebrew does this for you)
+# A symlink rather than a copy, so it follows every update instead of going
+# stale — which is exactly how a command and its application drift apart.
+link: install
+	@mkdir -p /usr/local/bin
+	@ln -sf "$(INSTALLED)/Contents/Helpers/flip" /usr/local/bin/flip
+	@echo "Linked /usr/local/bin/flip -> $(INSTALLED)"
+
+## unlink: take it off the PATH again
+unlink:
+	@rm -f /usr/local/bin/flip
+	@echo "Removed /usr/local/bin/flip"
+
 ## icon: redraw resources/Flip.icns and docs/icon.png
 # Committed rather than generated during a build: CI has to package the same icon
 # without redrawing it, and an .icns is small enough to keep in the repository.
@@ -71,6 +93,7 @@ icon:
 sign: bundle
 	@security find-identity -v -p codesigning | grep -qF "$(IDENTITY)" || \
 		{ echo "No signing identity '$(IDENTITY)'. Run: make cert" >&2; exit 1; }
+	codesign --force --sign "$(IDENTITY)" $(CLI_IN_BUNDLE)
 	codesign --force --sign "$(IDENTITY)" --identifier "$(BUNDLE_ID)" $(BUNDLE)
 	@codesign --verify --verbose=2 $(BUNDLE)
 

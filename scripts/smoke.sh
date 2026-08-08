@@ -267,6 +267,48 @@ else
 fi
 check "Filling again puts it back" "${half_w:-}" "${back_w:-}"
 
+# ------------------------------------------------------------------ the command
+
+echo
+echo "Command line"
+FLIP="$HOME/Applications/Flip.app/Contents/Helpers/flip"
+if [ -x "$FLIP" ]; then
+    pass "The flip command ships in the bundle"
+
+    LISTED=$("$FLIP" list 2>/dev/null | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' 2>/dev/null)
+    if [ -n "${LISTED:-}" ] && [ "$LISTED" -gt 0 ]; then
+        pass "flip list answers with $LISTED windows"
+    else
+        fail "flip list answers" "got '${LISTED:-nothing}'"
+    fi
+
+    # Something that is not already in front, so coming forward means something.
+    TARGET=$("$FLIP" list 2>/dev/null | python3 -c '
+import json, sys
+windows = json.load(sys.stdin)
+front = windows[0]["app"]
+other = next((w for w in windows if w["app"] != front), None)
+print(f"{other[\"id\"]}\t{other[\"app\"]}" if other else "")' 2>/dev/null)
+    TID=${TARGET%%	*}
+    TAPP=${TARGET#*	}
+    if [ -n "${TID:-}" ]; then
+        "$FLIP" focus "$TID"
+        check "flip focus brings that window forward" "yes" "$("$DRIVER" awaitfront "$TAPP" 4000)"
+    else
+        fail "flip focus brings that window forward" "only one application has windows"
+    fi
+
+    case "$("$FLIP" arrange middle 2>&1)" in
+        *"unknown arrangement"*) pass "flip rejects an unknown arrangement" ;;
+        *) fail "flip rejects an unknown arrangement" ;;
+    esac
+else
+    fail "The flip command ships in the bundle" "not at $FLIP"
+    fail "flip list answers" "no command"
+    fail "flip focus brings that window forward" "no command"
+    fail "flip rejects an unknown arrangement" "no command"
+fi
+
 # -------------------------------------------------------------------- the menu bar
 
 echo

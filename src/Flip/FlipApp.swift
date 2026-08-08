@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import FlipControl
 import OSLog
 
 private let log = Logger(subsystem: Bundle.identifier, category: "startup")
@@ -19,6 +20,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         store: store, frontmost: frontmost, thumbnails: thumbnails, settings: settings
     )
     private var router: KeyRouter?
+    private var control: ControlServer?
     private var tap: EventTap?
     private var menuBar: MenuBarItem?
 
@@ -82,6 +84,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         frontmost.startObserving()
         startWindowStoreIfPermitted()
         startInputIfPermitted()
+        startControlServer()
 
         // Grants happen while running and are announced nowhere.
         poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -170,6 +173,66 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         }
         self.tap = tap
         tap.start()
+    }
+
+    /// The socket answers on its own thread. Reading windows is safe there —
+    /// the store publishes under a lock — and everything that is not hops to
+    /// main and reports that it was accepted rather than waiting for it.
+    private func startControlServer() {
+        control = ControlServer { [weak self] command in
+            guard let self else { return .failure("Flip is shutting down") }
+
+            return answer(command)
+        }
+        control?.start()
+    }
+
+    private nonisolated func answer(_ command: ControlCommand) -> ControlResponse {
+        switch command {
+        case .list:
+            // Everything Flip knows, not the narrower set the overlay is
+            // configured to show: a script asking what exists wants the whole
+            // answer, and `focus` reaches any of them.
+            let windows = store.windows(includingMinimized: true, fromEverySpace: true)
+
+            return .windows(windows.map {
+                ControlWindow(id: $0.id, app: $0.applicationName, title: $0.title, minimized: $0.isMinimized)
+            })
+
+        case .focus(let id):
+            guard let window = store
+                .windows(includingMinimized: true, fromEverySpace: true)
+                .first(where: { $0.id == id })
+            else { return .failure("no window with id \(id) — see `flip list`") }
+
+            store.focus(window)
+            return .ok
+
+        case .arrange(let name):
+            guard let arrangement = WindowArrangement(controlName: name)
+            else { return .failure("unknown arrangement '\(name)'") }
+
+            store.arrange(arrangement)
+            return .ok
+
+        case .switcher:
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+
+                presenter.showAllWindows(step: 1)
+                router?.overlayWasOpenedExternally()
+            }
+            return .ok
+
+        case .pause, .resume:
+            let wanted = command.isPause
+            Task { @MainActor [weak self] in
+                guard let self, isPaused != wanted else { return }
+
+                togglePause()
+            }
+            return .ok
+        }
     }
 
     private func buildRouter() {

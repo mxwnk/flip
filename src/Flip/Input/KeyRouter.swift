@@ -26,6 +26,13 @@ final class KeyRouter {
         isOverlayVisible = false
     }
 
+    /// `flip switch` opened it, so no modifier is being held and nothing will be
+    /// released to commit it. Escape, the mouse and Return are the ways out —
+    /// which is why Return commits at all.
+    func overlayWasOpenedExternally() {
+        isOverlayVisible = true
+    }
+
     /// Written on main when bindings or layout change, read on the tap thread
     /// for every keystroke.
     private let bindingsLock = NSLock()
@@ -116,7 +123,7 @@ final class KeyRouter {
         }
 
         // Only taken while the overlay is up, so they work normally elsewhere.
-        if isOverlayVisible, let action = navigation(for: code) {
+        if isOverlayVisible, let action = navigation(for: code, modifiers: base) {
             action()
             return nil
         }
@@ -159,8 +166,20 @@ final class KeyRouter {
 
     // MARK: - Actions
 
-    private func navigation(for code: CGKeyCode) -> (() -> Void)? {
+    private func navigation(for code: CGKeyCode, modifiers: CGEventFlags) -> (() -> Void)? {
         switch Int(code) {
+        case kVK_Return:
+            // Bare, or with the leader held. Anything else and this is ⌃⌥↩ asking
+            // to fill the window behind the grid, which still wins.
+            bindingsLock.lock()
+            let leader = leaderFlags
+            bindingsLock.unlock()
+            guard modifiers.isEmpty || modifiers == leader else { return nil }
+
+            return { [self] in
+                isOverlayVisible = false
+                onMain { $0.commit() }
+            }
         case kVK_Escape:
             return { [self] in
                 isOverlayVisible = false

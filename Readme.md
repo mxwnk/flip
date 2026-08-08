@@ -109,6 +109,27 @@ there is a small switch under the picture for it.
 **Pause** in the menu bar hands `⌘ Tab` back to macOS for as long as a screen
 share lasts.
 
+## From the command line
+
+Homebrew puts a `flip` command on your PATH; with the disk image, `make link`
+does the same.
+
+```sh
+flip list                    # every window Flip knows, as JSON
+flip focus 27461             # bring one forward
+flip arrange left-half       # move the focused window
+flip switch                  # open the switcher
+flip pause                   # hand ⌘Tab back to macOS, then `flip resume`
+```
+
+It drives the running application over a socket rather than doing the work
+itself, so it sees exactly the windows the switcher sees. That makes the missing
+title search a script:
+
+```sh
+flip focus "$(flip list | jq 'map(select(.title | test("invoice"; "i")))[0].id')"
+```
+
 ## Questions
 
 **Why does a window switcher want Screen Recording?** Only for the thumbnails.

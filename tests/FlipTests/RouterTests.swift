@@ -72,6 +72,35 @@ final class RouterTests: XCTestCase {
         )
     }
 
+    /// `flip switch` opens the grid with no modifier held, so nothing will ever
+    /// be released to commit it. Return is that way out.
+    func testReturnCommitsWhileTheOverlayIsOpen() {
+        router.overlayWasOpenedExternally()
+
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Return)))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.committed, 1)
+        XCTAssertNotNil(
+            router.handle(type: .keyDown, event: key(kVK_RightArrow)),
+            "committing ends the session, so the arrows go back to everyone else"
+        )
+    }
+
+    /// The same key with the window-action modifiers is ⌃⌥↩ asking to fill the
+    /// window behind the grid, which it did before Return meant anything.
+    func testReturnWithTheWindowActionModifiersStillFills() {
+        openOverlay()
+
+        XCTAssertNil(router.handle(
+            type: .keyDown, event: key(kVK_Return, flags: [.maskControl, .maskAlternate])
+        ))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.arranged, [.maximize])
+        XCTAssertEqual(presenter.committed, 0, "filling is not choosing")
+    }
+
     func testARepeatIsSwallowedButNotActedOnTwice() {
         XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Tab, flags: .maskAlternate)))
 
@@ -151,6 +180,7 @@ private final class FakePresenter: SwitcherPresenting {
     private(set) var opened = 0
     private(set) var reached: [String] = []
     private(set) var arranged: [WindowArrangement] = []
+    private(set) var committed = 0
 
     func showAllWindows(step: Int) { open() }
     func showWindows(of bundleID: String, step: Int) { open() }
@@ -170,6 +200,6 @@ private final class FakePresenter: SwitcherPresenting {
 
     func move(by step: Int) {}
     func moveRow(by step: Int) {}
-    func commit() {}
+    func commit() { committed += 1 }
     func cancel() {}
 }

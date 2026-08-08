@@ -14,6 +14,31 @@ enum WindowArrangement: CaseIterable {
     case maximize
     case previousDisplay
     case nextDisplay
+
+    /// What `flip arrange` calls these. A test holds this to the names in
+    /// FlipControl, so neither side can gain one the other does not know.
+    var controlName: String {
+        switch self {
+        case .leftHalf: return "left-half"
+        case .rightHalf: return "right-half"
+        case .topHalf: return "top-half"
+        case .bottomHalf: return "bottom-half"
+        case .topLeftQuarter: return "top-left"
+        case .topRightQuarter: return "top-right"
+        case .bottomLeftQuarter: return "bottom-left"
+        case .bottomRightQuarter: return "bottom-right"
+        case .maximize: return "fill"
+        case .previousDisplay: return "previous-display"
+        case .nextDisplay: return "next-display"
+        }
+    }
+
+    init?(controlName: String) {
+        guard let match = Self.allCases.first(where: { $0.controlName == controlName })
+        else { return nil }
+
+        self = match
+    }
 }
 
 /// One action and its key. The router matches against this and the settings
