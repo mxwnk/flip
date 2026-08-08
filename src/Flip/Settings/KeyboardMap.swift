@@ -39,6 +39,13 @@ struct KeyboardMap: View {
 
                 Spacer(minLength: 16)
 
+                // The two options are bare symbols, so without this there is
+                // nothing to say what is being chosen between.
+                // A step quieter than the legend on the left, which is what the
+                // eye should reach first.
+                Caption("Match your keyboard", tone: Color(nsColor: .tertiaryLabelColor))
+                    .lineLimit(1)
+
                 // With the picture rather than in a tab: it changes nothing
                 // about Flip, only whether the drawing matches the desk.
                 Picker("", selection: $order) {
@@ -50,6 +57,8 @@ struct KeyboardMap: View {
                 .pickerStyle(.segmented)
                 .font(.caption)
                 .fixedSize()
+                .help("Where control, option and command sit on your bottom row. "
+                    + "macOS cannot tell, and it only changes this picture.")
             }
         }
     }
