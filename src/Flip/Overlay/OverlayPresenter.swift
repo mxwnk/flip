@@ -86,6 +86,7 @@ final class OverlayPresenter: SwitcherPresenting {
         // screens means three coordinate spaces holding the same picture.
         host.onPointerMoved = { [weak self] point in self?.hover(at: point, on: index) }
         host.onClick = { [weak self] point in self?.click(at: point, on: index) }
+        host.onScroll = { [weak self] steps in self?.scroll(by: steps, on: index) }
 
         return panel
     }
@@ -211,6 +212,16 @@ final class OverlayPresenter: SwitcherPresenting {
         guard let tile = tile(at: point, on: panelIndex), tile != model.selected else { return }
 
         model.selected = tile
+    }
+
+    /// Steps the selection like the arrow keys do, wrapping included — the
+    /// wheel is another way to say the same thing, not a second model. Going
+    /// through `move` also re-anchors the pointer, so the tile the selection
+    /// lands on is not immediately taken back by a hover the wheel caused.
+    private func scroll(by steps: Int, on panelIndex: Int) {
+        guard isVisible, panelIndex < inUse, panels[panelIndex].isVisible else { return }
+
+        move(by: steps)
     }
 
     private func click(at point: CGPoint, on panelIndex: Int) {

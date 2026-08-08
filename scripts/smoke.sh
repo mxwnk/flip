@@ -175,6 +175,34 @@ else
 fi
 "$DRIVER" release wait 200
 
+# Nothing is logged when the selection moves, so the picture is the evidence:
+# same panel, same tiles, only the ring in a different place.
+mark
+"$DRIVER" hold option wait 300 key tab await "overlay shown" 4000
+read -r wid wx wy ww _ <<<"$("$DRIVER" awaitwindow Flip 500 2000)"
+if [ -n "${wid:-}" ]; then
+    # The dimmed backdrop rather than a tile, so hovering cannot move the
+    # selection and only the wheel can.
+    "$DRIVER" move $((wx + ww / 2)) $((wy + 40)) wait 400
+    screencapture -x -o -l "$wid" "$OUT/wheel-before.png" 2>/dev/null
+    "$DRIVER" scroll -1 wait 400
+    screencapture -x -o -l "$wid" "$OUT/wheel-after.png" 2>/dev/null
+    "$DRIVER" scroll 1 wait 400
+    screencapture -x -o -l "$wid" "$OUT/wheel-back.png" 2>/dev/null
+
+    if [ "$(md5 -q "$OUT/wheel-before.png")" = "$(md5 -q "$OUT/wheel-after.png")" ]; then
+        fail "The wheel moves the selection" "the grid did not change"
+    else
+        pass "The wheel moves the selection"
+    fi
+    check "The wheel goes back as far as it came" \
+        "$(md5 -q "$OUT/wheel-before.png")" "$(md5 -q "$OUT/wheel-back.png")"
+else
+    fail "The wheel moves the selection" "no panel"
+    fail "The wheel goes back as far as it came" "no panel"
+fi
+"$DRIVER" key escape release wait 300
+
 # ---------------------------------------------------------------------- raising
 
 # AltTab's most reported bug: a chosen window whose application never comes

@@ -194,6 +194,15 @@ while !arguments.isEmpty {
             exit(2)
         }
         postKey(code, extra)
+    case "scroll":
+        // Line units, which is what a wheel sends — the trackpad's continuous
+        // deltas cannot be posted this way and are not what needs proving here.
+        let amount = Int32(next())!
+        CGEvent(
+            scrollWheelEvent2Source: source, units: .line,
+            wheelCount: 1, wheel1: amount, wheel2: 0, wheel3: 0
+        )?.post(tap: .cghidEventTap)
+        posted = true
     case "move":
         postMouse(.mouseMoved, CGPoint(x: Double(next())!, y: Double(next())!))
     case "click":

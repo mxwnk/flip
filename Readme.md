@@ -45,8 +45,8 @@ Needs macOS 14 or newer.
   choose.
 - **Moves and resizes windows** from the keyboard — halves, quarters, filling, and
   across to the other display.
-- **Keyboard or mouse.** Hover to pick, click to confirm, if your hand is already
-  there.
+- **Keyboard or mouse.** Hover or scroll to pick, click to confirm, if your hand
+  is already there.
 - **Brings minimised windows back.** Choosing one lifts it out of the Dock.
 
 ## Switching windows
@@ -58,7 +58,7 @@ Needs macOS 14 or newer.
 | `⌥ S` | jump straight to Spotify — one key per application, yours to choose |
 | `⌥` held, then a key | narrow the open grid to that application |
 | arrows, `esc` | move the selection, or give up |
-| the mouse | hover to select, click to confirm; click beside the grid to give up |
+| the mouse | hover to select, wheel to step, click to confirm; click beside the grid to give up |
 | let go of `⌥` | focus what is selected, out of the Dock if it was minimised |
 
 Add `⇧` to any of those to go backwards.

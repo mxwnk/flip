@@ -5,6 +5,13 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.3.0
 
+**The wheel steps through the grid.** Hovering already picked a tile and
+clicking already took it; scrolling was the one thing a hand on the mouse could
+not do. A notch is one window, the way it is in any list, and it follows the
+scrolling direction set on the machine rather than deciding for itself. A
+trackpad has to travel about a tile's width to earn a step, so a flick browses
+rather than bolting to the end.
+
 **Five fixes from a full read of the source.**
 
 A tap that failed to start had no way back. The port is created on its own
