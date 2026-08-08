@@ -206,11 +206,77 @@ kbd + kbd { margin-left: 6px; }
 .notice strong, .notice em { color: var(--ink); font-style: normal; }
 .fineprint { font-size: 13px; color: var(--ink-faint); }
 
+/* The guide is a sequence, so it is numbered and the numbers carry the eye down
+   the page rather than a row of identical cards. */
+.steps { display: grid; gap: 40px; }
+
+.step { display: grid; grid-template-columns: 44px 1fr; gap: 20px; }
+
+.step .num {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--blue);
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step h3 { margin-top: 8px; }
+.step p { font-size: 15px; }
+.step p:last-child { margin-bottom: 0; }
+
+/* The key being taught, big enough to be the thing you look at. */
+.taught { margin: 0 0 14px; }
+.taught kbd { font-size: 18px; padding: 8px 14px; }
+
+/* A short aside inside a step: the thing that trips people up. */
+.aside {
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--blue);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.aside p { margin: 0; font-size: 14px; }
+.aside p + p { margin-top: 10px; }
+.aside strong { color: var(--ink); }
+
+/* Back to the front page, and on the front page over to the guide. */
+.crumbs { font-size: 13px; margin-bottom: 20px; }
+.crumbs a { color: var(--ink-faint); }
+.crumbs a:hover { color: var(--ink); }
+
+.next {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 12px 20px;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 15px;
+}
+
+.next:hover { border-color: var(--blue); text-decoration: none; }
+
 footer {
     padding: 40px 0 64px;
     text-align: center;
     font-size: 13px;
     color: var(--ink-faint);
+}
+
+@media (max-width: 620px) {
+    .step { grid-template-columns: 1fr; gap: 10px; }
+    .step .num { width: 36px; height: 36px; }
 }
 
 @media (max-width: 620px) {
