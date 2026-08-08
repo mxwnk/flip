@@ -3,6 +3,15 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 1.4.0
+
+**A fresh install now ships one shortcut instead of fourteen.** The old seed was
+one person's habits — a file manager most people have never installed, a
+particular Chrome web app, three editors — and every key it claimed was one a new
+user had to find and clear before it was theirs. What is left is `⌥ F` for the
+Finder: enough to show what application keys are, on the one application every
+Mac certainly has. An existing `bindings.json` is untouched.
+
 ## 1.3.0
 
 **The wheel steps through the grid.** Hovering already picked a tile and

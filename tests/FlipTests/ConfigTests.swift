@@ -183,6 +183,16 @@ final class BindingStoreTests: XCTestCase {
         XCTAssertEqual(store.bindings[0].key, "F1")
     }
 
+    /// The seed is one binding on purpose: every key it takes is one somebody
+    /// has to find and clear before it is theirs, and the Finder is the only
+    /// application that is certainly installed.
+    func testTheSeedIsOneBindingForAnApplicationEveryMacHas() {
+        XCTAssertEqual(DefaultBindings.all.count, 1)
+        XCTAssertEqual(DefaultBindings.all.first?.key, "f")
+        XCTAssertEqual(DefaultBindings.all.first?.bundleID, "com.apple.finder")
+        XCTAssertEqual(DefaultBindings.all.first?.usesLeader, true)
+    }
+
     func testAnEmptyApplicationIsReported() {
         let store = makeStore()
         store.add()
