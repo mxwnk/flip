@@ -287,9 +287,12 @@ printf 'smoke-marker' | pbcopy
 osascript -e 'tell application "System Events" to tell process "Flip" to set frontmost to true' >/dev/null 2>&1
 open_menu
 click_menu_item "Copy Diagnostics"
-# Polled, so the usual case costs a tenth of a second.
+# Polled, so the usual case costs a tenth of a second. The ceiling is wide on
+# purpose: this is the slowest step in the suite — the report reads the OSLog
+# store, measured at 1.6s on an idle machine and longer right after the raising
+# loop. The flat 1.5s sleep this replaced was already below that.
 COPIED=""
-for _ in $(seq 1 30); do
+for _ in $(seq 1 150); do
     case "$(pbpaste)" in *"Accessibility:"*) COPIED=yes; break ;; esac
     sleep 0.1
 done
