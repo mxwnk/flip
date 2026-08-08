@@ -5,6 +5,37 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.3.0
 
+**Five fixes from a full read of the source.**
+
+A tap that failed to start had no way back. The port is created on its own
+thread, so a failure arrived after startup had already recorded the tap as
+running — no hotkey worked until the next launch, and the menu bar went on
+saying everything was fine. It now reports back, retries, and says so in the
+menu when it cannot.
+
+The safety timer that closes an overlay nobody let go of was re-armed on every
+narrowing, leaving the first one in the runloop. Half a minute later it could
+close a session it had nothing to do with. It now belongs to the session, which
+is what it was always measuring.
+
+Choosing an application with `⌘Tab` when macOS reported no frontmost application
+gave up without telling the router, which went on swallowing arrows and escape
+until the modifier came back up. Every other giving-up path already reported.
+
+Thumbnails were captured twice whenever two requests overlapped — reliably with
+the overlay delay set to Immediately — because a capture in flight was invisible
+to the check for what still needed one. The captures are also ordered around the
+tile that ends up selected now, rather than the one selected before the grid had
+stepped.
+
+A window closed by quitting its application left its remembered position behind,
+and window IDs get reused.
+
+**The shortcut editor warns when your leader is already spoken for.** Window
+actions are matched before application shortcuts, so choosing `⌃⌥` as the leader
+left bindings on `u i j k` and Return permanently unreachable, with nothing
+saying why.
+
 **The settings window stays in front.** Flip runs as an accessory application —
 no Dock icon, never the active one — and macOS will not reliably bring such an
 application's window forward. The window did open; it landed behind whatever was

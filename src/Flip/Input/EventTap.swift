@@ -8,8 +8,13 @@ final class EventTap {
     /// Returning nil swallows the event.
     typealias Handler = (CGEventType, CGEvent) -> CGEvent?
 
+    /// Whether the tap came up, reported from the tap's own thread. The port is
+    /// created after `start()` has returned, so failure has nowhere else to go.
+    typealias StateHandler = @Sendable (Bool) -> Void
+
     private let mask: CGEventMask
     private let handler: Handler
+    private let onState: StateHandler
     private let log = Logger(subsystem: Bundle.identifier, category: "eventtap")
 
     /// Written on the tap's thread, read from the main one when pausing.
@@ -21,9 +26,14 @@ final class EventTap {
     /// a missed deadline, so without this the recovery would undo the pause.
     private var wanted = true
 
-    init(observing types: [CGEventType], handler: @escaping Handler) {
+    init(
+        observing types: [CGEventType],
+        onState: @escaping StateHandler = { _ in },
+        handler: @escaping Handler
+    ) {
         self.mask = types.reduce(into: CGEventMask(0)) { $0 |= 1 << CGEventMask($1.rawValue) }
         self.handler = handler
+        self.onState = onState
     }
 
     func start() {
@@ -78,6 +88,7 @@ final class EventTap {
         ) else {
             // The call gives no reason; a missing Accessibility grant is usual.
             log.error("could not create the event tap; is Accessibility granted?")
+            onState(false)
             return
         }
 
@@ -91,6 +102,7 @@ final class EventTap {
         CGEvent.tapEnable(tap: port, enable: true)
 
         log.notice("event tap running on its own thread")
+        onState(true)
         CFRunLoopRun()
     }
 

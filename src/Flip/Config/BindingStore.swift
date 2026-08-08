@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import OSLog
 
@@ -156,6 +157,7 @@ final class BindingStore: ObservableObject {
         case unknownKey
         case duplicate
         case shadowsCharacter(Character)
+        case takenByWindowAction(String)
 
         var message: String {
             switch self {
@@ -164,17 +166,36 @@ final class BindingStore: ObservableObject {
             case .duplicate: return "Another binding already uses this key"
             case .shadowsCharacter(let character):
                 return "Option-this types \(character), which this binding takes away everywhere"
+            case .takenByWindowAction(let name):
+                return "\(name) already uses your leader with this key, and wins"
             }
         }
     }
 
-    func issue(for binding: AppBinding) -> Issue? {
+    /// `leader` and `displayMove` are what the window actions are bound to right
+    /// now. The router matches those before it looks at any binding, so a leader
+    /// that collides with one leaves the binding permanently unreachable — the
+    /// case this exists to catch.
+    func issue(
+        for binding: AppBinding,
+        leader: CGEventFlags = [],
+        displayMove: DisplayMoveModifier = .shiftOption
+    ) -> Issue? {
         if binding.bundleID.isEmpty { return .noApplication }
-        if binding.key.isEmpty || KeyboardLayout.keyCode(forBinding: binding.key) == nil {
+        guard let code = KeyboardLayout.keyCode(forBinding: binding.key), !binding.key.isEmpty else {
             return .unknownKey
         }
         if bindings.contains(where: { $0.id != binding.id && $0.key == binding.key && $0.usesLeader == binding.usesLeader }) {
             return .duplicate
+        }
+        if binding.usesLeader,
+           let action = WindowArrangement.matching(
+               keyCode: code, modifiers: leader, displayMove: displayMove
+           ) {
+            let name = WindowArrangement.shortcuts(displayMove: displayMove)
+                .first { $0.arrangement == action }?.name ?? "a window action"
+
+            return .takenByWindowAction(name)
         }
         if binding.usesLeader, binding.key.count == 1, let character = binding.key.first,
            let shadowed = KeyboardLayout.asciiOptionCharacter(for: character)

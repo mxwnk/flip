@@ -254,6 +254,10 @@ final class WindowStore: @unchecked Sendable {
 
     private func drop(_ pid: pid_t) {
         watchers[pid] = nil
+
+        // The frames go too: the window server reuses IDs, and a remembered
+        // frame outliving its window puts a fill back onto a dead one's place.
+        for (id, window) in windows where window.pid == pid { restoreFrames[id] = nil }
         windows = windows.filter { $0.value.pid != pid }
     }
 

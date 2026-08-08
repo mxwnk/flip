@@ -70,7 +70,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             },
             onTogglePause: { [weak self] in self?.togglePause() }
         )
-        menuBar?.update(for: status, paused: isPaused)
+        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking)
 
         updates.onFound = { [weak self] in
             guard let self else { return }
@@ -85,7 +85,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         // Grants happen while running and are announced nowhere.
         poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.reportIfChanged() }
+            MainActor.assumeIsolated {
+                self?.reportIfChanged()
+                self?.retryInputIfNeeded()
+            }
         }
     }
 
@@ -95,7 +98,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         status = latest
         Permissions.report(latest)
-        menuBar?.update(for: latest, paused: isPaused)
+        menuBar?.update(for: latest, paused: isPaused, inputWorking: inputWorking)
 
         // Accessibility usually arrives after the first launch.
         startWindowStoreIfPermitted()
@@ -122,11 +125,14 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         // An overlay left on screen would have no keys to close it.
         if isPaused { presenter.cancel(); router?.overlayDidClose() }
 
-        menuBar?.update(for: status, paused: isPaused)
+        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking)
         log.notice("\(self.isPaused ? "paused" : "resumed", privacy: .public)")
     }
 
     private var storeIsRunning = false
+    /// False once the tap has failed to come up, which the menu bar shows.
+    private var inputWorking = true
+    private var retryCountdown = 0
 
     private func startWindowStoreIfPermitted() {
         guard !storeIsRunning, status.accessibility else { return }
@@ -149,6 +155,24 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private func startInputIfPermitted() {
         guard tap == nil, status.accessibility else { return }
 
+        // Built once. A retry must not run this again, or every attempt stacks
+        // another set of onChange observers on the same stores.
+        if router == nil { buildRouter() }
+        guard let router else { return }
+
+        let tap = EventTap(
+            observing: [.keyDown, .flagsChanged],
+            onState: { [weak self] running in
+                Task { @MainActor in self?.inputStateChanged(running) }
+            }
+        ) { type, event in
+            router.handle(type: type, event: event)
+        }
+        self.tap = tap
+        tap.start()
+    }
+
+    private func buildRouter() {
         let router = KeyRouter(presenter: presenter, frontmost: frontmost)
         self.router = router
 
@@ -164,12 +188,32 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         bindings.onChange = reapply
         settings.onChange = reapply
         KeyboardLayout.observeInputSourceChanges(onChange: reapply)
+    }
 
-        let tap = EventTap(observing: [.keyDown, .flagsChanged]) { type, event in
-            router.handle(type: type, event: event)
+    /// The port is created on the tap's own thread, so a failure lands after
+    /// `start()` has already returned and `tap` is non-nil. Clearing it is what
+    /// lets the poll try again — without this, one failed create meant no
+    /// hotkeys until the next launch, and nothing said so.
+    private func inputStateChanged(_ running: Bool) {
+        if !running { tap = nil }
+        guard running != inputWorking else { return }
+
+        inputWorking = running
+        menuBar?.update(for: status, paused: isPaused, inputWorking: running)
+    }
+
+    /// The usual cause is a grant that has not propagated yet, which clears on
+    /// its own. Every fifth poll, so a permanent failure does not start a thread
+    /// every two seconds.
+    private func retryInputIfNeeded() {
+        guard tap == nil, status.accessibility else { return }
+        guard retryCountdown <= 0 else {
+            retryCountdown -= 1
+            return
         }
-        self.tap = tap
-        tap.start()
+
+        retryCountdown = 5
+        startInputIfPermitted()
     }
 
     /// Two copies mean two event taps racing, the loser silently swallowing keys.

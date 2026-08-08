@@ -29,6 +29,10 @@ final class ThumbnailStore: @unchecked Sendable {
 
     private let lock = NSLock()
     private var images: [CGWindowID: (image: CGImage, at: Date)] = [:]
+    /// Captures already on their way. Without this, `needsCapture` only ever
+    /// saw finished ones, so two fills a moment apart — the overlay revealing
+    /// itself and then narrowing — sent every window through twice.
+    private var inFlight: Set<CGWindowID> = []
 
     /// Ignores age: an icon for the ~150ms of a fresh capture looks worse than
     /// a slightly stale thumbnail.
@@ -37,6 +41,24 @@ final class ThumbnailStore: @unchecked Sendable {
         defer { lock.unlock() }
 
         return images[id]?.image
+    }
+
+    /// Takes the ids that nobody else is already capturing, in one step, so two
+    /// callers cannot both come away believing they own the same window.
+    private func claim(_ ids: [CGWindowID]) -> [CGWindowID] {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let free = ids.filter { !inFlight.contains($0) }
+        inFlight.formUnion(free)
+
+        return free
+    }
+
+    private func release(_ id: CGWindowID) {
+        lock.lock()
+        inFlight.remove(id)
+        lock.unlock()
     }
 
     private func needsCapture(_ id: CGWindowID) -> Bool {
@@ -50,7 +72,7 @@ final class ThumbnailStore: @unchecked Sendable {
 
     /// Calls back per image as it lands. Pass the selected tile first.
     func fill(_ ids: [CGWindowID], onImage: @escaping @MainActor (CGWindowID, CGImage) -> Void) {
-        let missing = ids.filter(needsCapture)
+        let missing = claim(ids.filter(needsCapture))
         guard !missing.isEmpty else { return }
 
         Task.detached(priority: .userInitiated) { [self] in
@@ -59,6 +81,7 @@ final class ThumbnailStore: @unchecked Sendable {
             await withTaskGroup(of: Void.self) { group in
                 for id in missing {
                     group.addTask { [self] in
+                        defer { release(id) }
                         guard let image = await capture(id) else { return }
 
                         store(image, for: id)

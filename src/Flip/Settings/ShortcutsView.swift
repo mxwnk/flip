@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct ShortcutsView: View {
     @ObservedObject var store: BindingStore
+    @ObservedObject var settings: SettingsStore
 
     var body: some View {
         Form {
@@ -15,7 +16,15 @@ struct ShortcutsView: View {
                 }
 
                 ForEach(store.bindings) { binding in
-                    BindingRow(binding: binding, issue: store.issue(for: binding), store: store)
+                    BindingRow(
+                        binding: binding,
+                        issue: store.issue(
+                            for: binding,
+                            leader: settings.settings.leader.flags,
+                            displayMove: settings.settings.displayMoveModifier
+                        ),
+                        store: store
+                    )
                 }
 
                 Button("Add Shortcut", systemImage: "plus") { store.add() }

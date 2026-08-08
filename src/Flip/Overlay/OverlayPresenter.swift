@@ -113,7 +113,13 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     func showFrontmostAppWindows(step: Int) {
-        guard let bundleID = frontmost.bundleID else { return }
+        // The router has already set isOverlayVisible, so a silent return here
+        // leaves it swallowing arrows and escape system-wide until the modifier
+        // comes back up.
+        guard let bundleID = frontmost.bundleID else {
+            onUnexpectedClose?()
+            return
+        }
 
         open(.application(bundleID), step: step)
     }
@@ -139,9 +145,19 @@ final class OverlayPresenter: SwitcherPresenting {
     func move(by step: Int) {
         guard isVisible, !model.windows.isEmpty else { return }
 
-        let count = model.windows.count
-        model.selected = (model.selected + step % count + count) % count
+        model.selected = Self.step(from: model.selected, by: step, of: model.windows.count)
         anchorPointer()
+    }
+
+    /// Where opening lands, which is one step on from the window in front.
+    private func selectedIndex(for count: Int, step: Int) -> Int {
+        Self.step(from: 0, by: step, of: count)
+    }
+
+    private static func step(from index: Int, by step: Int, of count: Int) -> Int {
+        guard count > 0 else { return 0 }
+
+        return (index + step % count + count) % count
     }
 
     func moveRow(by step: Int) {
@@ -165,7 +181,10 @@ final class OverlayPresenter: SwitcherPresenting {
 
         guard let window else { return }
 
-        log.debug("focusing \(window.applicationName, privacy: .public) — \(window.title, privacy: .public)")
+        // The application is public, the title is not: Copy Diagnostics puts the
+        // recent log into a report meant for a GitHub issue, and for a window
+        // switcher a title is a document name or a mail subject.
+        log.debug("focusing \(window.applicationName, privacy: .public) — \(window.title, privacy: .private)")
         store.focus(window)
     }
 
@@ -266,11 +285,13 @@ final class OverlayPresenter: SwitcherPresenting {
         }
 
         let wasVisible = isVisible
-        present(windows, from: source)
 
         // Opening steps onto the previous window; narrowing does not, since the
-        // application was named and its top window is the answer.
-        if !wasVisible { move(by: step) }
+        // application was named and its top window is the answer. Worked out
+        // before presenting, so the captures are ordered around the tile that
+        // ends up selected rather than around index 0.
+        let selection = wasVisible ? 0 : selectedIndex(for: windows.count, step: step)
+        present(windows, from: source, selecting: selection)
 
         let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
         log.notice("""
@@ -281,7 +302,7 @@ final class OverlayPresenter: SwitcherPresenting {
         """)
     }
 
-    private func present(_ windows: [WindowInfo], from source: Source) {
+    private func present(_ windows: [WindowInfo], from source: Source, selecting selected: Int) {
         let screens = targetScreens()
         ensurePanels(screens.count)
 
@@ -289,7 +310,7 @@ final class OverlayPresenter: SwitcherPresenting {
         let narrowest = screens.min { $0.frame.width < $1.frame.width } ?? screens[0]
 
         model.windows = windows
-        model.selected = 0
+        model.selected = selected
         model.layout = OverlayLayout(count: windows.count, screen: narrowest.frame.size)
         model.thumbnails = alreadyCaptured(windows)
 
@@ -304,12 +325,21 @@ final class OverlayPresenter: SwitcherPresenting {
         anchorPointer()
 
         // Narrowing keeps what the session decided, so pressing a key while
-        // holding the leader does not restart the wait.
-        if !wasRunning { scheduleReveal() }
+        // holding the leader does not restart the wait — and the same goes for
+        // the lifetime guard, which measures from when the modifier went down.
+        // Re-arming it here left the first timer in the runloop, still able to
+        // close a session started half a minute later.
+        if !wasRunning {
+            scheduleReveal()
+            scheduleLifetime()
+        }
+
         if panels.prefix(inUse).contains(where: \.isVisible) {
             requestMissingThumbnails(for: windows)
         }
+    }
 
+    private func scheduleLifetime() {
         lifetime = Timer.scheduledTimer(withTimeInterval: Configuration.maxOverlayLifetime, repeats: false) { _ in
             MainActor.assumeIsolated { [weak self] in
                 guard let self, isVisible else { return }

@@ -202,6 +202,34 @@ final class BindingStoreTests: XCTestCase {
         XCTAssertEqual(store.issue(for: store.bindings[0]), .duplicate)
     }
 
+    /// The router matches window actions before bindings, so ⌃⌥ as the leader
+    /// makes u i j k and Return unreachable — silently, until this said so.
+    func testALeaderThatCollidesWithAWindowActionIsReported() {
+        let store = makeStore()
+        store.add()
+        store.setBundleID("com.example.app", for: store.bindings[0].id)
+        store.setKey("u", for: store.bindings[0].id)
+
+        XCTAssertEqual(
+            store.issue(for: store.bindings[0], leader: ModifierChoice.optionControl.flags),
+            .takenByWindowAction("Top left quarter")
+        )
+        XCTAssertNil(store.issue(for: store.bindings[0], leader: ModifierChoice.option.flags))
+    }
+
+    /// A bare binding never carries the leader, so it cannot collide with one.
+    func testABareBindingIsNotAffectedByTheLeader() {
+        let store = makeStore()
+        store.add()
+        store.setBundleID("com.example.app", for: store.bindings[0].id)
+        store.setKey("u", for: store.bindings[0].id)
+        store.setUsesLeader(false, for: store.bindings[0].id)
+
+        XCTAssertNil(
+            store.issue(for: store.bindings[0], leader: ModifierChoice.optionControl.flags)
+        )
+    }
+
     /// The same key is fine on both sides of the modifier: Alt-F1 and a bare F1
     /// are different bindings.
     func testTheSameKeyWithAndWithoutTheLeaderDoesNotClash() {

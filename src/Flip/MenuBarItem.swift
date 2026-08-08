@@ -6,6 +6,7 @@ final class MenuBarItem: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
     private var isPaused = false
+    private var inputWorking = true
     private var availableUpdate: String?
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
@@ -27,19 +28,21 @@ final class MenuBarItem: NSObject {
         self.onTogglePause = onTogglePause
         super.init()
 
-        update(for: status, paused: false)
+        update(for: status, paused: false, inputWorking: true)
     }
 
     /// A switcher without Accessibility looks like a broken keyboard, so the
-    /// icon carries the warning.
-    func update(for status: Permissions.Status, paused: Bool) {
+    /// icon carries the warning — and so does a tap that never came up, which
+    /// is the same thing from the outside.
+    func update(for status: Permissions.Status, paused: Bool, inputWorking: Bool) {
         self.status = status
+        self.inputWorking = inputWorking
         isPaused = paused
 
         let symbol: String
         if paused {
             symbol = "pause.circle"
-        } else if status.isComplete {
+        } else if status.isComplete, inputWorking {
             symbol = "rectangle.on.rectangle"
         } else {
             symbol = "exclamationmark.triangle"
@@ -69,6 +72,15 @@ final class MenuBarItem: NSObject {
 
         menu.addItem(grant("Accessibility", status.accessibility))
         menu.addItem(grant("Screen Recording", status.screenRecording))
+
+        // Only when it is wrong: the tap working is the ordinary case and needs
+        // no line, but a dead one is invisible everywhere else.
+        if !inputWorking {
+            let dead = NSMenuItem(title: "Keyboard shortcuts unavailable", action: nil, keyEquivalent: "")
+            dead.isEnabled = false
+            dead.toolTip = "The event tap could not be created. Flip keeps retrying."
+            menu.addItem(dead)
+        }
 
         if !status.isComplete {
             menu.addItem(action("Open Privacy Settings…", #selector(openPrivacySettings)))

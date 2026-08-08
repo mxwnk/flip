@@ -105,7 +105,7 @@ private struct SettingsView: View {
                     .tabItem { Label("General", systemImage: "gearshape") }
                     .tag(Tab.general)
 
-                ShortcutsView(store: bindings)
+                ShortcutsView(store: bindings, settings: settings)
                     .tabItem { Label("Shortcuts", systemImage: "keyboard") }
                     .tag(Tab.shortcuts)
 
