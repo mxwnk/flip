@@ -7,7 +7,13 @@ import ServiceManagement
 @MainActor
 enum LoginItem {
     private static let log = Logger(subsystem: Bundle.identifier, category: "loginitem")
-    private static let service = SMAppService.agent(plistName: "dev.mxwnk.Flip.login.plist")
+    /// Built from the identifier rather than typed out: the Makefile names the
+    /// file after `BUNDLE_ID` and writes the same value into Info.plist, so
+    /// deriving it here ties both sides to one source. Spelled out, the two
+    /// agreed only by maintenance — and a mismatch shows up as a `register()`
+    /// that throws at runtime and nowhere else.
+    private static let service = SMAppService
+        .agent(plistName: "\(Bundle.identifier).login.plist")
 
     /// Written by the Makefile before the switch; would start a second copy.
     private static let legacyAgent = FileManager.default
