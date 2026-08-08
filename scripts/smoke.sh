@@ -13,7 +13,7 @@
 # It works on a Finder window of its own rather than anything of yours, restores
 # the clipboard, and leaves the settings as it found them.
 #
-# Almost none of that half minute is work — it is waiting for macOS. So nothing
+# Almost none of those twenty seconds is work — it is waiting for macOS. So nothing
 # here sleeps for a fixed interval if it can watch for the thing it is waiting
 # on instead: `await` blocks until Flip logs a decision, `awaitax` until a window
 # has actually moved, `awaitwindow` until a panel exists. A poll costs the real
