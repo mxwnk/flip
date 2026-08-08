@@ -283,14 +283,23 @@ if [ -x "$FLIP" ]; then
     fi
 
     # Something that is not already in front, so coming forward means something.
+    #
+    # One field per line rather than a tab-separated f-string: the quotes that
+    # needs are nested three deep by the time they reach python, and the version
+    # that was here produced a SyntaxError, an empty answer, and a check that
+    # blamed the machine for having one application.
     TARGET=$("$FLIP" list 2>/dev/null | python3 -c '
 import json, sys
 windows = json.load(sys.stdin)
 front = windows[0]["app"]
-other = next((w for w in windows if w["app"] != front), None)
-print(f"{other[\"id\"]}\t{other[\"app\"]}" if other else "")' 2>/dev/null)
-    TID=${TARGET%%	*}
-    TAPP=${TARGET#*	}
+for window in windows:
+    if window["app"] != front:
+        print(window["id"])
+        print(window["app"])
+        break
+' 2>/dev/null)
+    TID=$(printf "%s" "$TARGET" | sed -n 1p)
+    TAPP=$(printf "%s" "$TARGET" | sed -n 2p)
     if [ -n "${TID:-}" ]; then
         "$FLIP" focus "$TID"
         check "flip focus brings that window forward" "yes" "$("$DRIVER" awaitfront "$TAPP" 4000)"

@@ -109,7 +109,12 @@ install: sign stop
 # responsible process for TCC, and the privacy grants would be attributed to it
 # rather than to Flip. The login agent is registered by the app, not from here.
 run: install
-	open -a $(INSTALLED)
+	@# LaunchServices intermittently answers -600 for a bundle that was just
+	@# replaced — twice during smoke runs, never reproducibly on its own. The
+	@# process is gone in 20ms and the bundle is valid, so a second attempt a
+	@# moment later has always worked. Retried rather than diagnosed further:
+	@# the cost of being wrong here is one extra second.
+	@open -a $(INSTALLED) 2>/dev/null || { sleep 1; open -a $(INSTALLED); }
 	@echo "Started. Follow along with: make logs"
 
 ## stop: quit a running instance
