@@ -60,3 +60,7 @@ Claims about behaviour need evidence, and this app is measurable:
 # Commits
 
 One line, Conventional Commits, no body, no trailers.
+
+Types in use: `feat` `fix` `docs` `test` `refactor` `perf` `build` `ci`. A
+change to comments alone is `docs` and still needs a type — that is the one
+that gets forgotten.
