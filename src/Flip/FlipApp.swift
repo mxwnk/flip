@@ -22,9 +22,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private var tap: EventTap?
     private var menuBar: MenuBarItem?
 
-    /// Deliberately not persisted. Pausing is for the length of a screen share or
-    /// a game, and coming back to a switcher that silently does nothing would be
-    /// worse than one that resumed on its own.
+    /// Not persisted: pausing lasts a screen share or a game, and returning to a
+    /// switcher that silently does nothing is worse than one that resumed.
     private var isPaused = false
 
     private let bindings = BindingStore()
@@ -173,13 +172,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         tap.start()
     }
 
-    /// Two copies of Flip mean two event taps racing for every keystroke, and the
-    /// loser silently swallowing keys. Registering the login item starts the agent
-    /// immediately, so a second copy is now one click away rather than hypothetical.
-    ///
-    /// Only the oldest copy stays. A symmetric "is anyone else running" check
-    /// makes every copy leave; three raced once and none survived. Exits zero, so
-    /// the agent's KeepAlive treats it as deliberate.
+    /// Two copies mean two event taps racing, the loser silently swallowing keys.
+    /// Only the oldest stays: a symmetric "is anyone else running" check makes
+    /// every copy leave — three raced once and none survived. Exits zero, so
+    /// KeepAlive treats it as deliberate.
     private func isOnlyInstance() -> Bool {
         let ourPID = ProcessInfo.processInfo.processIdentifier
         let ourLaunch = NSRunningApplication.current.launchDate ?? .distantPast
@@ -205,8 +201,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         return true
     }
 
-    /// A private symbol resolving at build time can still be missing at run time.
-    /// The call is expected to fail; the point is that it returns rather than traps.
+    /// A private symbol resolving at build time can still be missing at run
+    /// time. The call is expected to fail — the point is that it returns.
     private func checkAXShimLinkage() {
         _ = AXBridge.windowID(of: AXUIElementCreateSystemWide())
         log.notice("_AXUIElementGetWindow resolved")

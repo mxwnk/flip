@@ -6,13 +6,11 @@
 #
 #   scripts/demo.sh [scene] [--record]
 #
-# Staging matters for two reasons. Every other application is excluded, so no
-# private window can wander into frame — the same precaution the readme
-# screenshot needed. And the demonstration applications are opened by the script
-# rather than by hand, so every take is the same take.
+# Staging does two things: every other application is excluded, so no private
+# window wanders into frame, and the demonstration applications are opened by
+# the script, so every take is the same take.
 #
-# Nobody may touch the keyboard while this runs: a real keystroke releases the
-# modifier and ends the sequence halfway through.
+# Hands off the keyboard: a real keystroke releases the modifier mid-sequence.
 
 set -euo pipefail
 
@@ -23,9 +21,8 @@ BACKUP="$(mktemp -d)"
 
 APPS=("Pages" "Numbers" "Safari" "Calculator")
 
-# Two temporary bindings. The jump scene presses the first; the arrange scene
-# presses the second so it lands on a window worth resizing, rather than acting
-# on whatever happened to be focused last.
+# Two temporary bindings: the jump scene presses the first, the arrange scene
+# the second, so it lands on a window worth resizing.
 JUMP_KEY="c"
 JUMP_BUNDLE="com.apple.calculator"
 ARRANGE_KEY="s"
@@ -109,9 +106,8 @@ PY
 (cd "$ROOT" && make run >/dev/null 2>&1)
 sleep 4
 
-# A take is only worth recording if every application actually put a window up.
-# Pages and Numbers open onto a template chooser when they have no document to
-# restore, and a chooser is not a window worth filming.
+# Only worth recording if every application put a window up: Pages and Numbers
+# open onto a template chooser, which is not a window worth filming.
 echo "==> Checking each application has a window"
 python3 - "${APPS[@]}" <<'PY'
 import subprocess, sys

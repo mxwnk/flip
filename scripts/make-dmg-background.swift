@@ -1,11 +1,8 @@
 // Draws the backdrop of the disk image window into build/dmg-background.tiff.
 //
-// A TIFF with both a normal and a doubled representation, which is how a Finder
-// background stays crisp on a retina display — a plain PNG is measured in points
-// and comes out soft.
-//
-// The icon positions here have to agree with the ones in scripts/make-dmg.sh, or
-// the arrow points at nothing.
+// A TIFF carrying both a normal and a doubled representation, which is how a
+// Finder background stays crisp on retina; a plain PNG is measured in points and
+// comes out soft. The icon positions must agree with scripts/make-dmg.sh.
 
 import AppKit
 import Foundation
@@ -17,12 +14,11 @@ let height = 440.0
 let appIcon = CGPoint(x: 170, y: 215)
 let applications = CGPoint(x: 490, y: 215)
 
-/// Stamped into the backdrop, so the window says which version is being installed
-/// rather than leaving that to the file name. Passed in by scripts/make-dmg.sh.
+/// Stamped in, so the window names the version rather than leaving it to the
+/// file name. Passed in by scripts/make-dmg.sh.
 let version = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : ""
 
-// Taken from Theme.swift by way of the application icon, so the disk image, the
-// icon and the overlay are recognisably one thing.
+// From Theme.swift by way of the icon, so image, icon and overlay match.
 let plateTop = NSColor(red: 0.20, green: 0.21, blue: 0.24, alpha: 1)
 let plateBottom = NSColor(red: 0.09, green: 0.09, blue: 0.11, alpha: 1)
 let selectionBlue = NSColor(red: 0.04, green: 0.52, blue: 1.0, alpha: 1)
@@ -36,8 +32,8 @@ func draw(title: String, _ font: NSFont, _ colour: NSColor, centredAt point: CGP
     )
 }
 
-/// Between the two icons, clear of both. Drawn rather than an image so it scales
-/// with whatever the positions above end up being.
+/// Between the two icons, clear of both. Drawn rather than an image, so it
+/// scales with the positions above.
 func drawArrow(from start: CGFloat, to end: CGFloat, y: CGFloat) {
     let head = 11.0
     let line = NSBezierPath()
@@ -84,8 +80,8 @@ func drawBackground() {
         NSColor(white: 1, alpha: 0.42),
         centredAt: CGPoint(x: width / 2, y: 100)
     )
-    // Said here rather than left to the first launch: a permission dialog nobody
-    // was expecting is the moment an unsigned application looks like malware.
+    // Said here rather than at first launch: an unexpected permission dialog is
+    // the moment an unsigned application looks like malware.
     draw(
         title: "It asks for Accessibility the first time you switch a window.",
         .systemFont(ofSize: 11),
@@ -123,8 +119,8 @@ let double = build.appendingPathComponent("dmg-background@2x.png")
 try render(scale: 1).write(to: single)
 try render(scale: 2).write(to: double)
 
-// Into build/ rather than the repository: the version is stamped in, so a
-// committed copy would be stale the moment it was committed.
+// Into build/, not the repository: the version is stamped in, so a committed
+// copy would be stale immediately.
 let output = build.appendingPathComponent("dmg-background.tiff")
 let tiffutil = Process()
 tiffutil.executableURL = URL(fileURLWithPath: "/usr/bin/tiffutil")

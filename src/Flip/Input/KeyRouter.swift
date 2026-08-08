@@ -3,18 +3,16 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-/// Turns key events into switcher commands. Runs on the event tap's thread and
-/// decides synchronously: whether to swallow an event cannot wait for main.
-///
-/// The interaction ends on a modifier coming back up, which no hotkey API
-/// reports — hence the tap rather than registered hotkeys.
+/// Turns key events into switcher commands, synchronously on the event tap's
+/// thread: whether to swallow an event cannot wait for main. The interaction
+/// ends on a modifier coming back up, which no hotkey API reports — hence a tap.
 final class KeyRouter {
     private let presenter: SwitcherPresenting
     private let frontmost: FrontmostApp
     private let log = Logger(subsystem: Bundle.identifier, category: "router")
 
-    /// A router that believes a closed overlay is open swallows arrow keys
-    /// system-wide, so this crosses threads under a lock.
+    /// Believing a closed overlay is open swallows arrow keys system-wide,
+    /// so this crosses threads under a lock.
     private let visibility = NSLock()
     private var overlayIsVisible = false
 
@@ -28,8 +26,8 @@ final class KeyRouter {
         isOverlayVisible = false
     }
 
-    /// Written on main when bindings or layout change, read on the tap thread for
-    /// every keystroke.
+    /// Written on main when bindings or layout change, read on the tap thread
+    /// for every keystroke.
     private let bindingsLock = NSLock()
     private var leaderBindings: [CGKeyCode: String] = [:]
     private var bareBindings: [CGKeyCode: String] = [:]
@@ -95,8 +93,7 @@ final class KeyRouter {
         let code = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = Modifiers.held(in: event)
 
-        // Shift only ever reverses direction, so it is taken out before the
-        // modifier combination is matched.
+        // Shift only reverses direction, so it comes out before matching.
         let backwards = flags.contains(.maskShift)
         let base = flags.subtracting(.maskShift)
         let step = backwards ? -1 : 1
@@ -124,8 +121,8 @@ final class KeyRouter {
             return nil
         }
 
-        // Matched against the flags as pressed, not `base`: shift is part of a
-        // window binding, where the switcher only ever reads it as "backwards".
+        // Against the flags as pressed, not `base`: shift is part of a window
+        // binding, where the switcher only reads it as "backwards".
         bindingsLock.lock()
         let displayMoveModifier = displayMove
         bindingsLock.unlock()

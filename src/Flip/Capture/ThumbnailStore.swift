@@ -5,21 +5,18 @@ import ScreenCaptureKit
 
 /// Window thumbnails, captured concurrently and scaled by the GPU during capture.
 final class ThumbnailStore: @unchecked Sendable {
-    /// Twice the tile, so a capture is still sharp on a retina display — and
-    /// derived rather than written out, because a tile that grew past a target
-    /// left behind would go soft with nothing to show for it.
+    /// Twice the tile, for retina. Derived rather than written out, so a tile
+    /// that grows past a stale target cannot go soft.
     private static let target = CGSize(
         width: Theme.tileWidth * 2,
         height: (Theme.tileWidth * Theme.thumbnailRatio).rounded(.down) * 2
     )
 
-    /// What accessibility reports the window measures, which Stage Manager does
-    /// not distort. Without it every capture is taken at face value.
+    /// The size accessibility reports, which Stage Manager does not distort.
     var expectedSize: (@Sendable (CGWindowID) -> CGSize?)?
 
-    /// Below this a capture is a Stage Manager miniature rather than a window.
-    /// The parked strip is around two hundred points wide; a window somebody
-    /// wants a preview of is not.
+    /// Below this a capture is a Stage Manager miniature, not a window: the
+    /// parked strip is ~200 points wide, a real window is not.
     private static let smallestRealWindow: CGFloat = 400
 
     /// Still shown while stale; only capture is triggered.
@@ -33,8 +30,8 @@ final class ThumbnailStore: @unchecked Sendable {
     private let lock = NSLock()
     private var images: [CGWindowID: (image: CGImage, at: Date)] = [:]
 
-    /// Ignores age on purpose: falling back to an icon for the ~150 ms of a fresh
-    /// capture looks worse than a slightly stale thumbnail.
+    /// Ignores age: an icon for the ~150ms of a fresh capture looks worse than
+    /// a slightly stale thumbnail.
     func cached(_ id: CGWindowID) -> CGImage? {
         lock.lock()
         defer { lock.unlock() }
@@ -98,14 +95,10 @@ final class ThumbnailStore: @unchecked Sendable {
         let rect = filter.contentRect
         guard rect.width > 0, rect.height > 0 else { return nil }
 
-        // Stage Manager parks a window as a shrunken, tilted miniature against the
-        // edge of the screen, and the window server reports that miniature as the
-        // window itself. Capturing it produces a picture of nothing anybody asked
-        // for. Accessibility goes on reporting the real size throughout, so the two
-        // disagreeing is the tell — measured at 200 wide against 2497.
-        //
-        // Returning nothing keeps whatever was captured before the window was
-        // parked, and leaves the tile on its icon if there was nothing.
+        // Stage Manager parks a window as a tilted miniature and the window
+        // server reports that as the window. Accessibility keeps reporting the
+        // real size, so the two disagreeing is the tell — measured 200 against
+        // 2497. Returning nothing keeps the capture from before it was parked.
         if rect.width < Self.smallestRealWindow,
            let expected = expectedSize?(id), expected.width > 0,
            rect.width < expected.width / 2 {
@@ -143,11 +136,11 @@ final class ThumbnailStore: @unchecked Sendable {
     }
 }
 
-/// Enumerating shareable content costs ~60 ms, more than a capture, so the
+/// Enumerating shareable content costs ~60ms, more than a capture, so the
 /// listing is held rather than fetched per window.
 private actor ShareableWindows {
-    /// An SCWindow stays valid as long as its window exists, so this only bounds
-    /// how long a *missing* entry is believed.
+    /// An SCWindow stays valid while its window exists, so this only bounds how
+    /// long a *missing* entry is believed.
     private static let lifetime: TimeInterval = 60
 
     private let log = Logger(subsystem: Bundle.identifier, category: "thumbnails")
@@ -170,9 +163,9 @@ private actor ShareableWindows {
         return Date().timeIntervalSince(fetchedAt) < Self.lifetime
     }
 
-    /// Actors are reentrant: without joining a refresh already in flight, five
-    /// concurrent tiles fetched the listing five times, serialised to 132 ms.
-    /// The task is assigned before the first await so no caller slips past it.
+    /// Actors are reentrant: without joining a refresh in flight, five concurrent
+    /// tiles fetched the listing five times, serialised to 132ms. Assigned before
+    /// the first await so no caller slips past.
     private func refresh() async {
         if let inFlight { return await inFlight.value }
 

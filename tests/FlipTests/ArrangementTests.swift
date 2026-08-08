@@ -5,7 +5,7 @@ import XCTest
 @testable import Flip
 
 final class WindowArrangementTests: XCTestCase {
-    /// A real visible frame: menu bar off the top, Dock down the left side, so the
+    /// A real visible frame — menu bar off the top, Dock down the left — so the
     /// origin is not zero and an off-by-origin mistake shows up.
     private let area = CGRect(x: 63, y: 0, width: 2497, height: 1410)
 
@@ -114,8 +114,8 @@ final class QuarterTests: XCTestCase {
         }
     }
 
-    /// The keys have to form a square on the keyboard, which is why they are not
-    /// the vim four. Pinned by key code, since a character depends on the layout.
+    /// The keys must form a square, which is why they are not the vim four.
+    /// Pinned by key code, since the character depends on the layout.
     func testTheCornerKeysFormASquare() {
         let table = WindowArrangement.shortcuts(displayMove: .shiftOption)
         let keys = Dictionary(uniqueKeysWithValues: table.map {
@@ -170,8 +170,8 @@ final class FillToggleTests: XCTestCase {
         XCTAssertEqual(outcome(.maximize, large, remembered: before).target, area)
     }
 
-    /// After a restart, or for a window that opened filled, there is nothing to
-    /// go back to. Refusing to move would look exactly like the bug this fixes.
+    /// After a restart, or a window that opened filled, there is nothing to go
+    /// back to — and refusing to move looks like the bug this fixes.
     func testWithNothingRememberedItFallsBackToSomethingCentred() {
         let result = outcome(.maximize, area)
         let target = try? XCTUnwrap(result.target)

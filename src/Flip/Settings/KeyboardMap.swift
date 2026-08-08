@@ -2,15 +2,10 @@ import Carbon.HIToolbox
 import CoreGraphics
 import SwiftUI
 
-/// A picture of the keyboard with the keys Flip uses lit up.
-///
-/// The symbols are the problem this solves: ⌃⌥⌘⇧ mean nothing until you see which
-/// physical key each one is, and the settings window was full of them. Here the
-/// modifier keys carry both the symbol and the word, in the positions your thumbs
-/// already know.
-///
-/// Positions are fixed — that is what a keyboard is — but the letters come from
-/// the layout in use, so a German keyboard shows Z where an American one shows Y.
+/// A picture of the keyboard with the keys Flip uses lit up. ⌃⌥⌘⇧ mean nothing
+/// until you see which physical key each one is, so the modifiers carry the word
+/// as well as the symbol. Letters follow the layout in use: a German keyboard
+/// shows Z where an American one shows Y.
 struct KeyboardMap: View {
     let keys: Set<CGKeyCode>
     let modifiers: CGEventFlags
@@ -44,9 +39,8 @@ struct KeyboardMap: View {
 
                 Spacer(minLength: 16)
 
-                // Sits with the picture rather than in a tab, because it changes
-                // nothing about how Flip behaves — only whether the drawing
-                // matches the keyboard on the desk.
+                // With the picture rather than in a tab: it changes nothing
+                // about Flip, only whether the drawing matches the desk.
                 Picker("", selection: $order) {
                     ForEach(ModifierRowOrder.allCases) { choice in
                         Text(choice.label).tag(choice)
@@ -60,8 +54,7 @@ struct KeyboardMap: View {
         }
     }
 
-    // Broken into named steps rather than one chain: the type checker gives up on
-    // the whole thing in one expression.
+    // Named steps rather than one chain: the type checker gives up otherwise.
     private func cap(_ key: Key) -> some View {
         let lit = isLit(key)
         let size: CGFloat = key.caption == nil ? 11 : 9
@@ -74,7 +67,7 @@ struct KeyboardMap: View {
             .font(.system(size: size, weight: weight))
             .foregroundStyle(ink)
             .lineLimit(2)
-            // The captions are what this whole view is for, so they shrink rather
+            // The captions are the point of this view, so they shrink rather
             // than truncate — "comm…" helps nobody.
             .minimumScaleFactor(0.7)
             .multilineTextAlignment(.center)
@@ -82,8 +75,8 @@ struct KeyboardMap: View {
             .background(RoundedRectangle(cornerRadius: 4).fill(fill))
     }
 
-    /// The letter this key types, falling back to the fixed name for the ones that
-    /// type nothing — escape, the arrows, the modifiers.
+    /// The letter this key types, or a fixed name for the ones that type
+    /// nothing — escape, the arrows, the modifiers.
     private func label(for key: Key) -> String {
         if let caption = key.caption {
             return key.name.map { "\($0)\n\(caption)" } ?? caption
@@ -138,12 +131,10 @@ struct KeyboardMap: View {
         Key(name: symbol, caption: caption, modifier: flag, width: width)
     }
 
-    /// Which shape the keyboard actually has. The letters follow the layout, but
-    /// the *shape* follows the hardware, and the two are independent: a German
-    /// layout is typed on plenty of ANSI keyboards, which have no key between the
-    /// left shift and Z and no key beside the return.
-    /// The upper rows come from the hardware, the bottom one from the setting —
-    /// macOS knows the first and cannot know the second.
+    /// Letters follow the layout, shape follows the hardware, and the two are
+    /// independent: a German layout is typed on plenty of ANSI keyboards, which
+    /// have no key between left shift and Z. The bottom row follows the setting,
+    /// because macOS knows the shape but cannot know where command sits.
     private var rows: [[Key]] {
         let shape = Int(KBGetLayoutType(Int16(LMGetKbdType()))) == kKeyboardANSI
             ? Self.ansi
@@ -165,15 +156,14 @@ struct KeyboardMap: View {
         let option = Self.modifier("⌥", "option", .maskAlternate, width: 1.4)
         let command = Self.modifier("⌘", "command", .maskCommand, width: 1.8)
         let left = order == .appleStyle ? [control, option, command] : [control, command, option]
-        // Two on the right, not three: that is the asymmetry every keyboard has,
-        // and mirroring all three made this row stick out past the ones above it.
+        // Two on the right, not three: the asymmetry every keyboard has, and
+        // mirroring all three made the row stick out past those above.
         let right = left.suffix(2).reversed()
 
         return left + [
         Self.named("space", nil, width: 3.0),
     ] + right + [
-        // Four in a row rather than the real inverted T: each one has to be
-        // able to light up on its own, and a stacked pair cannot.
+        // Four in a row rather than an inverted T: each has to light up alone.
         Self.named("←", kVK_LeftArrow),
         Self.named("↓", kVK_DownArrow),
         Self.named("↑", kVK_UpArrow),

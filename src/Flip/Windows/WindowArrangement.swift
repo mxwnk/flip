@@ -16,8 +16,8 @@ enum WindowArrangement: CaseIterable {
     case nextDisplay
 }
 
-/// One action and the key that performs it. The router matches against this and
-/// the settings window lists it, so the two cannot drift apart.
+/// One action and its key. The router matches against this and the settings
+/// window lists it, so the two cannot drift apart.
 struct WindowShortcut: Identifiable {
     let arrangement: WindowArrangement
     let modifiers: CGEventFlags
@@ -29,8 +29,8 @@ struct WindowShortcut: Identifiable {
 }
 
 extension WindowArrangement {
-    /// The lookup the router performs, on the table rather than inside it, so both
-    /// the router and its tests ask the same question.
+    /// On the table rather than inside the router, so the router and its tests
+    /// ask the same question.
     static func matching(
         keyCode: CGKeyCode,
         modifiers: CGEventFlags,
@@ -41,20 +41,12 @@ extension WindowArrangement {
             .arrangement
     }
 
-    /// The halves and quarters are fixed, and stay that way. Every single modifier
-    /// is already spoken for with the arrow keys — Option moves by word, Control
-    /// switches spaces, fn is Home and End, and Command is start and end of line —
-    /// so two of them is what is left, and there is no second pair to offer.
+    /// Halves and quarters are fixed: every single modifier is already taken on
+    /// the arrows, so a pair is all that is left and there is no second one. The
+    /// display moves share those arrows, hence a modifier of their own.
     ///
-    /// The display moves are the exception: they take the same arrows as the
-    /// halves, so they need a modifier of their own, and which one is a matter of
-    /// what else is bound on the machine.
-    ///
-    /// Corners take letters rather than arrows: four corners need four keys and
-    /// arrows only offer two axes. `u i j k` because those four sit as a square on
-    /// the keyboard, which the obvious vim choice does not — `y u / h j` looks like
-    /// a square on a US layout but types `z u / h j` on a German one, putting the
-    /// top left corner on the wrong key.
+    /// Corners take `u i j k` because those form a square on the keyboard —
+    /// vim's `y u / h j` only does on a US layout.
     static func shortcuts(displayMove: DisplayMoveModifier) -> [WindowShortcut] {
         let halves: CGEventFlags = [.maskControl, .maskAlternate]
         let displays = displayMove.flags
@@ -98,10 +90,8 @@ enum WindowArranger {
         var restore: CGRect?
     }
 
-    /// Where the window should end up, in Cocoa coordinates.
-    ///
-    /// Everything is measured against `visibleFrame`, so a maximised window stops
-    /// at the menu bar and the Dock rather than hiding behind them.
+    /// Where the window should end up, in Cocoa coordinates. Measured against
+    /// `visibleFrame`, so a maximised window stops at the menu bar and the Dock.
     static func outcome(
         for arrangement: WindowArrangement,
         window: CGRect,
@@ -120,9 +110,8 @@ enum WindowArranger {
         }
     }
 
-    /// Filling a window that already fills puts it back where it was. Every other
-    /// arrangement is one-way and forgets whatever was being held for a restore,
-    /// so a remembered frame can never outlive the fill it belongs to.
+    /// Filling a window that already fills puts it back. Every other arrangement
+    /// is one-way and forgets the remembered frame, so it cannot outlive its fill.
     nonisolated static func outcome(
         for arrangement: WindowArrangement,
         window: CGRect,
@@ -137,15 +126,14 @@ enum WindowArranger {
             return Outcome(target: area, restore: window)
         }
 
-        // Nothing remembered means the window was already filling when Flip first
-        // saw it — a restart, or the application opened that way. Something
-        // reasonable beats refusing to move.
+        // Nothing remembered: the window already filled when Flip first saw it.
+        // Something reasonable beats refusing to move.
         return Outcome(target: remembered ?? centred(in: area))
     }
 
     /// Applications that resize in steps cannot land on the visible frame exactly
-    /// — a terminal snaps to whole character cells — and a window a few points
-    /// short of the edges is filled as far as anyone pressing the key is concerned.
+    /// — a terminal snaps to whole character cells — and a few points short still
+    /// counts as filled to whoever pressed the key.
     nonisolated static func fills(_ window: CGRect, _ area: CGRect, tolerance: CGFloat = 20) -> Bool {
         abs(window.minX - area.minX) <= tolerance
             && abs(window.minY - area.minY) <= tolerance
@@ -162,9 +150,8 @@ enum WindowArranger {
         )
     }
 
-    /// The half and maximise geometry on its own, so it can be checked without a
-    /// screen. `area` is a visible frame: it excludes the menu bar and the Dock,
-    /// and its origin is not necessarily zero.
+    /// The geometry alone, so it can be checked without a screen. `area` is a
+    /// visible frame: no menu bar, no Dock, and its origin is not necessarily zero.
     nonisolated static func frame(for arrangement: WindowArrangement, in area: CGRect) -> CGRect? {
         switch arrangement {
         case .leftHalf:
@@ -199,9 +186,8 @@ enum WindowArranger {
         return mapped(window, from: screen.visibleFrame, to: target.visibleFrame)
     }
 
-    /// Keeps the window where it was on the display it leaves, proportionally, so a
-    /// left half stays a left half rather than landing somewhere arbitrary. Pure,
-    /// so it can be checked without a second monitor.
+    /// Proportional, so a left half stays a left half rather than landing
+    /// somewhere arbitrary. Pure, so it needs no second monitor to check.
     nonisolated static func mapped(_ window: CGRect, from: CGRect, to: CGRect) -> CGRect {
         let scaleX = to.width / from.width
         let scaleY = to.height / from.height

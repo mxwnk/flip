@@ -1,13 +1,11 @@
 import AppKit
 import SwiftUI
 
-/// The overlay's mouse handling, done in AppKit rather than with SwiftUI's
-/// `onHover`: that installs a tracking area which is only live while its own
-/// application is active, and Flip deliberately never activates. `.activeAlways`
-/// is the whole point of doing it here.
+/// Mouse handling in AppKit rather than SwiftUI's `onHover`, whose tracking area
+/// is only live while its own application is active — and Flip never activates.
+/// `.activeAlways` is the point.
 final class OverlayHostingView<Content: View>: NSHostingView<Content> {
-    /// Both report a point with the origin at the view's top left, matching the
-    /// way `OverlayLayout` counts rows.
+    /// Origin at the view's top left, matching how `OverlayLayout` counts rows.
     var onPointerMoved: ((CGPoint) -> Void)?
     var onClick: ((CGPoint) -> Void)?
 

@@ -1,9 +1,8 @@
 import AppKit
 import OSLog
 
-/// Everything worth knowing when Flip misbehaves, as plain text on the clipboard.
-/// The point is that a report can be written without opening a terminal, so this
-/// gathers what someone would otherwise be talked through collecting.
+/// Everything worth knowing when Flip misbehaves, as plain text on the
+/// clipboard — so a report can be written without opening a terminal.
 @MainActor
 enum Diagnostics {
     static func report(
@@ -16,8 +15,8 @@ enum Diagnostics {
         var lines: [String] = []
 
         lines.append("Flip \(Bundle.main.versionDescription)")
-        // Which copy is running matters: a Homebrew install and a `make run` build
-        // both answer to the same name, and only the path tells them apart.
+        // A Homebrew install and a `make run` build answer to the same name;
+        // only the path tells them apart.
         lines.append("Bundle: \(Bundle.main.bundlePath)")
         lines.append("macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)")
         lines.append("")
@@ -50,8 +49,8 @@ enum Diagnostics {
         pasteboard.setString(report, forType: .string)
     }
 
-    /// Flip's own entries only. `OSLogStore.local()` would need an entitlement
-    /// Flip has no business holding; the current process needs none.
+    /// Flip's own entries only: `OSLogStore.local()` needs an entitlement Flip
+    /// has no business holding.
     private static func recentLog(limit: Int = 60) -> [String] {
         guard let store = try? OSLogStore(scope: .currentProcessIdentifier) else { return [] }
 

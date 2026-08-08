@@ -2,9 +2,8 @@ import Foundation
 import OSLog
 import ServiceManagement
 
-/// Starting Flip at login. The plist ships in the bundle and is registered by the
-/// app, which puts it under System Settings › Login Items and resolves
-/// `BundleProgram` against the bundle, so moving Flip cannot strand it.
+/// Starting Flip at login. The plist ships in the bundle, so it appears under
+/// System Settings › Login Items and moving Flip cannot strand it.
 @MainActor
 enum LoginItem {
     private static let log = Logger(subsystem: Bundle.identifier, category: "loginitem")
@@ -37,8 +36,8 @@ enum LoginItem {
         }
     }
 
-    /// Deletes the old plist but does not boot the job out: this process is very
-    /// likely the one it started. Without the file it is not loaded again.
+    /// Deletes the plist without booting the job out — this process is probably
+    /// the one it started. Without the file it never loads again.
     static func migrateFromLegacyAgent() {
         guard FileManager.default.fileExists(atPath: legacyAgent.path) else { return }
 

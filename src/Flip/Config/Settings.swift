@@ -61,9 +61,8 @@ enum OverlayDelay: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// Which screen the grid appears on. A two monitor desk is where this matters:
-/// the grid can open on the display you are not looking at, and it looks for a
-/// moment as though the key did nothing.
+/// Which screen the grid appears on. On a two monitor desk it can otherwise
+/// open on the display you are not looking at, reading as though nothing happened.
 enum OverlayPlacement: String, Codable, CaseIterable, Identifiable {
     case activeWindow
     case primaryDisplay
@@ -80,8 +79,8 @@ enum OverlayPlacement: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// Which modifier carries a window to the next display. Kept apart from the
-/// halves, which own Control and Option with the same arrow keys.
+/// Which modifier carries a window to the next display — apart from the halves,
+/// which own Control and Option on the same arrows.
 enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable {
     case shiftOption
     case allThree
@@ -110,13 +109,9 @@ enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// Where command sits in the bottom row. Apple puts it beside the space bar;
-/// a board with a Windows layout puts the Windows key there instead, which macOS
-/// reads as command, so the order reads control, command, option.
-///
-/// macOS cannot be asked: the modifier remapping it exposes says what each key
-/// *does*, not where it *is*, and a keyboard like the Nuphy Air75 reports Apple's
-/// own vendor identifier while carrying the other arrangement.
+/// Where command sits in the bottom row. macOS cannot be asked: its modifier
+/// remapping says what each key *does*, not where it *is*, and the Nuphy Air75
+/// reports Apple's vendor identifier while carrying the Windows arrangement.
 enum ModifierRowOrder: String, Codable, CaseIterable, Identifiable {
     case appleStyle
     case windowsStyle
@@ -139,8 +134,8 @@ struct Settings: Codable, Equatable {
     /// Off needs no Screen Recording grant at all.
     var showThumbnails = true
 
-    /// A tap shorter than this switches with no overlay at all. The selection is
-    /// made either way; only showing it waits.
+    /// A shorter tap switches with no overlay. The selection is made either
+    /// way; only showing it waits.
     var overlayDelay: OverlayDelay = .short
 
     /// Off lists only what is on the space you are looking at.
@@ -148,8 +143,7 @@ struct Settings: Codable, Equatable {
 
     var overlayPlacement: OverlayPlacement = .activeWindow
 
-    /// Only the display moves are settable; the halves and quarters are not, for
-    /// the reason spelled out in WindowArrangement.
+    /// Only the display moves are settable — see WindowArrangement for why.
     var displayMoveModifier: DisplayMoveModifier = .shiftOption
 
     /// Only affects the picture of the keyboard in the settings window.
@@ -165,9 +159,8 @@ struct Settings: Codable, Equatable {
 
     init() {}
 
-    /// Every field falls back instead of failing. Swift's synthesised decoding
-    /// requires all keys, so adding one would make an existing file unreadable and
-    /// silently reset everything the user had configured.
+    /// Every field falls back instead of failing: synthesised decoding requires
+    /// all keys, so adding one would silently reset an existing file.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = Settings()

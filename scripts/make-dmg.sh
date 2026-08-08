@@ -6,11 +6,9 @@
 #   scripts/make-dmg.sh <version> <identity>
 #   scripts/make-dmg.sh <version> <identity> --layout
 #
-# The window layout lives in a `.DS_Store` that only Finder can write, and
-# driving Finder needs a desktop session — which a build runner does not reliably
-# have. So the layout is produced once with --layout and committed, the same way
-# the application icon is committed rather than drawn during a build. Everything
-# else here is hdiutil and cp, which are happy headless.
+# The layout lives in a `.DS_Store` only Finder can write, and driving Finder
+# needs a desktop session a build runner may not have. So it is produced once
+# with --layout and committed. The rest is hdiutil and cp, happy headless.
 
 set -euo pipefail
 
@@ -27,13 +25,12 @@ WRITABLE="$ROOT/build/rw.dmg"
 OUTPUT="$ROOT/build/$NAME-$VERSION.dmg"
 LAYOUT_FILE="$ROOT/resources/dmg/DS_Store"
 
-# Has to agree with scripts/make-dmg-background.swift, or the arrow drawn on the
-# backdrop points somewhere the icons are not.
+# Must agree with make-dmg-background.swift, or the arrow points at nothing.
 WINDOW_WIDTH=660
 WINDOW_HEIGHT=440
-# Finder measures the window, not the area the backdrop gets: the title bar takes
-# 31 points off the top and the status bar 28 off the bottom. Measured, because
-# guessing them clips the line along the bottom edge of the image.
+# Finder measures the window, not the backdrop area: the title bar takes 31
+# points off the top and the status bar 28 off the bottom. Measured, because
+# guessing clips the bottom edge.
 WINDOW_CHROME=59
 ICON_SIZE=112
 APP_X=170
@@ -47,9 +44,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# An earlier image of the same name may still be attached — the released one, if
-# somebody opened it to look. Mounting over it lands the writable copy somewhere
-# else and every step after that works on the wrong, read-only volume.
+# An earlier image of the same name may still be attached. Mounting over it
+# lands the writable copy elsewhere, and everything after works on the wrong,
+# read-only volume.
 hdiutil detach "$VOLUME" -quiet 2>/dev/null || true
 
 echo "==> Staging"
@@ -57,8 +54,8 @@ rm -rf "$STAGING"
 mkdir -p "$STAGING/.background"
 cp -R "$ROOT/build/$NAME.app" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
-# Redrawn per release so the window names the version being installed. The
-# layout refers to the backdrop by name, so replacing its contents is free.
+# Redrawn per release so the window names the version. The layout refers to it
+# by name, so replacing the contents is free.
 swift "$HERE/make-dmg-background.swift" "$VERSION" >/dev/null
 cp "$ROOT/build/dmg-background.tiff" "$STAGING/.background/background.tiff"
 cp "$ROOT/resources/$NAME.icns" "$STAGING/.VolumeIcon.icns"
@@ -76,10 +73,9 @@ hdiutil create -volname "$NAME" -srcfolder "$STAGING" -fs HFS+ \
     -format UDRW -size "${SIZE}m" -quiet "$WRITABLE"
 hdiutil attach "$WRITABLE" -quiet -nobrowse -noautoopen
 
-# Marks the volume as carrying its own icon; without it .VolumeIcon.icns is an
-# ordinary file that nothing looks at. SetFile ships with the command line tools,
-# and a build runner without them should still produce a usable disk image — the
-# icon is decoration, not the point.
+# Marks the volume as carrying its own icon; without it .VolumeIcon.icns is a
+# file nothing looks at. SetFile needs the command line tools, so this is
+# allowed to fail: the icon is decoration.
 SetFile -a C "$VOLUME" || echo "    no SetFile; the volume keeps the generic icon"
 
 if [ "$LAYOUT" = "--layout" ]; then

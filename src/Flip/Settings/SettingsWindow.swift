@@ -4,7 +4,7 @@ import CoreGraphics
 import SwiftUI
 
 /// An accessory application is never the active one, so ordering a window front
-/// is not enough — it opens behind everything without an explicit activate.
+/// is not enough on its own.
 @MainActor
 final class SettingsWindow {
     private let settings: SettingsStore
@@ -33,25 +33,23 @@ final class SettingsWindow {
         window.title = "Flip Settings"
 
         let host = NSHostingView(rootView: SettingsView(settings: settings, bindings: bindings))
-        // Otherwise the hosting view sizes the window to the content's ideal size,
-        // which for a list is every row at once.
+        // Otherwise the hosting view sizes to the content's ideal size, which
+        // for a list is every row at once.
         host.sizingOptions = []
         window.contentView = host
 
-        // A comfortable floor, not a required one: every tab is a grouped form now
-        // and scrolls, so nothing can be cut off however small this gets.
+        // A comfortable floor, not a required one: every tab scrolls.
         window.contentMinSize = NSSize(width: 560, height: 640)
         window.setContentSize(NSSize(width: 680, height: 820))
         window.center()
 
-        // Remembers a size you dragged to. Without it every launch snaps back.
+        // Remembers a size you dragged to; without it every launch snaps back.
         window.setFrameAutosaveName("Settings")
         window.setFrameUsingName("Settings")
 
-        // Above ordinary windows, because an accessory application cannot reliably
-        // be made active and the window otherwise opens behind whatever is in
-        // front — looking as though the menu item did nothing. Well below the
-        // overlay's own level, so the switcher still draws over it.
+        // An accessory application cannot reliably be made active, so without
+        // this the window opens behind whatever is in front and the menu item
+        // looks dead. Well below the overlay, which still draws over it.
         window.level = .floating
 
         window.isReleasedWhenClosed = false
@@ -68,8 +66,8 @@ private struct SettingsView: View {
 
     private enum Tab: Hashable { case general, shortcuts, windows, excluded }
 
-    /// What the keyboard lights up, following whichever tab is open. Showing every
-    /// binding at once would be a keyboard with half its keys lit and no meaning.
+    /// What the keyboard lights up, per tab. All bindings at once would be half
+    /// the keys lit and no meaning.
     private var litKeys: Set<CGKeyCode> {
         switch tab {
         case .general:
@@ -122,8 +120,8 @@ private struct SettingsView: View {
 
             Divider()
 
-            // Always on show, lighting up whatever the tab above is about. The
-            // symbols are unreadable until you can see which key each one is.
+            // Always on show: the symbols are unreadable until you can see
+            // which key each one is.
             KeyboardMap(
                 keys: litKeys,
                 modifiers: litModifiers,

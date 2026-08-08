@@ -30,8 +30,8 @@ final class MenuBarItem: NSObject {
         update(for: status, paused: false)
     }
 
-    /// A switcher that lost Accessibility looks exactly like a broken keyboard,
-    /// so the icon carries the warning.
+    /// A switcher without Accessibility looks like a broken keyboard, so the
+    /// icon carries the warning.
     func update(for status: Permissions.Status, paused: Bool) {
         self.status = status
         isPaused = paused
@@ -59,9 +59,8 @@ final class MenuBarItem: NSObject {
         header.isEnabled = false
         menu.addItem(header)
 
-        // Directly under the version, which is where anyone wondering whether
-        // they are current would look. The menu bar icon is left alone: it means
-        // something is wrong, and an update is not that.
+        // Under the version, where anyone wondering would look. The menu bar
+        // icon stays clean: it means something is wrong, and this is not.
         if let availableUpdate {
             menu.addItem(action("Update to \(availableUpdate)…", #selector(openReleasePage)))
         }

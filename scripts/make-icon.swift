@@ -1,14 +1,13 @@
 // Draws Flip's application icon: resources/Flip.icns for the bundle and
 // docs/icon.png for the readme.
 //
-// A generator rather than a checked-in image, so the icon can be adjusted by
-// changing numbers instead of round-tripping through a drawing program — and so
-// it needs nothing installed beyond the Swift toolchain the project already uses.
+// A generator rather than a checked-in image, so the icon is adjusted by
+// changing numbers and needs nothing beyond the Swift toolchain.
 //
 //   swift scripts/make-icon.swift        (or: make icon)
 //
-// The motif is the app's own: two window tiles, offset, the front one carrying
-// the same blue selection ring the overlay draws.
+// The motif is the app's own: two offset window tiles, the front one carrying
+// the overlay's blue selection ring.
 
 import AppKit
 import Foundation
@@ -17,8 +16,8 @@ import Foundation
 
 let canvas: CGFloat = 1024
 
-/// Apple leaves the outer tenth of the canvas empty and rounds what is left. Fill
-/// the whole square instead and the icon looks oversized next to every other one.
+/// Apple leaves the outer tenth empty and rounds the rest; filling the square
+/// makes the icon look oversized next to every other one.
 let plateInset: CGFloat = 100
 let plateRadius: CGFloat = 185
 
@@ -45,8 +44,8 @@ func tile(centredAt centre: CGPoint) -> CGRect {
     )
 }
 
-/// A line across the top of a tile, which is the least detail that still reads as
-/// a window rather than a rectangle. Anything finer turns to mush at 32 points.
+/// The least detail that still reads as a window rather than a rectangle.
+/// Anything finer turns to mush at 32 points.
 func drawTitleBar(in rect: CGRect, alpha: CGFloat) {
     let y = rect.maxY - 52
     let bar = NSBezierPath()
@@ -67,8 +66,8 @@ func drawIcon() {
     NSGradient(starting: plateTop, ending: plateBottom)?
         .draw(in: platePath, angle: -90)
 
-    // A hairline along the top edge, the same trick the overlay panel uses to keep
-    // a dark surface from looking flat.
+    // A hairline along the top edge, as the overlay panel does, so a dark
+    // surface does not look flat.
     platePath.addClip()
     let highlight = rounded(plate.insetBy(dx: 2, dy: 2), plateRadius - 2)
     highlight.lineWidth = 4
@@ -78,9 +77,8 @@ func drawIcon() {
     let back = tile(centredAt: backTileCentre)
     let front = tile(centredAt: frontTileCentre)
 
-    // Behind: dimmer, thinner, no ring — the window you are leaving. Not much
-    // dimmer, though: at 16 points it is three pixels of difference against the
-    // plate, and anything subtler simply vanishes.
+    // Behind: dimmer, thinner, no ring — the window you are leaving. Only just
+    // dimmer, though: at 16 points that is three pixels against the plate.
     let backPath = rounded(back, tileRadius)
     NSColor(white: 1, alpha: 0.21).setFill()
     backPath.fill()
@@ -89,8 +87,8 @@ func drawIcon() {
     backPath.stroke()
     drawTitleBar(in: back, alpha: 0.26)
 
-    // A shadow only under the front tile, which is what separates the two at small
-    // sizes far better than any difference in fill.
+    // Only under the front tile: at small sizes that separates the two far
+    // better than any difference in fill.
     NSGraphicsContext.current?.saveGraphicsState()
     let shadow = NSShadow()
     shadow.shadowColor = NSColor(white: 0, alpha: 0.55)
@@ -161,8 +159,8 @@ guard iconutil.terminationStatus == 0 else {
     exit(1)
 }
 
-// The readme shows the same drawing. Written from here rather than exported by
-// hand, which is exactly how it came to be a version behind the application.
+// The readme shows the same drawing. Exporting by hand is how it came to be a
+// version behind the application.
 try render(at: 512).write(to: root.appendingPathComponent("docs/icon.png"))
 
 print("wrote \(icns.path)")

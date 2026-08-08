@@ -1,12 +1,10 @@
 import CoreGraphics
 
 enum Modifiers {
-    /// Caps lock, fn, and the device dependent bits are deliberately left out.
-    ///
-    /// The device bits are frequently set with no key held at all. Caps lock must
-    /// not be able to hold a finished overlay open. And fn is set by the hardware
-    /// for whole groups of keys — the F-row and the arrows both carry it — so a
-    /// binding written as "Control and Option" would never match a real keypress.
+    /// Caps lock, fn and the device bits are left out: the device bits are often
+    /// set with no key held, caps lock must not hold a finished overlay open, and
+    /// fn is set by the hardware for the F-row and the arrows alike — so
+    /// "Control and Option" would never match a real keypress.
     static let significant: CGEventFlags = [
         .maskCommand, .maskAlternate, .maskControl, .maskShift,
     ]

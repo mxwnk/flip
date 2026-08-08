@@ -70,8 +70,7 @@ final class RowMovementTests: XCTestCase {
     }
 
     /// Thirteen windows fill rows of 5, 5 and 3, so columns 3 and 4 have no tile
-    /// in the last row. Landing on its last tile beats refusing to move: the row
-    /// is plainly there, and the nearest thing in it is where the eye goes.
+    /// in the last row. Landing on its last tile beats refusing to move.
     func testAColumnPastTheShortRowLandsOnItsLastTile() {
         XCTAssertEqual(ragged.index(movingRowBy: 1, from: 9, count: 13), 12)
         XCTAssertEqual(ragged.index(movingRowBy: 1, from: 8, count: 13), 12)
@@ -111,8 +110,8 @@ final class RowMovementTests: XCTestCase {
 }
 
 final class HitTestTests: XCTestCase {
-    /// The centre of tile `index`, derived the same way the stacks that draw it
-    /// are: rows from the top, and a short last row centred rather than ragged.
+    /// Derived the way the stacks that draw it are: rows from the top, a short
+    /// last row centred rather than ragged.
     private func centre(of index: Int, in layout: OverlayLayout, count: Int) -> CGPoint {
         let row = index / layout.columns
         let column = index % layout.columns

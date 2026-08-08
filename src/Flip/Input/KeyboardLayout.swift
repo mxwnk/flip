@@ -2,7 +2,7 @@ import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
 
-/// Maps characters to the physical keys that produce them. Hard-coded kVK_ANSI_*
+/// Characters to the physical keys that produce them. Hard-coded kVK_ANSI_*
 /// would bind the wrong key: QWERTZ types "z" where QWERTY says "y".
 enum KeyboardLayout {
     private static let namedKeys: [String: CGKeyCode] = [
@@ -22,9 +22,8 @@ enum KeyboardLayout {
         withLayout { codesByCharacter[character] }
     }
 
-    /// The other direction: what the key in this position types. Drawing a picture
-    /// of the keyboard needs it, and a picture labelled from a hard-coded American
-    /// layout would put Z and Y in the wrong places on a German one.
+    /// The other direction, for drawing the keyboard: a picture labelled from a
+    /// hard-coded American layout puts Z and Y wrong on a German one.
     static func character(for code: CGKeyCode) -> Character? {
         withLayout { charactersByCode[code] }
     }
@@ -35,10 +34,9 @@ enum KeyboardLayout {
         return namedKeys[key.uppercased()]
     }
 
-    /// Only printable ASCII, because "produces a character" is no warning at all:
-    /// on a German layout 40 of 40 alphanumeric keys do, but they produce ç, €, ƒ.
-    /// The nine ASCII ones — @ | [ ] { } ~ among them — are what a binding would
-    /// take away everywhere.
+    /// Only printable ASCII: "produces a character" warns about nothing, since
+    /// on a German layout all 40 alphanumeric keys do — but they produce ç, €, ƒ.
+    /// The nine ASCII ones are what a binding actually takes away.
     static func asciiOptionCharacter(for character: Character) -> Character? {
         withLayout { asciiOptionByCharacter[character] }
     }
@@ -70,8 +68,8 @@ enum KeyboardLayout {
         return body()
     }
 
-    /// Caller holds the lock. The API has no character-to-code direction, so the
-    /// whole keyboard is translated and reversed.
+    /// Caller holds the lock. The API has no character-to-code direction, so
+    /// the whole keyboard is translated and reversed.
     private static func reload() {
         isLoaded = true
         codesByCharacter = [:]

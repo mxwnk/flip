@@ -1,16 +1,14 @@
 import AppKit
 import CoreGraphics
 
-/// Converting between the two coordinate systems macOS uses for windows.
-///
-/// Accessibility and the window server measure from the top left of the primary
-/// display with y growing downwards; NSScreen measures from the bottom left with
-/// y growing upwards. The primary screen's height is the hinge between them.
-/// Getting this wrong moves a window to the wrong place rather than failing.
+/// The two coordinate systems macOS uses for windows: accessibility and the
+/// window server measure from the top left with y downwards, NSScreen from the
+/// bottom left with y upwards. The primary screen's height is the hinge. Getting
+/// it wrong moves a window to the wrong place rather than failing.
 @MainActor
 enum ScreenGeometry {
-    /// Identified by origin, not array position: the display at the Cocoa origin
-    /// is what everything else is measured from.
+    /// By origin, not array position: the display at the Cocoa origin is what
+    /// everything else is measured from.
     static var primary: NSScreen? {
         NSScreen.screens.first { $0.frame.origin == .zero } ?? NSScreen.screens.first
     }

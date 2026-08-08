@@ -3,7 +3,7 @@ import CAXShim
 import CoreGraphics
 
 enum AXBridge {
-    /// The WindowServer's ID, which is what matches an AX window against
+    /// The WindowServer's ID, which matches an AX window against
     /// CGWindowListCopyWindowInfo for z-order and space membership.
     static func windowID(of element: AXUIElement) -> CGWindowID? {
         var id: CGWindowID = 0
@@ -12,7 +12,7 @@ enum AXBridge {
         return id
     }
 
-    /// The default is six seconds. A short one turns a hung app into a missing
+    /// The default is six seconds; a short one turns a hung app into a missing
     /// window rather than a frozen switcher.
     static func limitMessagingTimeout(of application: AXUIElement, to seconds: Float = 0.5) {
         AXUIElementSetMessagingTimeout(application, seconds)
@@ -49,8 +49,8 @@ enum AXBridge {
         return (raw as! AXUIElement)
     }
 
-    /// Native full screen — the green button, its own space. Not a constant in
-    /// the SDK, but the attribute is real and writing false leaves full screen.
+    /// Native full screen — the green button, its own space. Not in the SDK,
+    /// but the attribute is real and writing false leaves it.
     static let fullScreenAttribute = "AXFullScreen"
 
     static func setBool(_ value: Bool, _ attribute: String, of element: AXUIElement) {
@@ -67,8 +67,8 @@ enum AXBridge {
         return CGRect(origin: origin, size: size)
     }
 
-    /// Position, then size, then position again: a window moved to a display it
-    /// does not fit on gets clamped, and the second pass corrects for that.
+    /// Position, size, position again: a window moved to a display it does not
+    /// fit on gets clamped, and the second pass corrects that.
     static func setFrame(_ frame: CGRect, of element: AXUIElement) {
         setPosition(frame.origin, of: element)
         setSize(frame.size, of: element)

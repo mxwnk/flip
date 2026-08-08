@@ -1,8 +1,8 @@
 import Foundation
 import OSLog
 
-/// The bindings, kept as readable JSON in Application Support so they can be
-/// inspected, diffed and carried between machines.
+/// The bindings, as readable JSON in Application Support: inspectable, diffable,
+/// portable between machines.
 @MainActor
 final class BindingStore: ObservableObject {
     @Published private(set) var bindings: [AppBinding] = []
@@ -60,9 +60,9 @@ final class BindingStore: ObservableObject {
     private var watcher: DispatchSourceFileSystemObject?
     private var lastWritten: Data?
 
-    /// Watches the file and re-arms when it is replaced. A directory watch alone
-    /// misses in-place overwrites; a file watch alone is stranded by an atomic
-    /// save swapping the inode. Both cases have to be covered.
+    /// Watches the file and re-arms when replaced. A directory watch misses
+    /// in-place overwrites; a file watch is stranded when an atomic save swaps
+    /// the inode. Both need covering.
     func watchForExternalEdits() {
         watcher?.cancel()
 
@@ -93,8 +93,8 @@ final class BindingStore: ObservableObject {
         watcher = source
     }
 
-    /// Compares content, not timestamps: every save is itself a write, and
-    /// reacting to those would loop.
+    /// Compares content, not timestamps: every save is a write, and reacting
+    /// to those would loop.
     private func reloadIfChangedOnDisk() {
         guard let data = try? Data(contentsOf: fileURL), data != lastWritten,
               let decoded = try? JSONDecoder().decode([AppBinding].self, from: data)

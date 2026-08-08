@@ -1,7 +1,7 @@
 import AppKit
 
-/// Names and icons for bundle identifiers, looked up once each — resolving either
-/// hits Launch Services and the file system.
+/// Names and icons per bundle identifier, looked up once: resolving either hits
+/// Launch Services and the file system.
 @MainActor
 enum AppCatalog {
     private static var icons: [String: NSImage] = [:]
@@ -37,7 +37,7 @@ enum AppCatalog {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
     }
 
-    /// Everything with a Dock icon right now. Flip is an agent, so it is absent.
+    /// Everything with a Dock icon. Flip is an agent, so it is absent.
     static func running() -> [(bundleID: String, name: String)] {
         var seen = Set<String>()
 

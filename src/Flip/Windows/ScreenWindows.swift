@@ -14,13 +14,9 @@ enum ScreenWindows {
         entries(matching: [.optionOnScreenOnly, .excludeDesktopElements])
     }
 
-    /// Every space, which the window server only reports without
-    /// `optionOnScreenOnly`. Far noisier — helper panels and untitled service
-    /// windows come with it — but it is only ever intersected with the
-    /// accessibility model, so a superset is exactly what is wanted: it says
-    /// which of Flip's windows still exist, not which ones to show.
-    ///
-    /// The order is meaningless here. Only one space has a front to back order.
+    /// Every space, which needs `optionOnScreenOnly` dropped. Noisier, but it is
+    /// only intersected with the accessibility model, so a superset is wanted.
+    /// The order is meaningless here: only one space has a front-to-back order.
     static func everySpace() -> [Entry] {
         entries(matching: [.excludeDesktopElements])
     }

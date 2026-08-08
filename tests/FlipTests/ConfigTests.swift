@@ -52,10 +52,10 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(decoded.showWindowsFromEverySpace)
     }
 
-    /// The default has to stay off: turning it on for everyone who upgrades would
-    /// silently widen the grid to windows they have never seen in it.
-    /// The default has to stay the pair it always was: changing it under an
-    /// upgrade would take away a shortcut somebody's fingers already know.
+    /// Must stay off: turning it on at upgrade would silently widen the grid to
+    /// windows nobody has seen in it.
+    /// Must stay the pair it always was: changing it under an upgrade takes away
+    /// a shortcut somebody's fingers know.
     func testTheDisplayMoveKeepsItsOldModifier() throws {
         XCTAssertEqual(Settings().displayMoveModifier, .shiftOption)
 
@@ -133,8 +133,8 @@ final class ModifiersTests: XCTestCase {
 
 @MainActor
 final class BindingStoreTests: XCTestCase {
-    /// A temporary file, because the store writes on every change and the real one
-    /// is the user's live configuration.
+    /// Temporary, because the store writes on every change and the real file is
+    /// the user's live configuration.
     private func makeStore() -> BindingStore {
         let file = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("flip-tests-\(UUID().uuidString)")

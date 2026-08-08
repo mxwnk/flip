@@ -1,12 +1,11 @@
 // The key sequence for the demonstration recording.
 //
-// Performed rather than typed, because a synthetic keystroke and a real one
-// cannot share a keyboard: any actual key press releases the modifier and ends
-// the take. Nobody may touch the keyboard while this runs.
+// Performed rather than typed: a synthetic keystroke and a real one cannot
+// share a keyboard, so any key press ends the take. Hands off while it runs.
 //
 //   swift scripts/demo-choreography.swift [scene]
 //
-// Scenes are separate so each can be recorded on its own: switch, jump, arrange.
+// Separate scenes so each records on its own: switch, jump, arrange.
 
 import CoreGraphics
 import Foundation
@@ -14,7 +13,7 @@ import Foundation
 // MARK: - Timing
 //
 // Generous on purpose: this is watched, not used. A hold has to outlast the
-// overlay's own delay or the grid never draws, which is the thing being shown.
+// overlay's delay or the grid never draws, which is the thing being shown.
 
 let beat: UInt32 = 700_000
 let pause: UInt32 = 1_100_000
@@ -35,8 +34,8 @@ let shiftOption: CGEventFlags = [.maskShift, .maskAlternate]
 
 let source = CGEventSource(stateID: .hidSystemState)
 
-/// Announced as its own event so a keystroke visualiser shows the modifier going
-/// down, rather than only seeing it attached to the next key.
+/// Its own event, so a keystroke visualiser shows the modifier going down
+/// rather than only seeing it attached to the next key.
 func holdModifier(_ flags: CGEventFlags) {
     let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true)
     event?.type = .flagsChanged
@@ -73,8 +72,8 @@ func switching() {
     releaseModifiers()
 }
 
-/// One key straight to an application, and the same key again narrowing the grid
-/// to it. Needs a binding pointing at a demonstration application.
+/// One key straight to an application, the same key again narrowing the grid to
+/// it. Needs a binding pointing at a demonstration application.
 func jumping() {
     tap(cKey, option, wait: pause)
 
@@ -84,11 +83,9 @@ func jumping() {
     releaseModifiers()
 }
 
-/// Halves, filling, and across to the other display.
-///
-/// Lands on Safari first. Window actions apply to whatever was focused last,
-/// and after the jump scene that is the calculator — a small fixed window that
-/// looks wrong stretched across half a screen.
+/// Halves, filling, and across to the other display. Lands on Safari first:
+/// window actions apply to whatever was focused last, and after the jump scene
+/// that is the calculator, which looks wrong stretched across half a screen.
 func arranging() {
     tap(sKey, option, wait: pause)
 

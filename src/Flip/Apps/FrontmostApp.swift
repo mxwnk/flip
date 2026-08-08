@@ -1,9 +1,8 @@
 import AppKit
 import Foundation
 
-/// Cached rather than asked for on demand: the router reads it on the tap thread,
-/// where an AppKit call has no business being. Written on main, read there, with
-/// the lock below as the only guard.
+/// Cached, because the router reads it on the tap thread where an AppKit call
+/// has no business being. Written on main, guarded by the lock below.
 final class FrontmostApp: @unchecked Sendable {
     private let lock = NSLock()
     private var cached: String?

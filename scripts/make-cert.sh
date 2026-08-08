@@ -2,25 +2,22 @@
 #
 # Creates the self-signed code signing identity that Flip is built with.
 #
-# TCC keys a privacy grant to the app's designated requirement, which for an
-# ad-hoc signature is the code directory hash — a value that changes with every
-# single build. Signing against a certificate instead pins the requirement to the
-# bundle identifier and this certificate, so Accessibility and Screen Recording
-# stay granted across rebuilds. Without it, every `make install` costs two trips
-# through System Settings.
+# TCC keys a privacy grant to the designated requirement, which for an ad-hoc
+# signature is the code directory hash — different every build. A certificate
+# pins it to the bundle ID instead, so the grants survive rebuilds. Without it
+# every `make install` costs two trips through System Settings.
 #
-# Interactive: macOS asks to confirm the trust setting at the end. Safe to re-run
-# and safe to interrupt — it picks up from whichever step is missing rather than
-# creating a second certificate. Use `make uncert` to start over.
+# Interactive, safe to re-run and to interrupt: it resumes from whichever step
+# is missing. `make uncert` starts over.
 
 set -euo pipefail
 
 IDENTITY="${1:-Flip Local Signing}"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
-# Homebrew's OpenSSL 3 writes a PKCS#12 that the Security framework refuses with
-# "MAC verification failed". The LibreSSL that ships with macOS writes the older
-# format it can read, so the path is pinned rather than taken from PATH.
+# Homebrew's OpenSSL 3 writes a PKCS#12 the Security framework refuses with
+# "MAC verification failed"; macOS's own LibreSSL writes the older format it
+# reads. Hence the pinned path rather than PATH.
 OPENSSL=/usr/bin/openssl
 
 # Only protects the file for the few milliseconds it exists in a temp directory.
@@ -34,9 +31,9 @@ if security find-identity -v -p codesigning | grep -qF "$IDENTITY"; then
     exit 0
 fi
 
-# A certificate can be left behind by an interrupted run, or be present but
-# untrusted, which is not a valid identity yet. Either way it is reused, because
-# importing a second one would leave codesign with an ambiguous name to match.
+# An interrupted run can leave a certificate behind, or an untrusted one, which
+# is not yet a valid identity. Either is reused: a second would leave codesign
+# with an ambiguous name.
 if security find-certificate -c "$IDENTITY" "$KEYCHAIN" >/dev/null 2>&1; then
     echo "==> Reusing the certificate already in the login keychain"
     security find-certificate -c "$IDENTITY" -p "$KEYCHAIN" > "$WORK/cert.pem"
@@ -53,24 +50,21 @@ else
         -inkey "$WORK/key.pem" -in "$WORK/cert.pem" -passout "pass:$TRANSIT_PASSWORD"
 
     echo "==> Importing into the login keychain"
-    # Scoped to codesign on purpose. Importing with -A would let any process on
-    # the machine sign as this identity, and anything signed as dev.mxwnk.Flip
-    # inherits Flip's Accessibility grant.
+    # Scoped to codesign: with -A any process could sign as this identity, and
+    # anything signed as dev.mxwnk.Flip inherits Flip's Accessibility grant.
     security import "$WORK/identity.p12" -k "$KEYCHAIN" -P "$TRANSIT_PASSWORD" \
         -T /usr/bin/codesign
 
-    # Comfort only: without it macOS puts up a keychain dialog the first time
-    # codesign touches the key. The private key does not reliably carry the
-    # certificate's label, so this cannot be targeted precisely and is allowed to
-    # fail — clicking "Always Allow" once has the same effect.
+    # Comfort only: without it macOS puts up a keychain dialog on the first
+    # sign. The key does not reliably carry the certificate's label, so this
+    # cannot be targeted precisely and may fail — "Always Allow" does the same.
     security set-key-partition-list \
         -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN" >/dev/null 2>&1 || true
 fi
 
 echo "==> Trusting the certificate for code signing (macOS will ask to confirm)"
-# Without a trust setting the certificate imports fine but reports
-# CSSMERR_TP_NOT_TRUSTED and never counts as a valid signing identity. Scoped to
-# codeSign so it is not trusted for anything else, TLS included.
+# Untrusted, the certificate imports fine but reports CSSMERR_TP_NOT_TRUSTED and
+# never counts as a signing identity. Scoped to codeSign, so not TLS.
 security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN" "$WORK/cert.pem"
 
 if security find-identity -v -p codesigning | grep -qF "$IDENTITY"; then

@@ -2,8 +2,8 @@ import Foundation
 
 /// One key bound to one application.
 struct AppBinding: Identifiable, Equatable, Codable {
-    /// SwiftUI list identity only, not persisted. A key can be empty or duplicated
-    /// mid-edit, which is exactly when a stable identity is needed.
+    /// SwiftUI list identity, not persisted: a key can be empty or duplicated
+    /// mid-edit, which is when a stable identity is needed.
     let id: UUID
 
     /// A single character, or a named key such as "F1".

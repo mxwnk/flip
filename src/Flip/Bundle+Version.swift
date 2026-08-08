@@ -9,8 +9,8 @@ extension Bundle {
         object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "dev"
     }
 
-    /// The build number only earns a mention when it says something the version
-    /// does not; the Makefile currently writes the same value into both.
+    /// The build number only shows when it differs from the version; the
+    /// Makefile currently writes the same value into both.
     var versionDescription: String {
         build == shortVersion ? shortVersion : "\(shortVersion) (\(build))"
     }

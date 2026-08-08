@@ -2,9 +2,8 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-/// A session-wide keyboard tap on a thread of its own. macOS quietly disables a
-/// tap whose callback misses its deadline, so it must never queue behind the main
-/// thread's rendering and window server round trips.
+/// A session-wide keyboard tap on its own thread. macOS quietly disables a tap
+/// whose callback misses its deadline, so it must never queue behind main.
 final class EventTap {
     /// Returning nil swallows the event.
     typealias Handler = (CGEventType, CGEvent) -> CGEvent?
@@ -18,9 +17,8 @@ final class EventTap {
     private var port: CFMachPort?
     private var runLoop: CFRunLoop?
 
-    /// Whether the tap is meant to be running. Disabling it makes macOS report the
-    /// tap as disabled, which is indistinguishable from a missed deadline — without
-    /// this the recovery below would switch it straight back on.
+    /// Whether the tap is meant to run. A deliberate disable looks exactly like
+    /// a missed deadline, so without this the recovery would undo the pause.
     private var wanted = true
 
     init(observing types: [CGEventType], handler: @escaping Handler) {
@@ -35,8 +33,8 @@ final class EventTap {
         thread.start()
     }
 
-    /// Disabling at the port rather than short-circuiting the handler: while paused
-    /// the events never reach Flip at all, so the Dock gets Cmd-Tab back.
+    /// At the port, not in the handler: while paused the events never reach
+    /// Flip at all, so the Dock gets Cmd-Tab back.
     func setEnabled(_ enabled: Bool) {
         state.lock()
         wanted = enabled
@@ -78,7 +76,7 @@ final class EventTap {
             },
             userInfo: context
         ) else {
-            // The call gives no reason; a missing Accessibility grant is the usual one.
+            // The call gives no reason; a missing Accessibility grant is usual.
             log.error("could not create the event tap; is Accessibility granted?")
             return
         }
@@ -97,9 +95,8 @@ final class EventTap {
     }
 
     private func dispatch(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // Announced exactly once. Without re-enabling, every hotkey silently stops
-        // working until the app restarts — but a pause looks identical from here,
-        // so intent decides.
+        // Announced once. Without re-enabling, every hotkey silently dies until
+        // restart — but a pause looks identical here, so intent decides.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             state.lock()
             let recover = wanted

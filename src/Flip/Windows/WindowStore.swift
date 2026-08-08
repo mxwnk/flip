@@ -3,8 +3,8 @@ import ApplicationServices
 import CoreGraphics
 import OSLog
 
-/// The live window model, maintained by AXObserver notifications on its own
-/// thread. Reading it costs one lock and one window server call, no AX traffic.
+/// The live window model, kept by AXObserver notifications on its own thread.
+/// Reading it costs one lock and one window server call, no AX traffic.
 final class WindowStore: @unchecked Sendable {
     private let log = Logger(subsystem: Bundle.identifier, category: "windows")
     private let thread = RunLoopThread(name: "\(Bundle.identifier).windows")
@@ -14,9 +14,8 @@ final class WindowStore: @unchecked Sendable {
     private var windows: [CGWindowID: WindowInfo] = [:]
     private var focusCounter: UInt64 = 0
     private var lastFocusedID: CGWindowID?
-    /// Where a window sat before it was told to fill the screen, so pressing the
-    /// same key again puts it back. Cocoa coordinates, cleared when the window
-    /// goes away or is arranged some other way.
+    /// Where a window sat before it filled the screen, so the same key puts it
+    /// back. Cocoa coordinates, cleared when it goes away or moves otherwise.
     private var restoreFrames: [CGWindowID: CGRect] = [:]
 
     /// The cheapest moment to capture a thumbnail: content final, still on screen.
@@ -28,9 +27,8 @@ final class WindowStore: @unchecked Sendable {
 
     // MARK: - Reading
 
-    /// Minimised windows are absent from both window server listings, so they are
-    /// added back from the AX model rather than filtered in — which is why they
-    /// have never obeyed the space filter in either direction.
+    /// Minimised windows are in neither window server listing, so they come back
+    /// from the AX model instead — which is why they ignore the space filter.
     func windows(
         ofBundleID bundleID: String? = nil,
         includingMinimized: Bool = false,
@@ -51,8 +49,8 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// What accessibility thinks the window measures. Read from the published
-    /// snapshot, so it costs a lock and no accessibility traffic.
+    /// What accessibility thinks the window measures, from the published
+    /// snapshot — a lock, and no accessibility traffic.
     func size(of id: CGWindowID) -> CGSize? {
         lock.lock()
         defer { lock.unlock() }
@@ -88,18 +86,16 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// Reads the window on the accessibility thread, works out the target on the
-    /// main one where NSScreen lives, then applies it back on the accessibility
-    /// thread. Two hops, but neither framework is touched from the wrong place.
+    /// Reads on the accessibility thread, computes on the main one where NSScreen
+    /// lives, writes back. Two hops, but neither framework is touched wrongly.
     func arrange(_ arrangement: WindowArrangement) {
         thread.perform { [self] in
             guard let (id, element) = focusedWindow() else { return }
 
-            // Native full screen is the other way a window can already fill the
-            // screen, and there the frame cannot be written at all — the window
-            // owns its own space. Only the fill key leaves it: the halves would
-            // then have to wait out the space animation to place anything, and
-            // silently undoing full screen is not what they were pressed for.
+            // In native full screen the frame cannot be written at all — the
+            // window owns its space. Only the fill key leaves it: the halves
+            // would have to wait out the space animation, and silently undoing
+            // full screen is not what they were pressed for.
             if arrangement == .maximize,
                AXBridge.bool(AXBridge.fullScreenAttribute, of: element) == true {
                 AXBridge.setBool(false, AXBridge.fullScreenAttribute, of: element)
@@ -110,8 +106,8 @@ final class WindowStore: @unchecked Sendable {
 
             let remembered = restoreFrames[id]
 
-            // Only the geometry needs the main thread: NSScreen is not safe to read
-            // anywhere else. The decision and the write stay where the state lives.
+            // Only the geometry needs the main thread — NSScreen is not safe to
+            // read elsewhere. The decision and the write stay with the state.
             DispatchQueue.main.async { [self] in
                 guard let cocoa = ScreenGeometry.cocoa(fromTopLeft: current) else { return }
 
@@ -195,11 +191,10 @@ final class WindowStore: @unchecked Sendable {
             self?.thread.perform { self?.drop(pid); self?.publish() }
         }
 
-        // Accessibility only lists the windows on the space you are looking at, so
-        // everything elsewhere is invisible until it has been seen once. A held
-        // element stays valid afterwards — raising one switches spaces by itself —
-        // so learning the set as you move around is enough, and needs no private
-        // call for which space a window is on.
+        // Accessibility only lists the current space's windows, so the rest are
+        // invisible until seen once. A held element stays valid afterwards and
+        // raising it switches spaces, so learning the set as you move around is
+        // enough — no private call for which space a window is on.
         center.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -231,8 +226,7 @@ final class WindowStore: @unchecked Sendable {
             self?.handle(event, from: watcher, element: element)
         }
 
-        // A launching application may not answer AX yet; its windows arrive by
-        // notification later.
+        // A launching application may not answer AX yet; its windows arrive later.
         guard let runLoop = thread.cfRunLoop, watcher.start(on: runLoop) else { return }
 
         watchers[identity.pid] = watcher
@@ -241,8 +235,8 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// Only windows that are new. Re-inserting a known one would reset its place
-    /// in the most-recently-used order, which is the whole point of the model.
+    /// New windows only: re-inserting a known one would reset its place in the
+    /// most-recently-used order, which is the point of the model.
     private func adoptWindowsRevealedByTheCurrentSpace() {
         var found = 0
         for watcher in watchers.values {
@@ -354,7 +348,7 @@ final class WindowStore: @unchecked Sendable {
         return snapshot.filter { !$0.isMinimized }.map(\.id)
     }
 
-    /// Nothing has been focused yet at startup, so front-to-back order stands in.
+    /// Nothing is focused yet at startup, so front-to-back order stands in.
     private func seedFocusOrderFromScreenOrder() {
         let onScreen = ScreenWindows.onCurrentSpace()
 

@@ -4,18 +4,12 @@
 //   driver window Flip 500        → id x y w h  of that owner's largest window
 //   driver frontmost              → the active application's name
 //
-// Compiled once rather than run through `swift -e` per step. That matters: the
-// compile takes about a second, and a step that arrives a second late lands after
-// the modifier was released, which reads as a failure that is not one.
+// Compiled once rather than run through `swift -e` per step, which costs a
+// second each — long enough for a step to land after the modifier was released.
 //
-// A whole interaction goes in one invocation so its timing is not at the mercy of
-// process startup. Nobody may touch the keyboard while it runs — a real keypress
-// releases the modifier and ends the sequence halfway through.
-//
-// That single invocation is also why the `await` commands live here rather than
-// in the shell: the sequence cannot be cut in half to poll from outside, because
-// a fresh process posts its key events with no modifier held and the switcher
-// would see the arrow key without the Option that is holding it open.
+// A whole interaction goes in one invocation. That is also why `await` lives
+// here and not in the shell: a fresh process posts its keys with no modifier
+// held, so the switcher would see the arrow without the Option holding it open.
 
 import AppKit
 import CoreGraphics
@@ -23,9 +17,8 @@ import CoreGraphics
 let source = CGEventSource(stateID: .hidSystemState)
 
 /// Poll until something is true, rather than sleeping long enough that it must
-/// be. Every wait in the suite used to be a flat sleep sized for the worst case
-/// on the slowest machine; polling costs the actual case and can afford a far
-/// more generous ceiling, so the suite got both quicker and harder to make flaky.
+/// be. Costs the actual case instead of the worst one, and affords a far more
+/// generous ceiling.
 func poll(timeout milliseconds: Double, every step: UInt32 = 20_000, until ready: () -> Bool) -> Bool {
     posted = false
     let deadline = Date().addingTimeInterval(milliseconds / 1000)
@@ -37,14 +30,13 @@ func poll(timeout milliseconds: Double, every step: UInt32 = 20_000, until ready
     return ready()
 }
 
-/// The log Flip is writing into, and how far into it this step has already been
-/// told to ignore. Passed in the environment so the argument lists stay readable.
+/// The log, and how far into it this step ignores. In the environment to keep
+/// the argument lists readable.
 let logPath = ProcessInfo.processInfo.environment["SMOKE_LOG"]
 let logMark = Int(ProcessInfo.processInfo.environment["SMOKE_MARK"] ?? "0") ?? 0
 
-/// Whether the log has said this since the mark. Reading the file each time is
-/// cheaper than it looks — the predicate is Flip's subsystem alone, so it holds
-/// kilobytes, not the megabytes an unfiltered stream would.
+/// Whether the log has said this since the mark. Re-reading is cheap: the
+/// predicate is Flip's subsystem alone, so the file holds kilobytes.
 func logged(_ pattern: String) -> Bool {
     guard let logPath, let regex = try? NSRegularExpression(pattern: pattern),
           let data = FileManager.default.contents(atPath: logPath), data.count > logMark
@@ -55,8 +47,8 @@ func logged(_ pattern: String) -> Bool {
     return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
 }
 
-/// What accessibility reports for an application's first window, which is the
-/// only way to measure an arrangement with Stage Manager on.
+/// The first window as accessibility sees it — the only way to measure an
+/// arrangement with Stage Manager on.
 func axFrame(of name: String) -> CGRect? {
     guard let app = NSWorkspace.shared.runningApplications.first(where: {
         $0.localizedName == name
@@ -112,15 +104,10 @@ func flags(_ names: String) -> CGEventFlags {
 /// Held across the rest of the invocation, so `key` does not have to repeat it.
 var held: CGEventFlags = []
 
-/// Whether an event has been posted with nothing waited for since. Posting is
-/// asynchronous — it hands the event to the window server — so an invocation
-/// that exits in the same breath can take the event down with it. Measured: a
-/// fill chord posted by an invocation ending right there moved nothing at all,
-/// three times running, while the same chord followed by any wait moved the
-/// window every time.
-///
-/// Every wait clears it, so a sequence that already ends by waiting for
-/// something costs nothing for this.
+/// Posting is asynchronous, so an invocation exiting in the same breath takes
+/// the event with it: a fill chord ending an invocation moved nothing three
+/// times running, the same chord plus a wait moved it every time. Every wait
+/// clears this, so sequences that already wait pay nothing.
 var posted = false
 
 func postFlags(_ value: CGEventFlags) {
@@ -263,15 +250,12 @@ while !arguments.isEmpty {
     // ------------------------------------------------------------------ waiting
 
     case "await":
-        // Waits for a line, and says nothing either way: the check that follows
-        // still reads the log and decides. So a timeout here fails exactly the
-        // check a too-short sleep used to fail — only after a ceiling nobody has
-        // to tune, instead of a sleep everybody does.
+        // Says nothing either way — the check that follows reads the log and
+        // decides. A timeout here fails exactly what a too-short sleep did.
         let pattern = next()
         _ = poll(timeout: Double(next())!) { logged(pattern) }
     case "awaitwindow":
-        // Blocks until the window exists, then prints it exactly as `window`
-        // does, so callers read the same five fields out of either.
+        // Prints the same five fields as `window`, once the window exists.
         let owner = next()
         let minimum = Double(next())!
         let timeout = Double(next())!
@@ -289,10 +273,9 @@ while !arguments.isEmpty {
         }
         print(arrived ? "yes" : "no")
     case "awaitax":
-        // Waits for an arrangement to land by watching the width change, rather
-        // than sleeping long enough that it must have. The settle first is not
-        // superstition: without it a window that already happens to satisfy the
-        // comparison returns the old reading before the key is even handled.
+        // Watches the width change rather than sleeping. The settle first is not
+        // superstition: without it a window already satisfying the comparison
+        // returns the old reading before the key is handled.
         let name = next()
         let comparison = next()
         let value = Double(next())!
@@ -317,6 +300,5 @@ while !arguments.isEmpty {
     }
 }
 
-// Nothing waited after the last event, so give the window server the moment it
-// needs to take delivery before this process disappears.
+// Nothing waited after the last event, so let the window server take delivery.
 if posted { usleep(150_000) }

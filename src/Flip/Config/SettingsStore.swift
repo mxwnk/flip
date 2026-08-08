@@ -32,8 +32,7 @@ final class SettingsStore: ObservableObject {
         }
 
         do {
-            // Through the property, so an older file missing keys is written back
-            // complete.
+            // Through the property, so an older file is written back complete.
             settings = try JSONDecoder().decode(Settings.self, from: data)
         } catch {
             log.error("settings unreadable (\(error.localizedDescription, privacy: .public)), using defaults")

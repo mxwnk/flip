@@ -2,10 +2,8 @@ import AppKit
 import Foundation
 import OSLog
 
-/// Asks GitHub what the newest release is, and stops there. Nothing is ever
-/// downloaded or installed: the answer is one menu item, so updating stays a
-/// deliberate act — and Homebrew keeps owning the copy it installed, which it
-/// could not if the application replaced itself behind Homebrew's back.
+/// Asks GitHub what the newest release is, and stops. Nothing is downloaded, so
+/// updating stays deliberate and Homebrew keeps owning the copy it installed.
 @MainActor
 final class UpdateChecker {
     static let releases = URL(string: "https://github.com/mxwnk/flip/releases/latest")!
@@ -15,8 +13,8 @@ final class UpdateChecker {
     private let settings: SettingsStore
     private var daily: Timer?
 
-    /// Set only when it is genuinely newer than this build, so a development
-    /// copy running ahead of the last release stays quiet.
+    /// Only when genuinely newer, so a development copy running ahead of the
+    /// last release stays quiet.
     private(set) var available: String?
     var onFound: (() -> Void)?
 
@@ -25,8 +23,7 @@ final class UpdateChecker {
     }
 
     func start() {
-        // Not at the instant of launch: at login the network is usually not up
-        // yet, and nothing here is urgent enough to race it.
+        // Not at launch: at login the network is usually not up yet.
         Timer.scheduledTimer(withTimeInterval: 30, repeats: false) { _ in
             MainActor.assumeIsolated { [weak self] in self?.check() }
         }
@@ -41,8 +38,7 @@ final class UpdateChecker {
         Task { await ask() }
     }
 
-    /// Compares dot separated numbers rather than strings, where 0.10.0 would
-    /// come out older than 0.9.0.
+    /// Dot-separated numbers, not strings, where 0.10.0 sorts below 0.9.0.
     nonisolated static func isNewer(_ candidate: String, than current: String) -> Bool {
         let new = numbers(in: candidate)
         let old = numbers(in: current)
@@ -56,8 +52,8 @@ final class UpdateChecker {
         return false
     }
 
-    /// Tolerates the leading v of a tag, and anything unparseable becomes zero
-    /// so a malformed tag can never look like an upgrade.
+    /// Tolerates a tag's leading v; anything unparseable becomes zero, so a
+    /// malformed tag cannot look like an upgrade.
     nonisolated static func numbers(in version: String) -> [Int] {
         version
             .drop { !$0.isNumber }

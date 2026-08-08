@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Same reason as the settings window: an accessory application is never the
-/// active one, so ordering front without activating opens it behind everything.
+/// Same as the settings window: an accessory application is never the active
+/// one, so ordering front is not enough on its own.
 @MainActor
 final class AboutWindow {
     static let repository = URL(string: "https://github.com/mxwnk/flip")!
@@ -38,7 +38,7 @@ final class AboutWindow {
 
         window.setContentSize(NSSize(width: 380, height: 430))
         window.center()
-        // Same reason as the settings window: otherwise it opens behind.
+        // Same as the settings window: otherwise it opens behind.
         window.level = .floating
 
         window.isReleasedWhenClosed = false
@@ -68,8 +68,7 @@ private struct AboutView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
-                // Selectable so a version can be pasted into a report by hand,
-                // for anyone who does not want the whole diagnostic dump.
+                // Selectable, for pasting a version without the whole dump.
                 .textSelection(.enabled)
 
             Text("A window switcher for macOS that gets out of the way.")
@@ -106,7 +105,7 @@ private struct AboutView: View {
         Diagnostics.copyToPasteboard(onCopyDiagnostics())
         copied = true
 
-        // Long enough to be read, short enough that the button is not stuck.
+        // Long enough to read, short enough that the button is not stuck.
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
     }
 }
