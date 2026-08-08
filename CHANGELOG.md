@@ -5,6 +5,13 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.3.0
 
+**The settings window stays in front.** Flip runs as an accessory application —
+no Dock icon, never the active one — and macOS will not reliably bring such an
+application's window forward. The window did open; it landed behind whatever was
+in front and looked as though the menu item had done nothing. It now floats above
+ordinary windows, and well below the switcher's own level, so the grid still draws
+over it.
+
 **The display moves are settable.** They share the arrow keys with the halves, so
 they have always needed a modifier of their own — and which one is a matter of
 what else is bound on the machine. Settings › Windows now offers `⇧⌥` as before,

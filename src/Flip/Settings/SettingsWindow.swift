@@ -48,6 +48,12 @@ final class SettingsWindow {
         window.setFrameAutosaveName("Settings")
         window.setFrameUsingName("Settings")
 
+        // Above ordinary windows, because an accessory application cannot reliably
+        // be made active and the window otherwise opens behind whatever is in
+        // front — looking as though the menu item did nothing. Well below the
+        // overlay's own level, so the switcher still draws over it.
+        window.level = .floating
+
         window.isReleasedWhenClosed = false
 
         return window

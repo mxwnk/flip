@@ -38,6 +38,9 @@ final class AboutWindow {
 
         window.setContentSize(NSSize(width: 380, height: 430))
         window.center()
+        // Same reason as the settings window: otherwise it opens behind.
+        window.level = .floating
+
         window.isReleasedWhenClosed = false
 
         return window
