@@ -34,6 +34,16 @@ enum KeyboardLayout {
         return namedKeys[key.uppercased()]
     }
 
+    /// The inverse, for writing down a key that was pressed. Named keys win: F1
+    /// is stored as "F1" rather than as whatever the layout says that key types,
+    /// which on some of them is a character nobody can produce on purpose.
+    static func bindingKey(for code: CGKeyCode) -> String? {
+        if let named = namedKeys.first(where: { $0.value == code })?.key { return named }
+        guard let character = character(for: code) else { return nil }
+
+        return String(character)
+    }
+
     /// Only printable ASCII: "produces a character" warns about nothing, since
     /// on a German layout all 40 alphanumeric keys do — but they produce ç, €, ƒ.
     /// The nine ASCII ones are what a binding actually takes away.

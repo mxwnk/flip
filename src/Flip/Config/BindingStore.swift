@@ -10,6 +10,11 @@ final class BindingStore: ObservableObject {
 
     var onChange: (() -> Void)?
 
+    /// Raised while the settings window is waiting for a key to be pressed.
+    /// Flip's own tap would otherwise swallow one that is already bound bare —
+    /// F1 above all, which is the very key a recorder exists to make reachable.
+    var onKeyCapture: ((Bool) -> Void)?
+
     private let log = Logger(subsystem: Bundle.identifier, category: "bindings")
 
     /// Injectable so tests cannot write over the real configuration.

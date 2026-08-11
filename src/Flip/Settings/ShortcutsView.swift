@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -32,7 +33,8 @@ struct ShortcutsView: View {
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
                     Caption("Hold Option and press a key to reach an application. Pressing it "
-                        + "again while that application is in front walks its windows.")
+                        + "again while that application is in front walks its windows. Click a "
+                        + "key to record another one; F1 to F12 count.")
 
                     Spacer(minLength: 16)
 
@@ -49,36 +51,93 @@ struct ShortcutsView: View {
     }
 }
 
-/// Clicking empties it, the first character typed commits and hands focus back.
-/// Leaving without typing restores the old key, so a stray click costs nothing.
-private struct KeyField: View {
+/// Click, then press the key. A text field could only ever be given characters,
+/// and F1 to F12 are perfectly good bindings — `bindings.json` could name them
+/// but this editor could not.
+///
+/// Escape gives up, and so does clicking it a second time. Recording swallows
+/// the keystroke, so nothing is typed into the settings window on the way past.
+private struct KeyRecorder: View {
     let id: UUID
     @ObservedObject var store: BindingStore
 
-    @FocusState private var isFocused: Bool
-    @State private var text = ""
+    @State private var isRecording = false
+    @State private var monitor: Any?
+    /// Which recording a pending timeout belongs to, so the one it was armed for
+    /// is the only one it can end.
+    @State private var session = 0
 
     var body: some View {
-        TextField(isFocused ? "press" : "key", text: $text)
-            // Without this the form lifts the placeholder into its label column
-            // and every row lines up differently.
-            .labelsHidden()
-            .textFieldStyle(.roundedBorder)
-            .multilineTextAlignment(.center)
-            .frame(width: 54)
-            .focused($isFocused)
-            .onAppear { text = store.key(for: id) }
-            .onChange(of: isFocused) { _, focused in
-                text = focused ? "" : store.key(for: id)
-            }
-            .onChange(of: text) { _, typed in
-                // Last character only, so pasting leaves one key rather than a
-                // rejected word.
-                guard isFocused, let character = typed.last else { return }
+        Button { isRecording ? stop() : start() } label: {
+            Text(isRecording ? "press" : label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(ink)
+                .lineLimit(1)
+                .frame(width: 54, height: 22)
+                .background(RoundedRectangle(cornerRadius: 5).fill(fill))
+        }
+        .buttonStyle(.plain)
+        .onDisappear(perform: stop)
+    }
 
-                store.setKey(String(character), for: id)
-                isFocused = false
-            }
+    private var label: String {
+        let key = store.key(for: id)
+
+        return key.isEmpty ? "key" : key.uppercased()
+    }
+
+    /// Lit the same way as the keyboard below, where this key is about to light
+    /// up too.
+    private var fill: Color {
+        isRecording ? Theme.selectedStroke : Color.primary.opacity(0.07)
+    }
+
+    private var ink: Color {
+        if isRecording { return .white }
+
+        return store.key(for: id).isEmpty ? .secondary : .primary
+    }
+
+    private func start() {
+        guard monitor == nil else { return }
+
+        session += 1
+        let armed = session
+        isRecording = true
+        store.onKeyCapture?(true)
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            record(event)
+
+            return nil
+        }
+
+        // Left armed it would keep Flip's own keys switched off, and nothing
+        // about the settings window would say why.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            guard session == armed else { return }
+
+            stop()
+        }
+    }
+
+    private func record(_ event: NSEvent) {
+        defer { stop() }
+
+        guard Int(event.keyCode) != kVK_Escape,
+              let key = KeyboardLayout.bindingKey(for: CGKeyCode(event.keyCode))
+        else { return }
+
+        store.setKey(key, for: id)
+    }
+
+    private func stop() {
+        guard let monitor else { return }
+
+        NSEvent.removeMonitor(monitor)
+        self.monitor = nil
+        isRecording = false
+        session += 1
+        store.onKeyCapture?(false)
     }
 }
 
@@ -94,7 +153,7 @@ private struct BindingRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 14)
 
-                KeyField(id: binding.id, store: store)
+                KeyRecorder(id: binding.id, store: store)
 
                 applicationPicker
 

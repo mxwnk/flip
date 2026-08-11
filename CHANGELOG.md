@@ -19,6 +19,17 @@ Held down it acts once. Backspace is a key people lean on, and a repeat would
 empty the grid before they let go. With `⌘` held it does nothing at all: that is
 `⌘⌫`, which means move-to-trash everywhere else.
 
+**The shortcuts editor records the key you press.** It was a text field, so it
+could only ever be given characters — and F1 to F12 are perfectly good bindings.
+`bindings.json` could name them and the editor could not, which is a strange
+place for a settings window to be. Click the key, press the one you want.
+
+Recording asks Flip's own tap to stand down for the moment, or a key that is
+already bound would be answered by that binding instead of arriving: F1 above
+all, which ships bound out of the box and is exactly the key this is for. It
+gives the keys back after five seconds if nothing is pressed, and pausing keeps
+the last word — resuming from here cannot undo it.
+
 ## 1.4.0
 
 **Flip has a command line.** `flip list` prints every window it knows as JSON,

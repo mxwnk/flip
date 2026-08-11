@@ -57,6 +57,14 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         bindings.load()
         bindings.watchForExternalEdits()
+        // A key being recorded has to reach the settings window rather than the
+        // binding it is already on. Pausing respects itself: resuming from here
+        // must not undo it.
+        bindings.onKeyCapture = { [weak self] capturing in
+            guard let self else { return }
+
+            tap?.setEnabled(!capturing && !isPaused)
+        }
         settings.load()
         LoginItem.migrateFromLegacyAgent()
 
