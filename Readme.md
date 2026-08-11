@@ -48,6 +48,8 @@ Needs macOS 14 or newer.
 - **Keyboard or mouse.** Hover or scroll to pick, click to confirm, if your hand
   is already there.
 - **Brings minimised windows back.** Choosing one lifts it out of the Dock.
+- **Closes windows from the grid.** `⌥⌫` on the one you were about to go and
+  close anyway.
 
 ## Switching windows
 
@@ -58,6 +60,7 @@ Needs macOS 14 or newer.
 | `⌥ F` | jump straight to the Finder — one key per application, the rest yours to choose |
 | `⌥` held, then a key | narrow the open grid to that application |
 | arrows, `esc` | move the selection, or give up |
+| `⌥⌫` | close the selected window; the grid stays up for the next one |
 | the mouse | hover to select, wheel to step, click to confirm; click beside the grid to give up |
 | let go of `⌥` | focus what is selected, out of the Dock if it was minimised |
 

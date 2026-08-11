@@ -122,6 +122,15 @@ final class KeyRouter {
             return event
         }
 
+        // Bare or with the leader held, like Return: with the app switcher's
+        // modifier down this is ⌘⌫, which means something else everywhere.
+        // Acted on once but swallowed throughout — a held key would otherwise
+        // empty the grid, which is not what the arrows repeating is for.
+        if isOverlayVisible, code == CGKeyCode(kVK_Delete), base.isEmpty || base == leader {
+            if !isRepeat { onMain { $0.closeSelection() } }
+            return nil
+        }
+
         // Only taken while the overlay is up, so they work normally elsewhere.
         if isOverlayVisible, let action = navigation(for: code, modifiers: base) {
             action()

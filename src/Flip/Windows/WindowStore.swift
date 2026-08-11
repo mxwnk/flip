@@ -86,6 +86,19 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
+    /// Presses the window's own close button, which is the only close macOS
+    /// offers accessibility. A window without one simply does not go — and the
+    /// application decides what closing means, so an unsaved document still gets
+    /// to put its sheet up.
+    func close(_ window: WindowInfo) {
+        thread.perform { [self] in
+            guard let button = AXBridge.element(kAXCloseButtonAttribute as String, of: window.element)
+            else { return log.debug("no close button on \(window.applicationName, privacy: .public)") }
+
+            AXUIElementPerformAction(button, kAXPressAction as CFString)
+        }
+    }
+
     /// Reads on the accessibility thread, computes on the main one where NSScreen
     /// lives, writes back. Two hops, but neither framework is touched wrongly.
     func arrange(_ arrangement: WindowArrangement) {

@@ -26,6 +26,9 @@ final class OverlayPresenter: SwitcherPresenting {
     /// Where the pointer was when the keyboard last had its say; hovering is
     /// ignored until it moves away. See `hover`.
     private var pointerAnchor: CGPoint?
+    /// What the grid was laid out for, kept so it can be laid out again when a
+    /// tile leaves mid-session without asking the screens a second time.
+    private var gridScreen: CGSize = .zero
 
     var onUnexpectedClose: (() -> Void)?
 
@@ -195,6 +198,32 @@ final class OverlayPresenter: SwitcherPresenting {
         hide()
     }
 
+    func closeSelection() {
+        guard isVisible, model.windows.indices.contains(model.selected) else { return }
+
+        let window = model.windows[model.selected]
+        log.debug("closing \(window.applicationName, privacy: .public) — \(window.title, privacy: .private)")
+        store.close(window)
+
+        // The tile leaves now rather than when the destroyed notification has
+        // found its way back through the store, so the grid keeps up with the
+        // keystroke. Nothing is lost either way: the store hears about it too.
+        var remaining = model.windows
+        remaining.remove(at: model.selected)
+
+        guard !remaining.isEmpty else {
+            hide()
+            onUnexpectedClose?()
+            return
+        }
+
+        model.windows = remaining
+        // Onto the tile that moved up into the gap, or the new last one.
+        model.selected = min(model.selected, remaining.count - 1)
+        model.layout = OverlayLayout(count: remaining.count, screen: gridScreen)
+        anchorPointer()
+    }
+
     // MARK: - Mouse
 
     /// Hovering waits for the pointer to actually move: a grid opening under a
@@ -319,10 +348,11 @@ final class OverlayPresenter: SwitcherPresenting {
 
         // Laid out for the narrowest, so one grid fits every screen it is on.
         let narrowest = screens.min { $0.frame.width < $1.frame.width } ?? screens[0]
+        gridScreen = narrowest.frame.size
 
         model.windows = windows
         model.selected = selected
-        model.layout = OverlayLayout(count: windows.count, screen: narrowest.frame.size)
+        model.layout = OverlayLayout(count: windows.count, screen: gridScreen)
         model.thumbnails = alreadyCaptured(windows)
 
         for (index, screen) in screens.enumerated() {

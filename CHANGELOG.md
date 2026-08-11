@@ -3,6 +3,22 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 1.5.0
+
+**Close a window from the grid.** `⌥⌫` on the selected tile closes it and leaves
+the grid standing, so the window you only opened the switcher to go and close is
+gone without ever being focused, and the next one is a keystroke away.
+
+It presses the window's own close button, which is the only close accessibility
+offers — so the application still decides what closing means and an unsaved
+document still gets to put its sheet up. The tile leaves at once rather than
+waiting for the destroyed notification to come back around, and closing the last
+one ends the session, because an empty grid answers nothing.
+
+Held down it acts once. Backspace is a key people lean on, and a repeat would
+empty the grid before they let go. With `⌘` held it does nothing at all: that is
+`⌘⌫`, which means move-to-trash everywhere else.
+
 ## 1.4.0
 
 **Flip has a command line.** `flip list` prints every window it knows as JSON,

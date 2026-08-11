@@ -101,6 +101,58 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(presenter.committed, 0, "filling is not choosing")
     }
 
+    // MARK: - Closing
+
+    func testDeleteClosesTheSelectionWhileTheOverlayIsOpen() {
+        openOverlay()
+
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.closed, 1)
+    }
+
+    /// The grid stays up, so the next key is still the router's to read.
+    func testClosingLeavesTheSessionRunning() {
+        openOverlay()
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+        drainMainQueue()
+
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_RightArrow)))
+    }
+
+    /// The one thing that must not happen: backspace is a key people hold, and
+    /// the grid would be empty before they let go.
+    func testAHeldDeleteClosesOneWindowOnly() {
+        openOverlay()
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+
+        let repeated = key(kVK_Delete, flags: .maskAlternate)
+        repeated.setIntegerValueField(.keyboardEventAutorepeat, value: 1)
+        XCTAssertNil(router.handle(type: .keyDown, event: repeated), "still swallowed")
+
+        drainMainQueue()
+        XCTAssertEqual(presenter.closed, 1)
+    }
+
+    /// Backspace is how everyone deletes a character. Taking it while nothing is
+    /// on screen would be the worst bug in this file.
+    func testDeleteIsLeftAloneWhileTheOverlayIsClosed() {
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete)))
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+    }
+
+    /// ⌘⌫ is move-to-trash in every file manager there is, so the app switcher's
+    /// modifier does not close windows even with the grid up.
+    func testTheAppSwitcherModifierDoesNotClose() {
+        openOverlay()
+
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskCommand)))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.closed, 0)
+    }
+
     func testARepeatIsSwallowedButNotActedOnTwice() {
         XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Tab, flags: .maskAlternate)))
 
@@ -181,6 +233,7 @@ private final class FakePresenter: SwitcherPresenting {
     private(set) var reached: [String] = []
     private(set) var arranged: [WindowArrangement] = []
     private(set) var committed = 0
+    private(set) var closed = 0
 
     func showAllWindows(step: Int) { open() }
     func showWindows(of bundleID: String, step: Int) { open() }
@@ -202,4 +255,5 @@ private final class FakePresenter: SwitcherPresenting {
     func moveRow(by step: Int) {}
     func commit() { committed += 1 }
     func cancel() {}
+    func closeSelection() { closed += 1 }
 }

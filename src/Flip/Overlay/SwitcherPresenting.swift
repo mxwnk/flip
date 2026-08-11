@@ -27,6 +27,10 @@ protocol SwitcherPresenting: AnyObject {
     /// Closes and focuses nothing.
     func cancel()
 
+    /// Closes the selected window and leaves the grid up, so several can go in
+    /// one breath. Ends the session only when nothing is left to show.
+    func closeSelection()
+
     /// The router tracks visibility itself to decide synchronously, so it has to
     /// hear about closes it did not ask for.
     var onUnexpectedClose: (() -> Void)? { get set }
