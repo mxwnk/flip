@@ -31,6 +31,11 @@ final class SettingsWindow {
             defer: false
         )
         window.title = "Flip Settings"
+        // The sidebar runs all the way up behind the traffic lights, which is
+        // the whole look. A title bar drawn over it would cut it in two, and the
+        // window's name is already the first thing in the sidebar.
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
 
         let host = NSHostingView(rootView: SettingsView(settings: settings, bindings: bindings))
         // Otherwise the hosting view sizes to the content's ideal size, which
@@ -38,9 +43,10 @@ final class SettingsWindow {
         host.sizingOptions = []
         window.contentView = host
 
-        // A comfortable floor, not a required one: every tab scrolls.
-        window.contentMinSize = NSSize(width: 560, height: 640)
-        window.setContentSize(NSSize(width: 680, height: 820))
+        // A comfortable floor, not a required one: every page scrolls. Wider
+        // than it was, because the sidebar now takes a column of its own.
+        window.contentMinSize = NSSize(width: 700, height: 620)
+        window.setContentSize(NSSize(width: 780, height: 760))
         window.center()
 
         // Remembers a size you dragged to; without it every launch snaps back.
@@ -62,9 +68,7 @@ private struct SettingsView: View {
     @ObservedObject var settings: SettingsStore
     @ObservedObject var bindings: BindingStore
 
-    @State private var tab: Tab = .general
-
-    private enum Tab: Hashable { case general, shortcuts, windows, excluded }
+    @State private var tab: SettingsTab = .general
 
     /// What the keyboard lights up, per tab. All bindings at once would be half
     /// the keys lit and no meaning.
@@ -99,24 +103,57 @@ private struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            TabView(selection: $tab) {
-                GeneralView(settings: settings)
-                    .tabItem { Label("General", systemImage: "gearshape") }
-                    .tag(Tab.general)
+        NavigationSplitView {
+            sidebar
+        } detail: {
+            detail
+        }
+        .navigationSplitViewStyle(.balanced)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 
-                ShortcutsView(store: bindings, settings: settings)
-                    .tabItem { Label("Shortcuts", systemImage: "keyboard") }
-                    .tag(Tab.shortcuts)
+    /// General on its own above the group: it is the page about Flip as a
+    /// whole, where the other three are each about one part of it.
+    private var sidebar: some View {
+        List(selection: $tab) {
+            row(.general)
 
-                WindowActionsView(settings: settings)
-                    .tabItem { Label("Windows", systemImage: "macwindow.on.rectangle") }
-                    .tag(Tab.windows)
-
-                ExclusionsView(settings: settings)
-                    .tabItem { Label("Excluded", systemImage: "eye.slash") }
-                    .tag(Tab.excluded)
+            Section("Settings") {
+                row(.shortcuts)
+                row(.windows)
+                row(.excluded)
             }
+        }
+        .listStyle(.sidebar)
+        .navigationSplitViewColumnWidth(min: 190, ideal: 205, max: 240)
+        // A split view fits itself a collapse button. Four pages that are the
+        // only way to reach any of this is not something to be able to fold
+        // away, and the title bar is otherwise empty on purpose.
+        .toolbar(removing: .sidebarToggle)
+    }
+
+    private func row(_ tab: SettingsTab) -> some View {
+        Label {
+            Text(tab.title)
+        } icon: {
+            SettingsIcon(tab: tab)
+        }
+        .padding(.vertical, 3)
+        .tag(tab)
+    }
+
+    private var detail: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                SettingsIcon(tab: tab, size: 26)
+                Text(tab.title).font(.system(size: 19, weight: .semibold))
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+
+            page
 
             Divider()
 
@@ -130,6 +167,15 @@ private struct SettingsView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var page: some View {
+        switch tab {
+        case .general: GeneralView(settings: settings)
+        case .shortcuts: ShortcutsView(store: bindings, settings: settings)
+        case .windows: WindowActionsView(settings: settings)
+        case .excluded: ExclusionsView(settings: settings)
+        }
     }
 }

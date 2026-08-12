@@ -90,7 +90,9 @@ modifier is already spoken for with the arrow keys.
 
 ## Settings
 
-**Settings…** in the menu bar, or `⌘,`. Every change applies as you make it.
+**Settings…** in the menu bar, or `⌘,`. Every change applies as you make it. The
+pages are down the side, with your keyboard drawn along the bottom and the keys
+of whichever page you are on lit up.
 
 - **General** — start at login, the two hotkeys, which display the grid opens on,
   how long Option must be held before it does, thumbnails or plain icons, windows

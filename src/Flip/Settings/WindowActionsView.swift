@@ -52,12 +52,19 @@ struct Keycap: View {
     var body: some View {
         Text(keys)
             .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            // Raised rather than recessed: a key you are being told to press
+            // reads better as one standing up than as a hole in the row.
             .background(
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(Color.primary.opacity(0.07))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
             )
     }
 }

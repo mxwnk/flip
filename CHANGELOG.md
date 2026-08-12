@@ -5,6 +5,11 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.5.0
 
+**The settings window has pages down the side.** Four tabs across the top were
+already one more than a tab bar wears well, and each page had to introduce itself
+in its own words. Now the pages are a sidebar with a colour each, the page says
+its own name at the top, and the keyboard stays where it was along the bottom.
+
 **Close a window from the grid.** `⌥⌫` on the selected tile closes it and leaves
 the grid standing, so the window you only opened the switcher to go and close is
 gone without ever being focused, and the next one is a keystroke away.
