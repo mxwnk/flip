@@ -59,43 +59,52 @@ extension WindowArrangement {
     static func matching(
         keyCode: CGKeyCode,
         modifiers: CGEventFlags,
+        navigation: ModifierChoice,
         displayMove: DisplayMoveModifier
     ) -> WindowArrangement? {
-        shortcuts(displayMove: displayMove)
+        shortcuts(navigation: navigation, displayMove: displayMove)
             .first { $0.keyCode == keyCode && $0.modifiers == Modifiers.significant(in: modifiers) }?
             .arrangement
     }
 
-    /// Halves and quarters are fixed: every single modifier is already taken on
-    /// the arrows, so a pair is all that is left and there is no second one. The
-    /// display moves share those arrows, hence a modifier of their own.
+    /// The keys are fixed and the modifiers are not. Which pair carries the
+    /// halves comes down to what else is bound on the machine, but a pair it
+    /// wants to be: a single modifier and an arrow is already spoken for by
+    /// macOS, which `ModifierChoice.takesArrowKeys` spells out.
+    ///
+    /// The display moves take the same arrows, so they carry a modifier of their
+    /// own and cannot be given one of these — the two sets do not overlap.
     ///
     /// Corners take `u i j k` because those form a square on the keyboard —
     /// vim's `y u / h j` only does on a US layout.
-    static func shortcuts(displayMove: DisplayMoveModifier) -> [WindowShortcut] {
-        let halves: CGEventFlags = [.maskControl, .maskAlternate]
+    static func shortcuts(
+        navigation: ModifierChoice,
+        displayMove: DisplayMoveModifier
+    ) -> [WindowShortcut] {
+        let halves = navigation.flags
+        let key = navigation.label
         let displays = displayMove.flags
-        let move = displayMove.symbols
+        let move = displayMove.label
 
         return [
             WindowShortcut(arrangement: .leftHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Left half", keys: "⌃⌥←"),
+                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Left half", keys: "\(key)←"),
             WindowShortcut(arrangement: .rightHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_RightArrow), name: "Right half", keys: "⌃⌥→"),
+                           keyCode: CGKeyCode(kVK_RightArrow), name: "Right half", keys: "\(key)→"),
             WindowShortcut(arrangement: .topHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_UpArrow), name: "Top half", keys: "⌃⌥↑"),
+                           keyCode: CGKeyCode(kVK_UpArrow), name: "Top half", keys: "\(key)↑"),
             WindowShortcut(arrangement: .bottomHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_DownArrow), name: "Bottom half", keys: "⌃⌥↓"),
+                           keyCode: CGKeyCode(kVK_DownArrow), name: "Bottom half", keys: "\(key)↓"),
             WindowShortcut(arrangement: .topLeftQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_U), name: "Top left quarter", keys: "⌃⌥U"),
+                           keyCode: CGKeyCode(kVK_ANSI_U), name: "Top left quarter", keys: "\(key)U"),
             WindowShortcut(arrangement: .topRightQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_I), name: "Top right quarter", keys: "⌃⌥I"),
+                           keyCode: CGKeyCode(kVK_ANSI_I), name: "Top right quarter", keys: "\(key)I"),
             WindowShortcut(arrangement: .bottomLeftQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_J), name: "Bottom left quarter", keys: "⌃⌥J"),
+                           keyCode: CGKeyCode(kVK_ANSI_J), name: "Bottom left quarter", keys: "\(key)J"),
             WindowShortcut(arrangement: .bottomRightQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_K), name: "Bottom right quarter", keys: "⌃⌥K"),
+                           keyCode: CGKeyCode(kVK_ANSI_K), name: "Bottom right quarter", keys: "\(key)K"),
             WindowShortcut(arrangement: .maximize, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_Return), name: "Fill the screen", keys: "⌃⌥↩"),
+                           keyCode: CGKeyCode(kVK_Return), name: "Fill the screen", keys: "\(key)↩"),
             WindowShortcut(arrangement: .previousDisplay, modifiers: displays,
                            keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display",
                            keys: "\(move)←"),

@@ -1,9 +1,20 @@
 import CoreGraphics
 import Foundation
 
+/// Anything that can be picked as a leader. The picker draws keys, so it needs
+/// the symbols that go on one and the words that go under it — the sets differ
+/// between what a leader may be and what a window action may be, which is why
+/// this is a protocol rather than one enum for both.
+protocol LeaderChoice: CaseIterable, Hashable, Identifiable {
+    /// The symbols on the key.
+    var label: String { get }
+    /// The words under them: ⌃⌥⌘ mean nothing until you have read them once.
+    var spelled: String { get }
+}
+
 /// A closed set: the pair has to be unambiguous, and a leader with no modifier
 /// would swallow ordinary typing.
-enum ModifierChoice: String, Codable, CaseIterable, Identifiable {
+enum ModifierChoice: String, Codable, CaseIterable, Identifiable, LeaderChoice {
     case option
     case control
     case command
@@ -35,8 +46,6 @@ enum ModifierChoice: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Spelled out under the symbols, for the same reason the keyboard picture
-    /// spells them out: ⌃⌥⌘ mean nothing until you have read them once.
     var spelled: String {
         switch self {
         case .option: return "option"
@@ -50,6 +59,16 @@ enum ModifierChoice: String, Codable, CaseIterable, Identifiable {
 
     /// Command and a letter is a menu shortcut in every application there is.
     var takesMenuShortcuts: Bool { flags.contains(.maskCommand) }
+
+    /// One modifier and an arrow is already spoken for by macOS: option moves by
+    /// word, control switches spaces, command goes to the end of the line. Two of
+    /// them is what is left over, which is why the window actions started there.
+    var takesArrowKeys: Bool {
+        switch self {
+        case .option, .control, .command: return true
+        case .optionControl, .optionCommand, .controlCommand: return false
+        }
+    }
 }
 
 /// How long the leader must be held before the overlay appears.
@@ -95,9 +114,10 @@ enum OverlayPlacement: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// Which modifier carries a window to the next display — apart from the halves,
-/// which own Control and Option on the same arrows.
-enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable {
+/// Which modifier carries a window to the next display. It shares the arrows
+/// with the halves, so the two must differ — and they cannot collide, because
+/// neither of these two is expressible as a `ModifierChoice`.
+enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable, LeaderChoice {
     case shiftOption
     case allThree
 
@@ -110,17 +130,17 @@ enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var symbols: String {
+    var label: String {
         switch self {
         case .shiftOption: return "⇧⌥"
         case .allThree: return "⌃⌥⌘"
         }
     }
 
-    var label: String {
+    var spelled: String {
         switch self {
-        case .shiftOption: return "⇧⌥ and the arrows"
-        case .allThree: return "⌃⌥⌘ and the arrows"
+        case .shiftOption: return "shift option"
+        case .allThree: return "control option command"
         }
     }
 }
@@ -165,8 +185,12 @@ struct Settings: Codable, Equatable {
 
     var overlayPlacement: OverlayPlacement = .activeWindow
 
-    /// Only the display moves are settable — see WindowArrangement for why.
     var displayMoveModifier: DisplayMoveModifier = .shiftOption
+
+    /// What the halves, quarters and filling answer to. Two modifiers is where
+    /// this started and where it belongs — see `takesArrowKeys` — but which two
+    /// is a matter of what else is bound on the machine.
+    var windowLeader: ModifierChoice = .optionControl
 
     /// Only affects the picture of the keyboard in the settings window.
     var modifierRowOrder: ModifierRowOrder = .appleStyle
@@ -209,6 +233,10 @@ struct Settings: Codable, Equatable {
         displayMoveModifier = try container
             .decodeIfPresent(DisplayMoveModifier.self, forKey: .displayMoveModifier)
             ?? defaults.displayMoveModifier
+        // The default is what the halves were nailed to before they were
+        // settable, so an older file keeps the keys somebody's fingers know.
+        windowLeader = try container.decodeIfPresent(ModifierChoice.self, forKey: .windowLeader)
+            ?? defaults.windowLeader
         modifierRowOrder = try container
             .decodeIfPresent(ModifierRowOrder.self, forKey: .modifierRowOrder)
             ?? defaults.modifierRowOrder

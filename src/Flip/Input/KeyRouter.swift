@@ -42,6 +42,7 @@ final class KeyRouter {
     private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
     private var shortcutLeaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var displayMove: DisplayMoveModifier = .shiftOption
+    private var windowLeader: ModifierChoice = .optionControl
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
@@ -69,6 +70,7 @@ final class KeyRouter {
         appSwitcherFlags = settings.appSwitcher.flags
         shortcutLeaderFlags = settings.shortcutLeader.flags
         displayMove = settings.displayMoveModifier
+        windowLeader = settings.windowLeader
         bindingsLock.unlock()
 
         log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare")
@@ -143,10 +145,12 @@ final class KeyRouter {
         // binding, where the switcher only reads it as "backwards".
         bindingsLock.lock()
         let displayMoveModifier = displayMove
+        let navigation = windowLeader
         bindingsLock.unlock()
 
         if let arrangement = WindowArrangement.matching(
-            keyCode: code, modifiers: flags, displayMove: displayMoveModifier
+            keyCode: code, modifiers: flags,
+            navigation: navigation, displayMove: displayMoveModifier
         ) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil

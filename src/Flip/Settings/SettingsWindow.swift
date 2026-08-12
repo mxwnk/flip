@@ -80,7 +80,10 @@ private struct SettingsView: View {
             return Set(bindings.bindings.compactMap { KeyboardLayout.keyCode(forBinding: $0.key) })
         case .windows:
             return Set(
-                WindowArrangement.shortcuts(displayMove: settings.settings.displayMoveModifier)
+                WindowArrangement.shortcuts(
+                    navigation: settings.settings.windowLeader,
+                    displayMove: settings.settings.displayMoveModifier
+                )
                     .map(\.keyCode)
             )
         case .excluded:
@@ -95,7 +98,7 @@ private struct SettingsView: View {
         case .shortcuts:
             return settings.settings.shortcutLeader.flags
         case .windows:
-            return CGEventFlags([.maskControl, .maskAlternate])
+            return settings.settings.windowLeader.flags
                 .union(settings.settings.displayMoveModifier.flags)
         case .excluded:
             return []

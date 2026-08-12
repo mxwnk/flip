@@ -83,10 +83,14 @@ Add `⇧` to any of those to go backwards.
 Everything stops at the menu bar and the Dock. Filling is a toggle: press it on a
 window that already fills and it goes back where it was.
 
-The display moves take the same arrows as the halves, so they need a modifier of
-their own — `⇧⌥` to begin with, or `⌃⌥⌘` if that suits your other shortcuts
-better. Settings › Windows. The halves and quarters are fixed: every remaining
-modifier is already spoken for with the arrow keys.
+Both modifiers are yours, in Settings › Windows, picked as keys rather than from
+a menu. The display moves take the same arrows as the halves, so the two carry
+different ones — and they cannot be given the same, whatever you pick.
+
+A pair rather than one key is the sensible choice for the halves: a single
+modifier and an arrow already means something on macOS, where option moves by
+word, control switches spaces and command goes to the end of the line. Flip lets
+you take one anyway and says what it costs.
 
 ## Settings
 
@@ -102,7 +106,9 @@ of whichever page you are on lit up.
   is tapped and let go, this one is held while you aim, and they need not be the
   same key. Click a key and press the one you want, function keys included. The
   editor warns when a key would shadow a character you need to type.
-- **Windows** — the keys above, listed so you can find them without this page.
+- **Windows** — the modifier that carries a window to another display, the one
+  that moves and resizes it, and the keys they go with, listed so you can find
+  them without this page.
 - **Excluded** — applications kept out of the grid. A key bound directly to one
   still reaches it.
 

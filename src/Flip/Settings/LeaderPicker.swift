@@ -4,12 +4,12 @@ import SwiftUI
 /// to where your thumb already rests and what else is bound on the machine —
 /// both questions you answer by looking at keys, not by reading a list. The
 /// symbols carry their words for the same reason the keyboard below does.
-struct LeaderPicker: View {
-    @Binding var choice: ModifierChoice
+struct LeaderPicker<Choice: LeaderChoice>: View {
+    @Binding var choice: Choice
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(ModifierChoice.allCases) { option in
+            ForEach(Array(Choice.allCases)) { option in
                 Button { choice = option } label: { cap(option) }
                     .buttonStyle(.plain)
                     .help("Hold \(option.spelled) and press a key")
@@ -19,7 +19,7 @@ struct LeaderPicker: View {
 
     // Named steps rather than one chain: the type checker gives up on the whole
     // thing in a single expression.
-    private func cap(_ option: ModifierChoice) -> some View {
+    private func cap(_ option: Choice) -> some View {
         let chosen = option == choice
         let ink: Color = chosen ? .white : .primary
         let fill: Color = chosen ? Theme.selectedStroke : Color(nsColor: .controlBackgroundColor)

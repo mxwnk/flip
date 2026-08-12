@@ -40,6 +40,7 @@ struct ShortcutsView: View {
                         issue: store.issue(
                             for: binding,
                             leader: leader.flags,
+                            navigation: settings.settings.windowLeader,
                             displayMove: settings.settings.displayMoveModifier
                         ),
                         leader: leader.label,

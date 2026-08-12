@@ -5,6 +5,21 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.5.0
 
+**The halves and quarters are settable too.** They were nailed to `⌃⌥` with an
+argument attached: every single modifier is already spoken for on the arrows, so
+a pair is what is left. The argument holds for how many modifiers, and says
+nothing about which two — so Settings › Windows now picks that as well, on the
+same keys as everything else, with the display move above it.
+
+The reasoning did not go away, it moved into the window that needed it: choose a
+single modifier and Flip says what it takes from you, since `⌥` and an arrow is
+move-by-word and `⌃` and an arrow switches spaces. The two modifiers on this page
+can never collide, whatever you pick — the display moves live in a set the halves
+cannot reach — and the tests now prove that across every combination of the two
+rather than for the pair that used to be hard-coded.
+
+An older configuration comes back on `⌃⌥`, so nothing your fingers know moves.
+
 **The application keys have a leader of their own.** They used to borrow the
 switcher's, which quietly decided one question with the answer to another. The
 two are held differently — one is tapped and let go, the other is held while you

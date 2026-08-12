@@ -1,40 +1,52 @@
 import SwiftUI
 
-/// Read-only for now: these keys are fixed, and a list that looked editable but
-/// was not would be worse than one that says so.
+/// The two modifiers, then the keys they carry. The keys themselves stay put:
+/// four corners need four keys that form a square, and moving those around is a
+/// different question from which modifier you hold.
 struct WindowActionsView: View {
     @ObservedObject var settings: SettingsStore
+
+    private var navigation: ModifierChoice { settings.settings.windowLeader }
 
     var body: some View {
         Form {
             Section {
-                Picker("Move to another display with", selection: $settings.settings.displayMoveModifier) {
-                    ForEach(DisplayMoveModifier.allCases) { choice in
-                        Text(choice.label).tag(choice)
-                    }
-                }
+                LeaderPicker(choice: $settings.settings.displayMoveModifier)
+                    .padding(.vertical, 2)
+            } header: {
+                Text("Move to another display")
             } footer: {
-                Caption("The only one of these that is settable. The halves and "
-                    + "quarters share the arrow keys with it, so it needs a modifier "
-                    + "of its own.")
+                Caption("Held with ← and →. It shares those arrows with the halves below, so "
+                    + "it carries a modifier of its own — and neither choice here can be one "
+                    + "of theirs.")
             }
 
             Section {
-                ForEach(WindowArrangement.shortcuts(displayMove: settings.settings.displayMoveModifier)) { shortcut in
+                LeaderPicker(choice: $settings.settings.windowLeader)
+                    .padding(.vertical, 2)
+            } header: {
+                Text("Move and resize")
+            } footer: {
+                if navigation.takesArrowKeys {
+                    Caption("\(navigation.label) and an arrow already means something on macOS: "
+                        + "option moves by word, control switches spaces, command goes to the "
+                        + "end of the line. Bound here, that is taken away everywhere.",
+                        tone: .orange)
+                } else {
+                    Caption("Held with the arrows, the four corner keys and return.")
+                }
+            }
+
+            Section {
+                ForEach(WindowArrangement.shortcuts(
+                    navigation: navigation, displayMove: settings.settings.displayMoveModifier
+                )) { shortcut in
                     LabeledContent(shortcut.name) { Keycap(shortcut.keys) }
                 }
             } footer: {
-                // Both in the footer rather than a second section: a note in a card
-                // of its own reads as a group of settings that forgot its controls.
-                VStack(alignment: .leading, spacing: 8) {
-                    Caption("Halves and filling stop at the menu bar and the Dock. Filling a "
-                        + "window that already fills puts it back where it was.")
-                    Caption("The halves and quarters cannot be changed. Every single modifier "
-                        + "is already taken with the arrows: Option moves by word, Control "
-                        + "switches spaces, fn is Home and End, and Command is the start and "
-                        + "end of a line — so two of them is what is left, and there is no "
-                        + "second pair to offer.")
-                }
+                Caption("Halves and filling stop at the menu bar and the Dock. Filling a "
+                    + "window that already fills puts it back where it was. The corners take "
+                    + "u i j k because those four sit as a square on the keyboard.")
             }
         }
         .formStyle(.grouped)

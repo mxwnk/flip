@@ -90,6 +90,28 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(round.shortcutLeader, .controlCommand)
     }
 
+    /// Nailed to ⌃⌥ before it was settable, so an older file has to come back
+    /// carrying exactly that — the keys are ones fingers have learned.
+    func testAnOlderFileKeepsTheWindowActionsOnControlOption() throws {
+        XCTAssertEqual(Settings().windowLeader, .optionControl)
+
+        let old = Data(#"{"leader":"command"}"#.utf8)
+
+        XCTAssertEqual(
+            try JSONDecoder().decode(Settings.self, from: old).windowLeader, .optionControl
+        )
+    }
+
+    func testEveryWindowLeaderSurvivesARoundTrip() throws {
+        for choice in ModifierChoice.allCases {
+            var settings = Settings()
+            settings.windowLeader = choice
+            let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+
+            XCTAssertEqual(round.windowLeader, choice)
+        }
+    }
+
     func testBothDisplayMoveChoicesSurviveARoundTrip() throws {
         for choice in DisplayMoveModifier.allCases {
             var settings = Settings()

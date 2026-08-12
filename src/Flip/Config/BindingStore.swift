@@ -184,6 +184,7 @@ final class BindingStore: ObservableObject {
     func issue(
         for binding: AppBinding,
         leader: CGEventFlags = [],
+        navigation: ModifierChoice = .optionControl,
         displayMove: DisplayMoveModifier = .shiftOption
     ) -> Issue? {
         if binding.bundleID.isEmpty { return .noApplication }
@@ -195,9 +196,10 @@ final class BindingStore: ObservableObject {
         }
         if binding.usesLeader,
            let action = WindowArrangement.matching(
-               keyCode: code, modifiers: leader, displayMove: displayMove
+               keyCode: code, modifiers: leader,
+               navigation: navigation, displayMove: displayMove
            ) {
-            let name = WindowArrangement.shortcuts(displayMove: displayMove)
+            let name = WindowArrangement.shortcuts(navigation: navigation, displayMove: displayMove)
                 .first { $0.arrangement == action }?.name ?? "a window action"
 
             return .takenByWindowAction(name)

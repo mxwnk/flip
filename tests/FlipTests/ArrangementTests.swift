@@ -117,7 +117,7 @@ final class QuarterTests: XCTestCase {
     /// The keys must form a square, which is why they are not the vim four.
     /// Pinned by key code, since the character depends on the layout.
     func testTheCornerKeysFormASquare() {
-        let table = WindowArrangement.shortcuts(displayMove: .shiftOption)
+        let table = WindowArrangement.shortcuts(navigation: .optionControl, displayMove: .shiftOption)
         let keys = Dictionary(uniqueKeysWithValues: table.map {
             ($0.arrangement, $0.keyCode)
         })
