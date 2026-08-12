@@ -7,6 +7,7 @@ final class MenuBarItem: NSObject {
     private var status = Permissions.Status(accessibility: false, screenRecording: false)
     private var isPaused = false
     private var inputWorking = true
+    private var canReadWindowIDs = true
     private var availableUpdate: String?
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
@@ -28,21 +29,27 @@ final class MenuBarItem: NSObject {
         self.onTogglePause = onTogglePause
         super.init()
 
-        update(for: status, paused: false, inputWorking: true)
+        update(for: status, paused: false, inputWorking: true, canReadWindowIDs: true)
     }
 
     /// A switcher without Accessibility looks like a broken keyboard, so the
     /// icon carries the warning — and so does a tap that never came up, which
     /// is the same thing from the outside.
-    func update(for status: Permissions.Status, paused: Bool, inputWorking: Bool) {
+    func update(
+        for status: Permissions.Status,
+        paused: Bool,
+        inputWorking: Bool,
+        canReadWindowIDs: Bool
+    ) {
         self.status = status
         self.inputWorking = inputWorking
+        self.canReadWindowIDs = canReadWindowIDs
         isPaused = paused
 
         let symbol: String
         if paused {
             symbol = "pause.circle"
-        } else if status.isComplete, inputWorking {
+        } else if status.isComplete, inputWorking, canReadWindowIDs {
             symbol = "rectangle.on.rectangle"
         } else {
             symbol = "exclamationmark.triangle"
@@ -75,6 +82,16 @@ final class MenuBarItem: NSObject {
 
         // Only when it is wrong: the tap working is the ordinary case and needs
         // no line, but a dead one is invisible everywhere else.
+        // First, because nothing else matters if windows have no ids.
+        if !canReadWindowIDs {
+            let unsupported = NSMenuItem(
+                title: "Not supported on this macOS", action: nil, keyEquivalent: ""
+            )
+            unsupported.isEnabled = false
+            unsupported.toolTip = "Flip needs a private accessibility symbol this system does not export."
+            menu.addItem(unsupported)
+        }
+
         if !inputWorking {
             let dead = NSMenuItem(title: "Keyboard shortcuts unavailable", action: nil, keyEquivalent: "")
             dead.isEnabled = false

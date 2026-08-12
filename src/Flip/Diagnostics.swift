@@ -10,6 +10,7 @@ enum Diagnostics {
         isPaused: Bool,
         settings: Settings,
         bindingCount: Int,
+        canReadWindowIDs: Bool,
         windowCount: Int
     ) -> String {
         var lines: [String] = []
@@ -25,6 +26,7 @@ enum Diagnostics {
         lines.append("Screen Recording: \(status.screenRecording ? "granted" : "MISSING")")
         lines.append("Start at login: \(LoginItem.isEnabled ? "on" : "off")")
         lines.append("Event tap: \(isPaused ? "paused" : "running")")
+        lines.append("Window ids: \(canReadWindowIDs ? "available" : "UNSUPPORTED ON THIS SYSTEM")")
         lines.append("")
 
         lines.append("Switch windows with: \(settings.leader.label)")

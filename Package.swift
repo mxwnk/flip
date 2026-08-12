@@ -35,7 +35,7 @@ let package = Package(
         ),
         .testTarget(
             name: "FlipTests",
-            dependencies: ["Flip", "FlipControl"],
+            dependencies: ["Flip", "FlipControl", "CAXShim"],
             path: "tests/FlipTests",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),

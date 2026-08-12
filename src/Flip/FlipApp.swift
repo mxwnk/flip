@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import CAXShim
 import FlipControl
 import OSLog
 
@@ -80,7 +81,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             },
             onTogglePause: { [weak self] in self?.togglePause() }
         )
-        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking)
+        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking, canReadWindowIDs: canReadWindowIDs)
 
         updates.onFound = { [weak self] in
             guard let self else { return }
@@ -109,7 +110,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         status = latest
         Permissions.report(latest)
-        menuBar?.update(for: latest, paused: isPaused, inputWorking: inputWorking)
+        menuBar?.update(for: latest, paused: isPaused, inputWorking: inputWorking, canReadWindowIDs: canReadWindowIDs)
 
         // Accessibility usually arrives after the first launch.
         startWindowStoreIfPermitted()
@@ -122,6 +123,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             isPaused: isPaused,
             settings: settings.settings,
             bindingCount: bindings.bindings.count,
+            canReadWindowIDs: canReadWindowIDs,
             windowCount: store.windows(
                 includingMinimized: true,
                 fromEverySpace: settings.settings.showWindowsFromEverySpace
@@ -136,13 +138,15 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         // An overlay left on screen would have no keys to close it.
         if isPaused { presenter.cancel(); router?.overlayDidClose() }
 
-        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking)
+        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking, canReadWindowIDs: canReadWindowIDs)
         log.notice("\(self.isPaused ? "paused" : "resumed", privacy: .public)")
     }
 
     private var storeIsRunning = false
     /// False once the tap has failed to come up, which the menu bar shows.
     private var inputWorking = true
+    /// False where `_AXUIElementGetWindow` is absent. Shown, not silent.
+    private var canReadWindowIDs = true
     private var retryCountdown = 0
 
     private func startWindowStoreIfPermitted() {
@@ -270,7 +274,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         guard running != inputWorking else { return }
 
         inputWorking = running
-        menuBar?.update(for: status, paused: isPaused, inputWorking: running)
+        menuBar?.update(for: status, paused: isPaused, inputWorking: running, canReadWindowIDs: canReadWindowIDs)
     }
 
     /// The usual cause is a grant that has not propagated yet, which clears on
@@ -316,10 +320,15 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         return true
     }
 
-    /// A private symbol resolving at build time can still be missing at run
-    /// time. The call is expected to fail — the point is that it returns.
+    /// Weakly imported, so a system without it starts instead of dying. Nothing
+    /// works without it, though: a window with no id cannot be matched.
     private func checkAXShimLinkage() {
-        _ = AXBridge.windowID(of: AXUIElementCreateSystemWide())
+        canReadWindowIDs = FlipCanReadWindowIDs()
+        guard canReadWindowIDs else {
+            log.error("_AXUIElementGetWindow is missing here; windows cannot be identified")
+            return
+        }
+
         log.notice("_AXUIElementGetWindow resolved")
     }
 }

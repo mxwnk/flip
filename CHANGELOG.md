@@ -3,6 +3,26 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 1.5.1
+
+**Flip could refuse to launch at all, and then refuse to stay gone.** It reads a
+private accessibility symbol to put a window server id on a window — the only
+reliable way to line the two lists up. That symbol was linked strongly, so on a
+system that does not export it the process was killed by the dynamic linker
+*before any Flip code ran*: no log, no menu bar, nothing to read but a system
+dialog. The check inside the app that was supposed to catch this could never fire,
+because there was no app yet.
+
+It is weakly imported now. Where the symbol is missing Flip starts, says so in
+the menu bar and in Copy Diagnostics, and does the rest of its job.
+
+**And the login item no longer resurrects a broken copy.** The launch agent asked
+launchd to restart Flip after any unsuccessful exit, which turns "cannot start"
+into a loop: a new process every few seconds, and quitting or force-quitting it
+brings it straight back. Measured on a deliberately failing job — three starts in
+twenty-five seconds with that setting, one without. It is gone. Starting at login
+still works; a crash now leaves Flip closed until you open it.
+
 ## 1.5.0
 
 **The halves and quarters are settable too.** They were nailed to `⌃⌥` with an

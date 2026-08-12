@@ -7,7 +7,7 @@ enum AXBridge {
     /// CGWindowListCopyWindowInfo for z-order and space membership.
     static func windowID(of element: AXUIElement) -> CGWindowID? {
         var id: CGWindowID = 0
-        guard _AXUIElementGetWindow(element, &id) == .success else { return nil }
+        guard FlipReadWindowID(element, &id) == .success else { return nil }
 
         return id
     }

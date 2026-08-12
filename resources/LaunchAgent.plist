@@ -16,13 +16,9 @@
 	<key>RunAtLoad</key>
 	<true/>
 
-	<!-- Restart after a crash, but not after a deliberate quit: launchd
-	     resurrecting an app the user just closed is a bug, not a feature. -->
-	<key>KeepAlive</key>
-	<dict>
-		<key>SuccessfulExit</key>
-		<false/>
-	</dict>
+	<!-- No KeepAlive on purpose: restarting after an unsuccessful exit turns a
+	     failure to launch into an endless respawn that cannot be quit. RunAtLoad
+	     still starts it at login. -->
 
 	<!-- Groups the agent under Flip in System Settings › Login Items instead of
 	     listing it as an anonymous background item. -->
