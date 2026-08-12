@@ -75,6 +75,10 @@ private struct SettingsView: View {
     private var litKeys: Set<CGKeyCode> {
         switch tab {
         case .general:
+            // Nothing on that page is a key, and a keyboard lit for a page it
+            // has nothing to do with is worse than one left dark.
+            return []
+        case .switcher:
             return [CGKeyCode(kVK_Tab)]
         case .shortcuts:
             return Set(bindings.bindings.compactMap { KeyboardLayout.keyCode(forBinding: $0.key) })
@@ -94,6 +98,8 @@ private struct SettingsView: View {
     private var litModifiers: CGEventFlags {
         switch tab {
         case .general:
+            return []
+        case .switcher:
             return settings.settings.leader.flags.union(settings.settings.appSwitcher.flags)
         case .shortcuts:
             return settings.settings.shortcutLeader.flags
@@ -122,6 +128,7 @@ private struct SettingsView: View {
             row(.general)
 
             Section("Settings") {
+                row(.switcher)
                 row(.shortcuts)
                 row(.windows)
                 row(.excluded)
@@ -176,6 +183,7 @@ private struct SettingsView: View {
     private var page: some View {
         switch tab {
         case .general: GeneralView(settings: settings)
+        case .switcher: SwitcherView(settings: settings)
         case .shortcuts: ShortcutsView(store: bindings, settings: settings)
         case .windows: WindowActionsView(settings: settings)
         case .excluded: ExclusionsView(settings: settings)

@@ -48,6 +48,13 @@ already one more than a tab bar wears well, and each page had to introduce itsel
 in its own words. Now the pages are a sidebar with a colour each, the page says
 its own name at the top, and the keyboard stays where it was along the bottom.
 
+The switcher got a page of its own out of it. General had grown into everything —
+what opens the grid, where it appears, how long it waits, what it draws — with
+start-at-login and the update check sitting among them as though they were the
+same kind of question. They are not: one page is the application, the other is
+the grid. The two modifiers that open the switcher are picked as keys there now,
+like every other modifier in the window.
+
 **Close a window from the grid.** `⌥⌫` on the selected tile closes it and leaves
 the grid standing, so the window you only opened the switcher to go and close is
 gone without ever being focused, and the next one is a keystroke away.

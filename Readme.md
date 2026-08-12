@@ -98,9 +98,11 @@ you take one anyway and says what it costs.
 pages are down the side, with your keyboard drawn along the bottom and the keys
 of whichever page you are on lit up.
 
-- **General** — start at login, the two hotkeys, which display the grid opens on,
-  how long Option must be held before it does, thumbnails or plain icons, windows
-  from every space, and the update check.
+- **General** — start at login, and the update check. Flip itself, and nothing
+  about the grid it draws.
+- **Switcher** — the two modifiers that open it, which display it appears on, how
+  long the modifier must be held before it draws anything, thumbnails or plain
+  icons, and whether windows from other spaces are listed.
 - **Shortcuts** — one key per application, and the leader they answer to, picked
   as keys rather than from a menu. It is its own setting: the switcher's leader
   is tapped and let go, this one is held while you aim, and they need not be the
