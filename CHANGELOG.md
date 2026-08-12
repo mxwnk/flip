@@ -9,7 +9,10 @@ publishes it as the release notes, so what is written here is what people read.
 argument attached: every single modifier is already spoken for on the arrows, so
 a pair is what is left. The argument holds for how many modifiers, and says
 nothing about which two — so Settings › Windows now picks that as well, on the
-same keys as everything else, with the display move above it.
+same keys as everything else, with the display move above it. Each modifier is
+listed with the keys it carries rather than all eleven in one table underneath,
+which is the only arrangement in which you can see that the two do not tread on
+each other.
 
 The reasoning did not go away, it moved into the window that needed it: choose a
 single modifier and Flip says what it takes from you, since `⌥` and an arrow is

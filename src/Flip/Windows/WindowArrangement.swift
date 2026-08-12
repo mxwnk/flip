@@ -15,6 +15,15 @@ enum WindowArrangement: CaseIterable {
     case previousDisplay
     case nextDisplay
 
+    /// Carries a window to another display rather than moving it within one.
+    /// These answer to their own modifier, so they are listed with it.
+    var movesToAnotherDisplay: Bool {
+        switch self {
+        case .previousDisplay, .nextDisplay: return true
+        default: return false
+        }
+    }
+
     /// What `flip arrange` calls these. A test holds this to the names in
     /// FlipControl, so neither side can gain one the other does not know.
     var controlName: String {

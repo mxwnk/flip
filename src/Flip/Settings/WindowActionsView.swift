@@ -8,45 +8,55 @@ struct WindowActionsView: View {
 
     private var navigation: ModifierChoice { settings.settings.windowLeader }
 
+    /// Split so each modifier is listed with the keys it actually carries, which
+    /// is the only way to see that the two do not tread on each other.
+    private var shortcuts: [WindowShortcut] {
+        WindowArrangement.shortcuts(
+            navigation: navigation, displayMove: settings.settings.displayMoveModifier
+        )
+    }
+
     var body: some View {
         Form {
             Section {
                 LeaderPicker(choice: $settings.settings.displayMoveModifier)
                     .padding(.vertical, 2)
+
+                ForEach(shortcuts.filter(\.arrangement.movesToAnotherDisplay)) { shortcut in
+                    LabeledContent(shortcut.name) { Keycap(shortcut.keys) }
+                }
             } header: {
                 Text("Move to another display")
             } footer: {
-                Caption("Held with ← and →. It shares those arrows with the halves below, so "
-                    + "it carries a modifier of its own — and neither choice here can be one "
-                    + "of theirs.")
+                Caption("The window keeps its place on the display it lands on, proportionally, "
+                    + "so a left half stays a left half. These share the arrows with the halves "
+                    + "below, which is why they carry a modifier of their own — and neither "
+                    + "choice here can ever be one of theirs.")
             }
 
             Section {
                 LeaderPicker(choice: $settings.settings.windowLeader)
                     .padding(.vertical, 2)
+
+                ForEach(shortcuts.filter { !$0.arrangement.movesToAnotherDisplay }) { shortcut in
+                    LabeledContent(shortcut.name) { Keycap(shortcut.keys) }
+                }
             } header: {
                 Text("Move and resize")
             } footer: {
-                if navigation.takesArrowKeys {
-                    Caption("\(navigation.label) and an arrow already means something on macOS: "
-                        + "option moves by word, control switches spaces, command goes to the "
-                        + "end of the line. Bound here, that is taken away everywhere.",
-                        tone: .orange)
-                } else {
-                    Caption("Held with the arrows, the four corner keys and return.")
-                }
-            }
+                VStack(alignment: .leading, spacing: 8) {
+                    if navigation.takesArrowKeys {
+                        Caption("\(navigation.label) and an arrow already means something on "
+                            + "macOS: option moves by word, control switches spaces, command "
+                            + "goes to the end of the line. Bound here, that is taken away "
+                            + "everywhere.", tone: .orange)
+                    }
 
-            Section {
-                ForEach(WindowArrangement.shortcuts(
-                    navigation: navigation, displayMove: settings.settings.displayMoveModifier
-                )) { shortcut in
-                    LabeledContent(shortcut.name) { Keycap(shortcut.keys) }
+                    Caption("Everything stops at the menu bar and the Dock. Filling is a toggle: "
+                        + "press it on a window that already fills and it goes back where it "
+                        + "was. The corners take u i j k because those four sit as a square on "
+                        + "the keyboard.")
                 }
-            } footer: {
-                Caption("Halves and filling stop at the menu bar and the Dock. Filling a "
-                    + "window that already fills puts it back where it was. The corners take "
-                    + "u i j k because those four sit as a square on the keyboard.")
             }
         }
         .formStyle(.grouped)
