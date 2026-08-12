@@ -45,7 +45,15 @@ These break silently. Nothing crashes, nothing logs, and the app looks fine.
 - English throughout, including comments.
 - Few comments. Simple code gets none. Comment only what the code cannot show:
   macOS or private-API behaviour, measured timings, and why something that looks
-  removable is not. Never narrate history or reverted approaches.
+  removable is not.
+- **Two lines is the norm, four is the ceiling.** Past that, either the comment is
+  narrating or the code needs splitting. A longer doc comment on a type is the one
+  exception, and only for a contract a signature cannot carry.
+- **No war stories.** Not what broke, not what the old version did, not how it was
+  found, not "measured the hard way". Keep the *fact* and drop the story: the
+  number, the constraint, the reason it cannot change. CHANGELOG.md and the git
+  history are where the narrative belongs, and repeating it in the source is how
+  a file ends up half prose.
 - Files are grouped by feature under `src/Flip/`.
 
 # Verifying

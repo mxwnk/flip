@@ -9,13 +9,12 @@ final class WindowStore: @unchecked Sendable {
     private let log = Logger(subsystem: Bundle.identifier, category: "windows")
     private let thread = RunLoopThread(name: "\(Bundle.identifier).windows")
 
-    /// Everything below is owned by `thread` and must not be touched elsewhere.
+    /// Owned by `thread`. Not to be touched elsewhere.
     private var watchers: [pid_t: AXApplicationWatcher] = [:]
     private var windows: [CGWindowID: WindowInfo] = [:]
     private var focusCounter: UInt64 = 0
     private var lastFocusedID: CGWindowID?
-    /// Where a window sat before it filled the screen, so the same key puts it
-    /// back. Cocoa coordinates, cleared when it goes away or moves otherwise.
+    /// Cocoa coordinates, for the fill toggle. Cleared when the window goes.
     private var restoreFrames: [CGWindowID: CGRect] = [:]
 
     /// The cheapest moment to capture a thumbnail: content final, still on screen.
@@ -27,8 +26,8 @@ final class WindowStore: @unchecked Sendable {
 
     // MARK: - Reading
 
-    /// Minimised windows are in neither window server listing, so they come back
-    /// from the AX model instead — which is why they ignore the space filter.
+    /// Minimised windows are in neither window server listing, so they come from
+    /// the AX model instead and cannot obey the space filter.
     func windows(
         ofBundleID bundleID: String? = nil,
         includingMinimized: Bool = false,
@@ -49,8 +48,7 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// What accessibility thinks the window measures, from the published
-    /// snapshot — a lock, and no accessibility traffic.
+    /// From the published snapshot: a lock, no accessibility traffic.
     func size(of id: CGWindowID) -> CGSize? {
         lock.lock()
         defer { lock.unlock() }
@@ -68,8 +66,7 @@ final class WindowStore: @unchecked Sendable {
                 window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse
             )
 
-            // Unminimising animates out of the Dock; a raise in the same breath
-            // is dropped.
+            // Unminimising animates out of the Dock; a raise now is dropped.
             DispatchQueue.global().asyncAfter(deadline: .now() + 0.15) { [self] in
                 thread.perform { self.raise(window) }
             }
@@ -86,10 +83,8 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// Presses the window's own close button, which is the only close macOS
-    /// offers accessibility. A window without one simply does not go — and the
-    /// application decides what closing means, so an unsaved document still gets
-    /// to put its sheet up.
+    /// The window's own close button is the only close accessibility offers.
+    /// The application still decides what closing means.
     func close(_ window: WindowInfo) {
         thread.perform { [self] in
             guard let button = AXBridge.element(kAXCloseButtonAttribute as String, of: window.element)
@@ -99,16 +94,15 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// Reads on the accessibility thread, computes on the main one where NSScreen
-    /// lives, writes back. Two hops, but neither framework is touched wrongly.
+    /// Reads on the accessibility thread, computes on main where NSScreen lives,
+    /// writes back. Two hops, neither framework touched from the wrong one.
     func arrange(_ arrangement: WindowArrangement) {
         thread.perform { [self] in
             guard let (id, element) = focusedWindow() else { return }
 
-            // In native full screen the frame cannot be written at all — the
-            // window owns its space. Only the fill key leaves it: the halves
-            // would have to wait out the space animation, and silently undoing
-            // full screen is not what they were pressed for.
+            // In native full screen the frame cannot be written; the window owns
+            // its space. Only the fill key leaves it — the halves would have to
+            // wait out the space animation.
             if arrangement == .maximize,
                AXBridge.bool(AXBridge.fullScreenAttribute, of: element) == true {
                 AXBridge.setBool(false, AXBridge.fullScreenAttribute, of: element)
@@ -119,8 +113,7 @@ final class WindowStore: @unchecked Sendable {
 
             let remembered = restoreFrames[id]
 
-            // Only the geometry needs the main thread — NSScreen is not safe to
-            // read elsewhere. The decision and the write stay with the state.
+            // Only the geometry needs main; NSScreen is unsafe elsewhere.
             DispatchQueue.main.async { [self] in
                 guard let cocoa = ScreenGeometry.cocoa(fromTopLeft: current) else { return }
 
@@ -204,10 +197,9 @@ final class WindowStore: @unchecked Sendable {
             self?.thread.perform { self?.drop(pid); self?.publish() }
         }
 
-        // Accessibility only lists the current space's windows, so the rest are
-        // invisible until seen once. A held element stays valid afterwards and
-        // raising it switches spaces, so learning the set as you move around is
-        // enough — no private call for which space a window is on.
+        // Accessibility lists only the current space. A held element stays valid
+        // afterwards and raising it switches spaces, so learning the set as you
+        // move around needs no private call.
         center.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -248,8 +240,7 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// New windows only: re-inserting a known one would reset its place in the
-    /// most-recently-used order, which is the point of the model.
+    /// New windows only: re-inserting resets the most-recently-used order.
     private func adoptWindowsRevealedByTheCurrentSpace() {
         var found = 0
         for watcher in watchers.values {
@@ -268,8 +259,8 @@ final class WindowStore: @unchecked Sendable {
     private func drop(_ pid: pid_t) {
         watchers[pid] = nil
 
-        // The frames go too: the window server reuses IDs, and a remembered
-        // frame outliving its window puts a fill back onto a dead one's place.
+        // The frames go too: window server ids are reused, and a stale one would
+        // put a fill back onto a dead window's place.
         for (id, window) in windows where window.pid == pid { restoreFrames[id] = nil }
         windows = windows.filter { $0.value.pid != pid }
     }

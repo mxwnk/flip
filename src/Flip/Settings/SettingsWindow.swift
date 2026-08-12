@@ -31,20 +31,17 @@ final class SettingsWindow {
             defer: false
         )
         window.title = "Flip Settings"
-        // The sidebar runs all the way up behind the traffic lights, which is
-        // the whole look. A title bar drawn over it would cut it in two, and the
-        // window's name is already the first thing in the sidebar.
+        // The sidebar runs up behind the traffic lights; a title bar would cut
+        // it in two, and the sidebar already names the window.
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
 
         let host = NSHostingView(rootView: SettingsView(settings: settings, bindings: bindings))
-        // Otherwise the hosting view sizes to the content's ideal size, which
-        // for a list is every row at once.
+        // Otherwise the hosting view sizes to every row at once.
         host.sizingOptions = []
         window.contentView = host
 
-        // A comfortable floor, not a required one: every page scrolls. Wider
-        // than it was, because the sidebar now takes a column of its own.
+        // A floor, not a requirement: every page scrolls.
         window.contentMinSize = NSSize(width: 700, height: 620)
         window.setContentSize(NSSize(width: 780, height: 760))
         window.center()
@@ -54,8 +51,7 @@ final class SettingsWindow {
         window.setFrameUsingName("Settings")
 
         // An accessory application cannot reliably be made active, so without
-        // this the window opens behind whatever is in front and the menu item
-        // looks dead. Well below the overlay, which still draws over it.
+        // this it opens behind. Well below the overlay, which draws over it.
         window.level = .floating
 
         window.isReleasedWhenClosed = false
@@ -70,13 +66,11 @@ private struct SettingsView: View {
 
     @State private var tab: SettingsTab = .general
 
-    /// What the keyboard lights up, per tab. All bindings at once would be half
-    /// the keys lit and no meaning.
+    /// Per page. All bindings at once is half the keys lit and no meaning.
     private var litKeys: Set<CGKeyCode> {
         switch tab {
         case .general:
-            // Nothing on that page is a key, and a keyboard lit for a page it
-            // has nothing to do with is worse than one left dark.
+            // Nothing on that page is a key.
             return []
         case .switcher:
             return [CGKeyCode(kVK_Tab)]
@@ -121,8 +115,7 @@ private struct SettingsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// General on its own above the group: it is the page about Flip as a
-    /// whole, where the other three are each about one part of it.
+    /// General is about Flip as a whole; the other three are each one part.
     private var sidebar: some View {
         List(selection: $tab) {
             row(.general)
@@ -136,9 +129,8 @@ private struct SettingsView: View {
         }
         .listStyle(.sidebar)
         .navigationSplitViewColumnWidth(min: 190, ideal: 205, max: 240)
-        // A split view fits itself a collapse button. Four pages that are the
-        // only way to reach any of this is not something to be able to fold
-        // away, and the title bar is otherwise empty on purpose.
+        // A split view fits itself a collapse button, and these four pages are
+        // the only way to reach any of this.
         .toolbar(removing: .sidebarToggle)
     }
 
@@ -167,8 +159,7 @@ private struct SettingsView: View {
 
             Divider()
 
-            // Always on show: the symbols are unreadable until you can see
-            // which key each one is.
+            // The symbols are unreadable until you see which key each one is.
             KeyboardMap(
                 keys: litKeys,
                 modifiers: litModifiers,

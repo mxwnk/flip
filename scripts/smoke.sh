@@ -6,13 +6,12 @@
 #
 #   make smoke
 #
-# Hands off the keyboard and mouse for the ~20s it runs: one real keystroke
-# releases the modifier holding the switcher open. Uses a Finder window of its
-# own, restores the clipboard and the settings.
+# Hands off the keyboard and mouse while it runs: one real keystroke releases the
+# modifier holding the switcher open. Uses a Finder window of its own, restores
+# the clipboard and the settings.
 #
-# Nothing sleeps for a fixed interval if it can watch for the thing instead —
-# hence `await`, `awaitax`, `awaitwindow`. Their ceilings are generous because
-# reaching one is a failure, not the normal course.
+# Nothing sleeps for a fixed interval if it can watch for the thing instead. The
+# ceilings are generous because reaching one is a failure.
 
 set -uo pipefail
 
@@ -36,10 +35,8 @@ check() {   # description  expected  actual
     if [ "$2" = "$3" ]; then pass "$1"; else fail "$1" "expected '$2', got '$3'"; fi
 }
 
-# The log is the only window into what Flip decided. One stream for the whole
-# suite, one byte mark per step, so an earlier step's line cannot be mistaken for
-# this one's. Restarting it per step cost 1.5s each time and lost whatever Flip
-# logged in the gap.
+# One stream for the whole suite, one byte mark per step, so an earlier step's
+# line cannot be mistaken for this one's.
 MARK=0
 export SMOKE_LOG="$LOG"
 
@@ -85,8 +82,7 @@ echo "==> Building the driver"
 swiftc -O "$HERE/smoke/driver.swift" -o "$DRIVER" || { echo "driver would not build"; exit 1; }
 
 # The rest of the ~1.5s attach. Not watchable: `log` prints its header with the
-# first event, so on an idle subsystem waiting for it hangs. Once up, a line
-# reaches the file inside 650ms — which is what makes the polling below work.
+# first event, so on an idle subsystem waiting for it hangs.
 sleep 0.6
 
 echo "==> Installing and starting Flip"
@@ -284,10 +280,8 @@ if [ -x "$FLIP" ]; then
 
     # Something that is not already in front, so coming forward means something.
     #
-    # One field per line rather than a tab-separated f-string: the quotes that
-    # needs are nested three deep by the time they reach python, and the version
-    # that was here produced a SyntaxError, an empty answer, and a check that
-    # blamed the machine for having one application.
+    # One field per line: a tab-separated f-string needs quotes nested three
+    # deep by the time they reach python.
     TARGET=$("$FLIP" list 2>/dev/null | python3 -c '
 import json, sys
 windows = json.load(sys.stdin)
@@ -338,10 +332,8 @@ printf 'smoke-marker' | pbcopy
 osascript -e 'tell application "System Events" to tell process "Flip" to set frontmost to true' >/dev/null 2>&1
 open_menu
 click_menu_item "Copy Diagnostics"
-# Polled, so the usual case costs a tenth of a second. The ceiling is wide on
-# purpose: this is the slowest step in the suite — the report reads the OSLog
-# store, measured at 1.6s on an idle machine and longer right after the raising
-# loop. The flat 1.5s sleep this replaced was already below that.
+# The slowest step in the suite: the report reads the OSLog store, measured at
+# 1.6s idle and longer after the raising loop. Hence the wide ceiling.
 COPIED=""
 for _ in $(seq 1 150); do
     case "$(pbpaste)" in *"Accessibility:"*) COPIED=yes; break ;; esac

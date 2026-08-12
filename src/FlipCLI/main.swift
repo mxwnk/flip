@@ -1,17 +1,9 @@
 import Foundation
 import FlipControl
 
-// The `flip` command: drives the running application from a prompt or a script.
-//
-//   flip list                  every window, as JSON
-//   flip focus <id>            bring one forward
-//   flip arrange left-half     move the focused window
-//   flip switch                open the grid
-//   flip pause | resume        hand ⌘Tab back to macOS, or take it again
-//
-// It talks to the running copy over a unix socket rather than doing the work
-// itself: window state lives in one place, and a second process reaching into
-// accessibility would answer differently from the switcher you can see.
+// Drives the running application over a unix socket rather than doing the work
+// itself, so it sees exactly the windows the switcher sees. `--help` lists the
+// commands; the usage string below is the one place they are written down.
 
 let usage = """
 flip — drive the running Flip from the command line

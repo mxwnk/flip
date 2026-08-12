@@ -25,8 +25,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private var tap: EventTap?
     private var menuBar: MenuBarItem?
 
-    /// Not persisted: pausing lasts a screen share or a game, and returning to a
-    /// switcher that silently does nothing is worse than one that resumed.
+    /// Not persisted: coming back to a switcher that silently does nothing is
+    /// worse than one that resumed.
     private var isPaused = false
 
     private let bindings = BindingStore()
@@ -58,9 +58,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
         bindings.load()
         bindings.watchForExternalEdits()
-        // A key being recorded has to reach the settings window rather than the
-        // binding it is already on. Pausing respects itself: resuming from here
-        // must not undo it.
+        // A key being recorded must reach the settings window, not the binding
+        // it is already on. Must not resume out of a deliberate pause.
         bindings.onKeyCapture = { [weak self] capturing in
             guard let self else { return }
 
@@ -187,9 +186,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         tap.start()
     }
 
-    /// The socket answers on its own thread. Reading windows is safe there —
-    /// the store publishes under a lock — and everything that is not hops to
-    /// main and reports that it was accepted rather than waiting for it.
+    /// Answers on the socket thread. Reading windows is safe there; anything
+    /// that is not hops to main and reports acceptance, not completion.
     private func startControlServer() {
         control = ControlServer { [weak self] command in
             guard let self else { return .failure("Flip is shutting down") }
@@ -202,9 +200,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private nonisolated func answer(_ command: ControlCommand) -> ControlResponse {
         switch command {
         case .list:
-            // Everything Flip knows, not the narrower set the overlay is
-            // configured to show: a script asking what exists wants the whole
-            // answer, and `focus` reaches any of them.
+            // Everything Flip knows, not the overlay's narrower set: `focus`
+            // reaches any of them.
             let windows = store.windows(includingMinimized: true, fromEverySpace: true)
 
             return .windows(windows.map {
@@ -265,10 +262,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         KeyboardLayout.observeInputSourceChanges(onChange: reapply)
     }
 
-    /// The port is created on the tap's own thread, so a failure lands after
-    /// `start()` has already returned and `tap` is non-nil. Clearing it is what
-    /// lets the poll try again — without this, one failed create meant no
-    /// hotkeys until the next launch, and nothing said so.
+    /// The port is created on the tap's own thread, so failure lands after
+    /// `start()` returned and `tap` is non-nil. Clearing it lets the poll retry.
     private func inputStateChanged(_ running: Bool) {
         if !running { tap = nil }
         guard running != inputWorking else { return }
@@ -277,9 +272,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         menuBar?.update(for: status, paused: isPaused, inputWorking: running, canReadWindowIDs: canReadWindowIDs)
     }
 
-    /// The usual cause is a grant that has not propagated yet, which clears on
-    /// its own. Every fifth poll, so a permanent failure does not start a thread
-    /// every two seconds.
+    /// Usually a grant that has not propagated yet. Every fifth poll, so a
+    /// permanent failure does not start a thread every two seconds.
     private func retryInputIfNeeded() {
         guard tap == nil, status.accessibility else { return }
         guard retryCountdown <= 0 else {
@@ -291,10 +285,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         startInputIfPermitted()
     }
 
-    /// Two copies mean two event taps racing, the loser silently swallowing keys.
-    /// Only the oldest stays: a symmetric "is anyone else running" check makes
-    /// every copy leave — three raced once and none survived. Exits zero, so
-    /// KeepAlive treats it as deliberate.
+    /// Two copies mean two event taps racing, the loser silently swallowing
+    /// keys. Only the oldest stays; a symmetric check would make all of them
+    /// leave.
     private func isOnlyInstance() -> Bool {
         let ourPID = ProcessInfo.processInfo.processIdentifier
         let ourLaunch = NSRunningApplication.current.launchDate ?? .distantPast
@@ -320,8 +313,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         return true
     }
 
-    /// Weakly imported, so a system without it starts instead of dying. Nothing
-    /// works without it, though: a window with no id cannot be matched.
+    /// Weakly imported, so an absent symbol starts instead of dying — but a
+    /// window with no id cannot be matched, so nothing works.
     private func checkAXShimLinkage() {
         canReadWindowIDs = FlipCanReadWindowIDs()
         guard canReadWindowIDs else {

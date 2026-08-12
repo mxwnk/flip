@@ -7,11 +7,8 @@ import ServiceManagement
 @MainActor
 enum LoginItem {
     private static let log = Logger(subsystem: Bundle.identifier, category: "loginitem")
-    /// Built from the identifier rather than typed out: the Makefile names the
-    /// file after `BUNDLE_ID` and writes the same value into Info.plist, so
-    /// deriving it here ties both sides to one source. Spelled out, the two
-    /// agreed only by maintenance — and a mismatch shows up as a `register()`
-    /// that throws at runtime and nowhere else.
+    /// Derived, not typed out: the Makefile names the file after `BUNDLE_ID` and
+    /// writes the same value into Info.plist, so both sides have one source.
     private static let service = SMAppService
         .agent(plistName: "\(Bundle.identifier).login.plist")
 

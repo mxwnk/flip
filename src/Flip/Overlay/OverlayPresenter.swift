@@ -2,9 +2,8 @@ import AppKit
 import OSLog
 import SwiftUI
 
-/// The overlay. Panels are built once at launch and never torn down: showing one
-/// is an `orderFront`, hiding it an `orderOut`. One per screen, because the
-/// placement setting can ask for the grid on every display at once.
+/// Panels are built once at launch and never torn down, one per screen: showing
+/// one is an `orderFront`, hiding it an `orderOut`.
 @MainActor
 final class OverlayPresenter: SwitcherPresenting {
     private let log = Logger(subsystem: Bundle.identifier, category: "switcher")
@@ -14,20 +13,18 @@ final class OverlayPresenter: SwitcherPresenting {
     private let settings: SettingsStore
 
     private let model = OverlayModel()
-    /// All drawing the same model; only the first `inUse` are shown.
     private var panels: [NSPanel] = []
     private var inUse = 0
-    /// A session is running — the panel may not be drawn yet, since a tap
-    /// released inside the delay commits without showing anything.
+    /// A session is running. The panel may not be drawn: a tap released inside
+    /// the delay commits without showing anything.
     private var isVisible = false
     private var currentSource: Source?
     private var lifetime: Timer?
     private var reveal: Timer?
-    /// Where the pointer was when the keyboard last had its say; hovering is
-    /// ignored until it moves away. See `hover`.
+    /// Hovering is ignored until the pointer moves away from here.
     private var pointerAnchor: CGPoint?
-    /// What the grid was laid out for, kept so it can be laid out again when a
-    /// tile leaves mid-session without asking the screens a second time.
+    /// Kept so a tile leaving mid-session can relayout without asking the
+    /// screens again.
     private var gridScreen: CGSize = .zero
 
     var onUnexpectedClose: (() -> Void)?
@@ -43,9 +40,8 @@ final class OverlayPresenter: SwitcherPresenting {
         self.thumbnails = thumbnails
         self.settings = settings
 
-        // Now rather than on the first keypress: the panel and its SwiftUI
-        // machinery are the expensive part, and not paying for them at ⌥Tab is
-        // what the design is arranged around.
+        // The panel and its SwiftUI machinery are the expensive part; not
+        // paying for them at ⌥Tab is what the design is arranged around.
         ensurePanels(max(NSScreen.screens.count, 1))
     }
 
@@ -56,8 +52,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private func makePanel(index: Int) -> NSPanel {
         let panel = NSPanel(
             contentRect: NSScreen.main?.frame ?? .zero,
-            // Non-activating: the switcher must not become the application it
-            // is about to switch away from.
+            // The switcher must not become the application it switches away from.
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -71,22 +66,19 @@ final class OverlayPresenter: SwitcherPresenting {
         panel.hidesOnDeactivate = false
 
         // isFloatingPanel rewrites the level, so it comes first. Reversed, the
-        // overlay sits at level 3 — under the menu bar and full-screen windows.
+        // overlay lands at level 3, under the menu bar and full-screen windows.
         panel.isFloatingPanel = true
         panel.level = .screenSaver
-        // The panel covers the screen, so it also swallows clicks on the dimmed
-        // backdrop. Those cancel; see `click`.
+        // Clicks on the dimmed backdrop cancel; see `click`.
         panel.ignoresMouseEvents = false
         panel.acceptsMouseMovedEvents = true
 
         let host = OverlayHostingView(rootView: OverlayView(model: model))
         panel.contentView = host
 
-        // Build SwiftUI's machinery now, not on the first Alt-Tab.
         host.layoutSubtreeIfNeeded()
 
-        // The index resolves a point against the panel it came from: three
-        // screens means three coordinate spaces holding the same picture.
+        // Three screens are three coordinate spaces holding the same picture.
         host.onPointerMoved = { [weak self] point in self?.hover(at: point, on: index) }
         host.onClick = { [weak self] point in self?.click(at: point, on: index) }
         host.onScroll = { [weak self] steps in self?.scroll(by: steps, on: index) }
@@ -94,7 +86,6 @@ final class OverlayPresenter: SwitcherPresenting {
         return panel
     }
 
-    /// Where the grid belongs, per the setting.
     private func targetScreens() -> [NSScreen] {
         switch settings.settings.overlayPlacement {
         case .activeWindow:
@@ -117,9 +108,8 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     func showFrontmostAppWindows(step: Int) {
-        // The router has already set isOverlayVisible, so a silent return here
-        // leaves it swallowing arrows and escape system-wide until the modifier
-        // comes back up.
+        // The router already set isOverlayVisible; a silent return leaves it
+        // swallowing arrows and escape system-wide.
         guard let bundleID = frontmost.bundleID else {
             onUnexpectedClose?()
             return
@@ -133,8 +123,8 @@ final class OverlayPresenter: SwitcherPresenting {
             ofBundleID: bundleID, includingMinimized: true, fromEverySpace: everySpace
         )
 
-        // activate() brings the application forward but leaves its windows in
-        // the Dock, so one with only minimised windows would show nothing.
+        // activate() leaves minimised windows in the Dock, so an application
+        // with only those would come forward showing nothing.
         guard let target = windows.first, windows.allSatisfy(\.isMinimized) else {
             return AppLauncher.activate(bundleID)
         }
@@ -185,9 +175,8 @@ final class OverlayPresenter: SwitcherPresenting {
 
         guard let window else { return }
 
-        // The application is public, the title is not: Copy Diagnostics puts the
-        // recent log into a report meant for a GitHub issue, and for a window
-        // switcher a title is a document name or a mail subject.
+        // The title stays private: Copy Diagnostics pastes this log into an
+        // issue, and a window title is a document name or a mail subject.
         log.debug("focusing \(window.applicationName, privacy: .public) — \(window.title, privacy: .private)")
         store.focus(window)
     }
@@ -205,9 +194,8 @@ final class OverlayPresenter: SwitcherPresenting {
         log.debug("closing \(window.applicationName, privacy: .public) — \(window.title, privacy: .private)")
         store.close(window)
 
-        // The tile leaves now rather than when the destroyed notification has
-        // found its way back through the store, so the grid keeps up with the
-        // keystroke. Nothing is lost either way: the store hears about it too.
+        // Now, not when the destroyed notification reaches the store, so the
+        // grid keeps up with the keystroke.
         var remaining = model.windows
         remaining.remove(at: model.selected)
 
@@ -243,10 +231,8 @@ final class OverlayPresenter: SwitcherPresenting {
         model.selected = tile
     }
 
-    /// Steps the selection like the arrow keys do, wrapping included — the
-    /// wheel is another way to say the same thing, not a second model. Going
-    /// through `move` also re-anchors the pointer, so the tile the selection
-    /// lands on is not immediately taken back by a hover the wheel caused.
+    /// Through `move`, which also re-anchors the pointer: otherwise a hover
+    /// the wheel itself caused would take the selection straight back.
     private func scroll(by steps: Int, on panelIndex: Int) {
         guard isVisible, panelIndex < inUse, panels[panelIndex].isVisible else { return }
 
@@ -256,8 +242,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private func click(at point: CGPoint, on panelIndex: Int) {
         guard isVisible, panelIndex < inUse, panels[panelIndex].isVisible else { return }
 
-        // The router decides synchronously and cannot see the click, so it would
-        // keep swallowing keys until the leader is let go.
+        // The router cannot see the click and would keep swallowing keys.
         defer { onUnexpectedClose?() }
 
         // Outside the grid is backdrop, not a tile: give up rather than commit.
@@ -267,8 +252,7 @@ final class OverlayPresenter: SwitcherPresenting {
         commit()
     }
 
-    /// The grid is centred in the panel the point came from, so that panel's
-    /// size is the container the hit test needs.
+    /// The grid is centred in its panel, so that panel is the hit test's box.
     private func tile(at point: CGPoint, on panelIndex: Int) -> Int? {
         model.layout.index(
             at: point, in: panels[panelIndex].frame.size, count: model.windows.count
@@ -282,8 +266,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
     // MARK: - Internals
 
-    /// Which question the overlay answers. Changing it narrows an open overlay
-    /// rather than stepping it along.
+    /// Changing it narrows an open overlay rather than stepping it along.
     private enum Source: Equatable {
         case allWindows
         case application(String)
@@ -306,7 +289,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private var everySpace: Bool { settings.settings.showWindowsFromEverySpace }
 
     private func open(_ source: Source, step: Int) {
-        // Same question: walk the list rather than rebuild it under the selection.
+        // Same question: walk the list, do not rebuild it under the selection.
         if isVisible, currentSource == source {
             move(by: step)
             return
@@ -318,18 +301,15 @@ final class OverlayPresenter: SwitcherPresenting {
         guard !windows.isEmpty else {
             log.debug("nothing to show for \(String(describing: source), privacy: .public)")
 
-            // Narrowing to nothing leaves the overlay standing; only a failed
-            // open is reported, or the router keeps swallowing keys.
+            // Only a failed open is reported, or the router keeps swallowing keys.
             if !isVisible { onUnexpectedClose?() }
             return
         }
 
         let wasVisible = isVisible
 
-        // Opening steps onto the previous window; narrowing does not, since the
-        // application was named and its top window is the answer. Worked out
-        // before presenting, so the captures are ordered around the tile that
-        // ends up selected rather than around index 0.
+        // Opening steps onto the previous window; narrowing does not. Decided
+        // before presenting, so captures are ordered around the real selection.
         let selection = wasVisible ? 0 : selectedIndex(for: windows.count, step: step)
         present(windows, from: source, selecting: selection)
 
@@ -365,11 +345,9 @@ final class OverlayPresenter: SwitcherPresenting {
         currentSource = source
         anchorPointer()
 
-        // Narrowing keeps what the session decided, so pressing a key while
-        // holding the leader does not restart the wait — and the same goes for
-        // the lifetime guard, which measures from when the modifier went down.
-        // Re-arming it here left the first timer in the runloop, still able to
-        // close a session started half a minute later.
+        // Both belong to the session, not to each present() within it: the
+        // lifetime guard measures from when the modifier went down, and
+        // re-arming it would leave the first timer armed in the runloop.
         if !wasRunning {
             scheduleReveal()
             scheduleLifetime()
@@ -392,8 +370,7 @@ final class OverlayPresenter: SwitcherPresenting {
         }
     }
 
-    /// The selection exists but nothing is drawn. Releasing the leader from
-    /// here is the fast path the delay is for.
+    /// Selection made, nothing drawn — the fast path the delay exists for.
     private func scheduleReveal() {
         let delay = settings.settings.overlayDelay.seconds
         guard delay > 0 else { return show() }

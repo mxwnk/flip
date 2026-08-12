@@ -10,9 +10,8 @@ final class BindingStore: ObservableObject {
 
     var onChange: (() -> Void)?
 
-    /// Raised while the settings window is waiting for a key to be pressed.
-    /// Flip's own tap would otherwise swallow one that is already bound bare —
-    /// F1 above all, which is the very key a recorder exists to make reachable.
+    /// Raised while the settings window waits for a key. Flip's own tap would
+    /// otherwise swallow one already bound bare, F1 above all.
     var onKeyCapture: ((Bool) -> Void)?
 
     private let log = Logger(subsystem: Bundle.identifier, category: "bindings")
@@ -66,9 +65,8 @@ final class BindingStore: ObservableObject {
     private var watcher: DispatchSourceFileSystemObject?
     private var lastWritten: Data?
 
-    /// Watches the file and re-arms when replaced. A directory watch misses
-    /// in-place overwrites; a file watch is stranded when an atomic save swaps
-    /// the inode. Both need covering.
+    /// Re-arms when the file is replaced: a directory watch misses in-place
+    /// overwrites, a file watch is stranded by an atomic save.
     func watchForExternalEdits() {
         watcher?.cancel()
 
@@ -99,8 +97,7 @@ final class BindingStore: ObservableObject {
         watcher = source
     }
 
-    /// Compares content, not timestamps: every save is a write, and reacting
-    /// to those would loop.
+    /// Content, not timestamps: every save is a write and would loop.
     private func reloadIfChangedOnDisk() {
         guard let data = try? Data(contentsOf: fileURL), data != lastWritten,
               let decoded = try? JSONDecoder().decode([AppBinding].self, from: data)
@@ -177,10 +174,8 @@ final class BindingStore: ObservableObject {
         }
     }
 
-    /// `leader` and `displayMove` are what the window actions are bound to right
-    /// now. The router matches those before it looks at any binding, so a leader
-    /// that collides with one leaves the binding permanently unreachable — the
-    /// case this exists to catch.
+    /// The router matches window actions before bindings, so a leader that
+    /// collides with one leaves the binding unreachable. That is the case here.
     func issue(
         for binding: AppBinding,
         leader: CGEventFlags = [],

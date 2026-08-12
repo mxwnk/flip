@@ -5,8 +5,7 @@ import ScreenCaptureKit
 
 /// Window thumbnails, captured concurrently and scaled by the GPU during capture.
 final class ThumbnailStore: @unchecked Sendable {
-    /// Twice the tile, for retina. Derived rather than written out, so a tile
-    /// that grows past a stale target cannot go soft.
+    /// Twice the tile, for retina. Derived, so it cannot go stale.
     private static let target = CGSize(
         width: Theme.tileWidth * 2,
         height: (Theme.tileWidth * Theme.thumbnailRatio).rounded(.down) * 2
@@ -15,8 +14,8 @@ final class ThumbnailStore: @unchecked Sendable {
     /// The size accessibility reports, which Stage Manager does not distort.
     var expectedSize: (@Sendable (CGWindowID) -> CGSize?)?
 
-    /// Below this a capture is a Stage Manager miniature, not a window: the
-    /// parked strip is ~200 points wide, a real window is not.
+    /// Below this a capture is a Stage Manager miniature: the parked strip is
+    /// ~200 points wide.
     private static let smallestRealWindow: CGFloat = 400
 
     /// Still shown while stale; only capture is triggered.
@@ -29,9 +28,8 @@ final class ThumbnailStore: @unchecked Sendable {
 
     private let lock = NSLock()
     private var images: [CGWindowID: (image: CGImage, at: Date)] = [:]
-    /// Captures already on their way. Without this, `needsCapture` only ever
-    /// saw finished ones, so two fills a moment apart — the overlay revealing
-    /// itself and then narrowing — sent every window through twice.
+    /// In flight. `needsCapture` sees only finished ones, so without this two
+    /// overlapping fills capture everything twice.
     private var inFlight: Set<CGWindowID> = []
 
     /// Ignores age: an icon for the ~150ms of a fresh capture looks worse than
@@ -43,8 +41,7 @@ final class ThumbnailStore: @unchecked Sendable {
         return images[id]?.image
     }
 
-    /// Takes the ids that nobody else is already capturing, in one step, so two
-    /// callers cannot both come away believing they own the same window.
+    /// One step, so two callers cannot both claim the same window.
     private func claim(_ ids: [CGWindowID]) -> [CGWindowID] {
         lock.lock()
         defer { lock.unlock() }
@@ -119,9 +116,8 @@ final class ThumbnailStore: @unchecked Sendable {
         guard rect.width > 0, rect.height > 0 else { return nil }
 
         // Stage Manager parks a window as a tilted miniature and the window
-        // server reports that as the window. Accessibility keeps reporting the
-        // real size, so the two disagreeing is the tell — measured 200 against
-        // 2497. Returning nothing keeps the capture from before it was parked.
+        // server reports that as the window; accessibility keeps reporting the
+        // real size. Measured 200 against 2497.
         if rect.width < Self.smallestRealWindow,
            let expected = expectedSize?(id), expected.width > 0,
            rect.width < expected.width / 2 {
@@ -162,8 +158,8 @@ final class ThumbnailStore: @unchecked Sendable {
 /// Enumerating shareable content costs ~60ms, more than a capture, so the
 /// listing is held rather than fetched per window.
 private actor ShareableWindows {
-    /// An SCWindow stays valid while its window exists, so this only bounds how
-    /// long a *missing* entry is believed.
+    /// An SCWindow stays valid while its window exists, so this only bounds
+    /// how long a *missing* entry is believed.
     private static let lifetime: TimeInterval = 60
 
     private let log = Logger(subsystem: Bundle.identifier, category: "thumbnails")
@@ -186,9 +182,8 @@ private actor ShareableWindows {
         return Date().timeIntervalSince(fetchedAt) < Self.lifetime
     }
 
-    /// Actors are reentrant: without joining a refresh in flight, five concurrent
-    /// tiles fetched the listing five times, serialised to 132ms. Assigned before
-    /// the first await so no caller slips past.
+    /// Actors are reentrant: five concurrent tiles once fetched the listing five
+    /// times and serialised to 132ms. Assigned before the first await.
     private func refresh() async {
         if let inFlight { return await inFlight.value }
 

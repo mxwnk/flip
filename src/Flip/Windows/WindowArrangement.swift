@@ -15,8 +15,7 @@ enum WindowArrangement: CaseIterable {
     case previousDisplay
     case nextDisplay
 
-    /// Carries a window to another display rather than moving it within one.
-    /// These answer to their own modifier, so they are listed with it.
+    /// Between displays, not within one, and on their own modifier.
     var movesToAnotherDisplay: Bool {
         switch self {
         case .previousDisplay, .nextDisplay: return true
@@ -24,8 +23,7 @@ enum WindowArrangement: CaseIterable {
         }
     }
 
-    /// What `flip arrange` calls these. A test holds this to the names in
-    /// FlipControl, so neither side can gain one the other does not know.
+    /// What `flip arrange` calls these; a test holds it to FlipControl.
     var controlName: String {
         switch self {
         case .leftHalf: return "left-half"
@@ -50,8 +48,7 @@ enum WindowArrangement: CaseIterable {
     }
 }
 
-/// One action and its key. The router matches against this and the settings
-/// window lists it, so the two cannot drift apart.
+/// The router matches against this and the settings window lists it.
 struct WindowShortcut: Identifiable {
     let arrangement: WindowArrangement
     let modifiers: CGEventFlags
@@ -63,8 +60,7 @@ struct WindowShortcut: Identifiable {
 }
 
 extension WindowArrangement {
-    /// On the table rather than inside the router, so the router and its tests
-    /// ask the same question.
+    /// On the table, so the router and its tests ask the same question.
     static func matching(
         keyCode: CGKeyCode,
         modifiers: CGEventFlags,
@@ -76,16 +72,9 @@ extension WindowArrangement {
             .arrangement
     }
 
-    /// The keys are fixed and the modifiers are not. Which pair carries the
-    /// halves comes down to what else is bound on the machine, but a pair it
-    /// wants to be: a single modifier and an arrow is already spoken for by
-    /// macOS, which `ModifierChoice.takesArrowKeys` spells out.
-    ///
-    /// The display moves take the same arrows, so they carry a modifier of their
-    /// own and cannot be given one of these — the two sets do not overlap.
-    ///
-    /// Corners take `u i j k` because those form a square on the keyboard —
-    /// vim's `y u / h j` only does on a US layout.
+    /// Fixed keys, settable modifiers — a pair of them, for the reason in
+    /// `ModifierChoice.takesArrowKeys`. Corners are `u i j k` because those form
+    /// a square; vim's `y u / h j` only does on a US layout.
     static func shortcuts(
         navigation: ModifierChoice,
         displayMove: DisplayMoveModifier
@@ -169,14 +158,12 @@ enum WindowArranger {
             return Outcome(target: area, restore: window)
         }
 
-        // Nothing remembered: the window already filled when Flip first saw it.
-        // Something reasonable beats refusing to move.
+        // Already filled when Flip first saw it; moving beats refusing to.
         return Outcome(target: remembered ?? centred(in: area))
     }
 
-    /// Applications that resize in steps cannot land on the visible frame exactly
-    /// — a terminal snaps to whole character cells — and a few points short still
-    /// counts as filled to whoever pressed the key.
+    /// A terminal snaps to whole character cells, so a few points short still
+    /// counts as filled.
     nonisolated static func fills(_ window: CGRect, _ area: CGRect, tolerance: CGFloat = 20) -> Bool {
         abs(window.minX - area.minX) <= tolerance
             && abs(window.minY - area.minY) <= tolerance
@@ -193,8 +180,8 @@ enum WindowArranger {
         )
     }
 
-    /// The geometry alone, so it can be checked without a screen. `area` is a
-    /// visible frame: no menu bar, no Dock, and its origin is not necessarily zero.
+    /// Geometry alone, checkable without a screen. `area` is a visible frame,
+    /// so its origin is not necessarily zero.
     nonisolated static func frame(for arrangement: WindowArrangement, in area: CGRect) -> CGRect? {
         switch arrangement {
         case .leftHalf:
@@ -229,8 +216,8 @@ enum WindowArranger {
         return mapped(window, from: screen.visibleFrame, to: target.visibleFrame)
     }
 
-    /// Proportional, so a left half stays a left half rather than landing
-    /// somewhere arbitrary. Pure, so it needs no second monitor to check.
+    /// Proportional, so a left half stays a left half. Pure, so it needs no
+    /// second monitor to check.
     nonisolated static func mapped(_ window: CGRect, from: CGRect, to: CGRect) -> CGRect {
         let scaleX = to.width / from.width
         let scaleY = to.height / from.height

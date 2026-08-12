@@ -3,15 +3,9 @@ import Foundation
 import FlipControl
 import OSLog
 
-/// Answers the `flip` command over a unix socket in Application Support.
-///
-/// A thread with a blocking accept loop rather than anything asynchronous: the
-/// traffic is one short request at a time from a person at a prompt, and this
-/// must never be able to hold up the event tap or the main thread.
-///
-/// The socket is created with only the owner able to read or write it. That is
-/// the whole of the access control, and it is enough: anything running as this
-/// user can already drive windows through accessibility directly.
+/// Answers the `flip` command over a unix socket in Application Support. A
+/// blocking accept loop on its own thread, because this must never hold up the
+/// event tap. Owner-only permissions are the whole access control.
 final class ControlServer: @unchecked Sendable {
     private let log = Logger(subsystem: Bundle.identifier, category: "control")
     private let handle: (ControlCommand) -> ControlResponse
@@ -34,8 +28,7 @@ final class ControlServer: @unchecked Sendable {
             withIntermediateDirectories: true
         )
 
-        // A crash leaves the file behind and bind refuses to reuse it. Removing
-        // it is safe because a live one would have been answered above.
+        // bind refuses a leftover file; a live one was answered above.
         if isAnswering(at: path) {
             return log.error("another copy is already answering on the control socket")
         }
@@ -60,8 +53,7 @@ final class ControlServer: @unchecked Sendable {
         listener = -1
     }
 
-    /// Whether somebody is already serving this path, which separates a stale
-    /// file from a second copy of Flip.
+    /// Separates a stale socket file from a second copy of Flip.
     private func isAnswering(at path: String) -> Bool {
         guard FileManager.default.fileExists(atPath: path) else { return false }
 
@@ -116,8 +108,7 @@ final class ControlServer: @unchecked Sendable {
         var request = Data()
         var buffer = [UInt8](repeating: 0, count: 8192)
 
-        // The client half-closes when the request is complete, so reading to the
-        // end is the frame.
+        // The client half-closes, so reading to the end is the frame.
         while true {
             let read = Darwin.read(connection, &buffer, buffer.count)
             guard read > 0 else { break }

@@ -29,8 +29,7 @@ struct ShortcutsView: View {
 
             Section {
                 if store.bindings.isEmpty {
-                    // The other tabs say when they are empty; this one used to show
-                    // a blank space and leave you guessing.
+                    // Every other page says when it is empty.
                     Caption("No shortcuts yet.")
                 }
 
@@ -71,20 +70,16 @@ struct ShortcutsView: View {
     }
 }
 
-/// Click, then press the key. A text field could only ever be given characters,
-/// and F1 to F12 are perfectly good bindings — `bindings.json` could name them
-/// but this editor could not.
-///
-/// Escape gives up, and so does clicking it a second time. Recording swallows
-/// the keystroke, so nothing is typed into the settings window on the way past.
+/// Click, then press the key. A text field takes only characters, and F1 to F12
+/// are good bindings. Recording swallows the keystroke so nothing is typed into
+/// the settings window on the way past; escape or a second click gives up.
 private struct KeyRecorder: View {
     let id: UUID
     @ObservedObject var store: BindingStore
 
     @State private var isRecording = false
     @State private var monitor: Any?
-    /// Which recording a pending timeout belongs to, so the one it was armed for
-    /// is the only one it can end.
+    /// So a pending timeout can only end the recording it was armed for.
     @State private var session = 0
 
     var body: some View {
@@ -106,8 +101,7 @@ private struct KeyRecorder: View {
         return key.isEmpty ? "key" : key.uppercased()
     }
 
-    /// Lit the same way as the keyboard below, where this key is about to light
-    /// up too.
+    /// Lit like the keyboard below, where this key lights up too.
     private var fill: Color {
         isRecording ? Theme.selectedStroke : Color.primary.opacity(0.07)
     }
@@ -131,8 +125,7 @@ private struct KeyRecorder: View {
             return nil
         }
 
-        // Left armed it would keep Flip's own keys switched off, and nothing
-        // about the settings window would say why.
+        // Left armed, Flip's own keys stay off and nothing says why.
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             guard session == armed else { return }
 
@@ -164,8 +157,7 @@ private struct KeyRecorder: View {
 private struct BindingRow: View {
     let binding: AppBinding
     let issue: BindingStore.Issue?
-    /// Passed in rather than read here: it followed the setting nowhere and the
-    /// row claimed ⌥ whatever the leader actually was.
+    /// Passed in, or the row claims ⌥ whatever the leader actually is.
     let leader: String
     @ObservedObject var store: BindingStore
 

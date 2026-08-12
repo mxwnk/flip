@@ -1,13 +1,8 @@
 import Foundation
 
-/// What the `flip` command and the running application say to each other.
-///
-/// Shared by both rather than written twice: the wire format is the one thing
-/// that cannot drift, because the two halves ship together but are built as
-/// separate binaries and could easily be updated apart.
-///
-/// One JSON object per line, one line each way, then the connection closes.
-/// Nothing here streams, and no command takes long enough to want it to.
+/// What the `flip` command and the running application say to each other: one
+/// JSON object per line, one line each way. Shared, not written twice — two
+/// binaries that ship together can be updated apart.
 public enum ControlCommand: Codable, Sendable {
     case list
     case focus(UInt32)

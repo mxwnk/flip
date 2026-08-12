@@ -3,16 +3,15 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-/// Turns key events into switcher commands, synchronously on the event tap's
-/// thread: whether to swallow an event cannot wait for main. The interaction
-/// ends on a modifier coming back up, which no hotkey API reports — hence a tap.
+/// Turns key events into switcher commands, synchronously on the tap's thread:
+/// whether to swallow cannot wait for main. The interaction ends on a modifier
+/// coming back up, which no hotkey API reports — hence a tap.
 final class KeyRouter {
     private let presenter: SwitcherPresenting
     private let frontmost: FrontmostApp
     private let log = Logger(subsystem: Bundle.identifier, category: "router")
 
-    /// Believing a closed overlay is open swallows arrow keys system-wide,
-    /// so this crosses threads under a lock.
+    /// Believing a closed overlay open swallows arrows system-wide.
     private let visibility = NSLock()
     private var overlayIsVisible = false
 
@@ -26,9 +25,8 @@ final class KeyRouter {
         isOverlayVisible = false
     }
 
-    /// `flip switch` opened it, so no modifier is being held and nothing will be
-    /// released to commit it. Escape, the mouse and Return are the ways out —
-    /// which is why Return commits at all.
+    /// `flip switch` holds no modifier, so nothing will be released to commit
+    /// it. That is why Return commits.
     func overlayWasOpenedExternally() {
         isOverlayVisible = true
     }
@@ -126,10 +124,9 @@ final class KeyRouter {
             return event
         }
 
-        // Bare or with the leader held, like Return: with the app switcher's
-        // modifier down this is ⌘⌫, which means something else everywhere.
-        // Acted on once but swallowed throughout — a held key would otherwise
-        // empty the grid, which is not what the arrows repeating is for.
+        // Bare or with the leader, like Return: ⌘⌫ means something else
+        // everywhere. Acted on once, swallowed throughout, or a held key would
+        // empty the grid.
         if isOverlayVisible, code == CGKeyCode(kVK_Delete), base.isEmpty || base == leader {
             if !isRepeat { onMain { $0.closeSelection() } }
             return nil
@@ -141,8 +138,7 @@ final class KeyRouter {
             return nil
         }
 
-        // Against the flags as pressed, not `base`: shift is part of a window
-        // binding, where the switcher only reads it as "backwards".
+        // As pressed, not `base`: shift is part of a window binding.
         bindingsLock.lock()
         let displayMoveModifier = displayMove
         let navigation = windowLeader
@@ -156,9 +152,8 @@ final class KeyRouter {
             return nil
         }
 
-        // Narrowing an open grid answers to whatever is holding it open, which
-        // is the switcher's leader and already under the thumb — not to the
-        // shortcut leader, which may well be a different key entirely.
+        // Narrowing answers to whatever is holding the grid open, which is the
+        // switcher's leader — not the shortcut leader.
         if isOverlayVisible, base == leader, let bundleID = bundleID(for: code, withLeader: true) {
             if !isRepeat { onMain { $0.showWindows(of: bundleID, step: 1) } }
             return nil
@@ -192,8 +187,7 @@ final class KeyRouter {
     private func navigation(for code: CGKeyCode, modifiers: CGEventFlags) -> (() -> Void)? {
         switch Int(code) {
         case kVK_Return:
-            // Bare, or with the leader held. Anything else and this is ⌃⌥↩ asking
-            // to fill the window behind the grid, which still wins.
+            // Anything else is ⌃⌥↩ asking to fill the window behind the grid.
             bindingsLock.lock()
             let leader = leaderFlags
             bindingsLock.unlock()
