@@ -5,6 +5,26 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 1.5.0
 
+**The application keys have a leader of their own.** They used to borrow the
+switcher's, which quietly decided one question with the answer to another. The
+two are held differently — one is tapped and let go, the other is held while you
+aim at a key — and on a board with a Windows bottom row they are not even in the
+places their names suggest, so the key that feels like command is the one macOS
+calls option.
+
+Settings › Shortcuts picks it as keys rather than from a menu, each carrying its
+word, because which modifier this should be is a question about where your thumb
+rests. Choosing one with command in it says so plainly: `⌘` and a letter is a
+menu shortcut everywhere, and a binding there takes it away.
+
+A file written before this keeps behaving exactly as it did — the shortcut leader
+falls back to the switcher's rather than to a default, so nothing moves under an
+update. Narrowing an open grid is the one thing that still answers to the
+switcher's leader, since that is the modifier already holding the grid open.
+
+The row in the editor also stops claiming `⌥` regardless of what is set. It never
+followed the setting at all.
+
 **The settings window has pages down the side.** Four tabs across the top were
 already one more than a tab bar wears well, and each page had to introduce itself
 in its own words. Now the pages are a sidebar with a colour each, the page says

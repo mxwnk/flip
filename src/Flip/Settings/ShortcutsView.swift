@@ -7,8 +7,26 @@ struct ShortcutsView: View {
     @ObservedObject var store: BindingStore
     @ObservedObject var settings: SettingsStore
 
+    private var leader: ModifierChoice { settings.settings.shortcutLeader }
+
     var body: some View {
         Form {
+            Section {
+                LeaderPicker(choice: $settings.settings.shortcutLeader)
+                    .padding(.vertical, 2)
+            } header: {
+                Text("Leader")
+            } footer: {
+                if leader.takesMenuShortcuts {
+                    Caption("\(leader.label) and a letter is a menu shortcut in every "
+                        + "application. A key bound here takes that one away everywhere — "
+                        + "\(leader.label)S no longer saves.", tone: .orange)
+                } else {
+                    Caption("Held while you press one of the keys below. The switcher's own "
+                        + "leader is set in General and can be a different key.")
+                }
+            }
+
             Section {
                 if store.bindings.isEmpty {
                     // The other tabs say when they are empty; this one used to show
@@ -21,9 +39,10 @@ struct ShortcutsView: View {
                         binding: binding,
                         issue: store.issue(
                             for: binding,
-                            leader: settings.settings.leader.flags,
+                            leader: leader.flags,
                             displayMove: settings.settings.displayMoveModifier
                         ),
+                        leader: leader.label,
                         store: store
                     )
                 }
@@ -32,9 +51,9 @@ struct ShortcutsView: View {
                     .buttonStyle(.borderless)
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
-                    Caption("Hold Option and press a key to reach an application. Pressing it "
-                        + "again while that application is in front walks its windows. Click a "
-                        + "key to record another one; F1 to F12 count.")
+                    Caption("Hold \(leader.label) and press a key to reach an application. "
+                        + "Pressing it again while that application is in front walks its "
+                        + "windows. Click a key to record another one; F1 to F12 count.")
 
                     Spacer(minLength: 16)
 
@@ -144,14 +163,17 @@ private struct KeyRecorder: View {
 private struct BindingRow: View {
     let binding: AppBinding
     let issue: BindingStore.Issue?
+    /// Passed in rather than read here: it followed the setting nowhere and the
+    /// row claimed ⌥ whatever the leader actually was.
+    let leader: String
     @ObservedObject var store: BindingStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
-                Text(binding.usesLeader ? "⌥" : "")
+                Text(binding.usesLeader ? leader : "")
                     .foregroundStyle(.secondary)
-                    .frame(width: 14)
+                    .frame(width: 26)
 
                 KeyRecorder(id: binding.id, store: store)
 

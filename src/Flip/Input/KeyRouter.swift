@@ -40,6 +40,7 @@ final class KeyRouter {
     private var bareBindings: [CGKeyCode: String] = [:]
     private var leaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
+    private var shortcutLeaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var displayMove: DisplayMoveModifier = .shiftOption
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
@@ -66,6 +67,7 @@ final class KeyRouter {
         bareBindings = bare
         leaderFlags = settings.leader.flags
         appSwitcherFlags = settings.appSwitcher.flags
+        shortcutLeaderFlags = settings.shortcutLeader.flags
         displayMove = settings.displayMoveModifier
         bindingsLock.unlock()
 
@@ -79,11 +81,11 @@ final class KeyRouter {
         return withLeader ? leaderBindings[code] : bareBindings[code]
     }
 
-    private var hotkeys: (leader: CGEventFlags, appSwitcher: CGEventFlags) {
+    private var hotkeys: (leader: CGEventFlags, appSwitcher: CGEventFlags, shortcut: CGEventFlags) {
         bindingsLock.lock()
         defer { bindingsLock.unlock() }
 
-        return (leaderFlags, appSwitcherFlags)
+        return (leaderFlags, appSwitcherFlags, shortcutLeaderFlags)
     }
 
     // MARK: - Event handling
@@ -105,7 +107,7 @@ final class KeyRouter {
         let base = flags.subtracting(.maskShift)
         let step = backwards ? -1 : 1
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
-        let (leader, appSwitcher) = hotkeys
+        let (leader, appSwitcher, shortcutLeader) = hotkeys
 
         if code == CGKeyCode(kVK_Tab) {
             if base == leader {
@@ -150,7 +152,15 @@ final class KeyRouter {
             return nil
         }
 
-        if base == leader, let bundleID = bundleID(for: code, withLeader: true) {
+        // Narrowing an open grid answers to whatever is holding it open, which
+        // is the switcher's leader and already under the thumb — not to the
+        // shortcut leader, which may well be a different key entirely.
+        if isOverlayVisible, base == leader, let bundleID = bundleID(for: code, withLeader: true) {
+            if !isRepeat { onMain { $0.showWindows(of: bundleID, step: 1) } }
+            return nil
+        }
+
+        if base == shortcutLeader, let bundleID = bundleID(for: code, withLeader: true) {
             if !isRepeat { reach(bundleID) }
             return nil
         }

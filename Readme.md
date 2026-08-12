@@ -97,9 +97,11 @@ of whichever page you are on lit up.
 - **General** — start at login, the two hotkeys, which display the grid opens on,
   how long Option must be held before it does, thumbnails or plain icons, windows
   from every space, and the update check.
-- **Shortcuts** — one key per application. Click the key and press the one you
-  want, function keys included. The editor warns when a key would shadow a
-  character you need to type.
+- **Shortcuts** — one key per application, and the leader they answer to, picked
+  as keys rather than from a menu. It is its own setting: the switcher's leader
+  is tapped and let go, this one is held while you aim, and they need not be the
+  same key. Click a key and press the one you want, function keys included. The
+  editor warns when a key would shadow a character you need to type.
 - **Windows** — the keys above, listed so you can find them without this page.
 - **Excluded** — applications kept out of the grid. A key bound directly to one
   still reaches it.

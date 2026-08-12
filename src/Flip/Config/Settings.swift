@@ -34,6 +34,22 @@ enum ModifierChoice: String, Codable, CaseIterable, Identifiable {
         case .controlCommand: return "⌃⌘"
         }
     }
+
+    /// Spelled out under the symbols, for the same reason the keyboard picture
+    /// spells them out: ⌃⌥⌘ mean nothing until you have read them once.
+    var spelled: String {
+        switch self {
+        case .option: return "option"
+        case .control: return "control"
+        case .command: return "command"
+        case .optionControl: return "control option"
+        case .optionCommand: return "option command"
+        case .controlCommand: return "control command"
+        }
+    }
+
+    /// Command and a letter is a menu shortcut in every application there is.
+    var takesMenuShortcuts: Bool { flags.contains(.maskCommand) }
 }
 
 /// How long the leader must be held before the overlay appears.
@@ -131,6 +147,12 @@ struct Settings: Codable, Equatable {
 
     var appSwitcher: ModifierChoice = .command
 
+    /// What the application keys answer to. Its own setting rather than the
+    /// switcher's leader, which it used to share: one is tapped and let go, the
+    /// other is held while you read a grid, and on a board with a Windows bottom
+    /// row they are not even in the places their names suggest.
+    var shortcutLeader: ModifierChoice = .option
+
     /// Off needs no Screen Recording grant at all.
     var showThumbnails = true
 
@@ -169,6 +191,11 @@ struct Settings: Codable, Equatable {
             ?? defaults.leader
         appSwitcher = try container.decodeIfPresent(ModifierChoice.self, forKey: .appSwitcher)
             ?? defaults.appSwitcher
+        // Falls back to the leader rather than to the default: a file written
+        // before the two were separable meant the leader, and a constant here
+        // would move every application key on the first launch after an update.
+        shortcutLeader = try container.decodeIfPresent(ModifierChoice.self, forKey: .shortcutLeader)
+            ?? leader
         showThumbnails = try container.decodeIfPresent(Bool.self, forKey: .showThumbnails)
             ?? defaults.showThumbnails
         overlayDelay = try container.decodeIfPresent(OverlayDelay.self, forKey: .overlayDelay)

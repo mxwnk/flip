@@ -193,6 +193,51 @@ final class RouterTests: XCTestCase {
         XCTAssertTrue(presenter.arranged.isEmpty)
     }
 
+    // MARK: - The two leaders
+
+    private func separateLeaders() -> Settings {
+        var settings = Settings()
+        settings.leader = .option
+        settings.shortcutLeader = .controlCommand
+
+        return settings
+    }
+
+    func testABindingAnswersToTheShortcutLeader() {
+        router.apply([AppBinding(key: "u", bundleID: "com.example.app")], settings: separateLeaders())
+
+        XCTAssertNil(router.handle(
+            type: .keyDown, event: key(kVK_ANSI_U, flags: [.maskControl, .maskCommand])
+        ))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.reached, ["com.example.app"])
+    }
+
+    /// The switcher's leader is no longer the application keys' leader, so on
+    /// its own it must leave a bound key to whoever else wants it.
+    func testTheSwitcherLeaderNoLongerReachesApplications() {
+        router.apply([AppBinding(key: "u", bundleID: "com.example.app")], settings: separateLeaders())
+
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_ANSI_U, flags: .maskAlternate)))
+        drainMainQueue()
+
+        XCTAssertTrue(presenter.reached.isEmpty)
+    }
+
+    /// Narrowing is the exception: the modifier holding the grid open is the one
+    /// under the thumb, so that is the one a key press there has to answer to.
+    func testNarrowingAnOpenGridStillAnswersToTheSwitcherLeader() {
+        router.apply([AppBinding(key: "u", bundleID: "com.example.app")], settings: separateLeaders())
+        openOverlay()
+
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_ANSI_U, flags: .maskAlternate)))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.opened, 2, "the grid narrowed rather than the application opening")
+        XCTAssertTrue(presenter.reached.isEmpty)
+    }
+
     func testAnUnboundKeyIsLeftAlone() {
         XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_ANSI_A)))
         XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_ANSI_A, flags: .maskAlternate)))

@@ -93,7 +93,7 @@ private struct SettingsView: View {
         case .general:
             return settings.settings.leader.flags.union(settings.settings.appSwitcher.flags)
         case .shortcuts:
-            return settings.settings.leader.flags
+            return settings.settings.shortcutLeader.flags
         case .windows:
             return CGEventFlags([.maskControl, .maskAlternate])
                 .union(settings.settings.displayMoveModifier.flags)

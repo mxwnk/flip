@@ -65,6 +65,31 @@ final class SettingsTests: XCTestCase {
         )
     }
 
+    /// The application keys used to answer to the switcher's leader. A file
+    /// written back then means that one, and defaulting to the constant instead
+    /// would move every shortcut somebody has on the first launch after an
+    /// update — silently, since nothing about the keys themselves changed.
+    func testAnOlderFileKeepsItsLeaderForTheShortcuts() throws {
+        for choice in ModifierChoice.allCases {
+            let json = Data(#"{"leader":"\#(choice.rawValue)"}"#.utf8)
+
+            let decoded = try JSONDecoder().decode(Settings.self, from: json)
+
+            XCTAssertEqual(decoded.shortcutLeader, choice, "\(choice)")
+        }
+    }
+
+    func testTheShortcutLeaderIsItsOwnOnceWritten() throws {
+        var settings = Settings()
+        settings.leader = .option
+        settings.shortcutLeader = .controlCommand
+
+        let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+
+        XCTAssertEqual(round.leader, .option)
+        XCTAssertEqual(round.shortcutLeader, .controlCommand)
+    }
+
     func testBothDisplayMoveChoicesSurviveARoundTrip() throws {
         for choice in DisplayMoveModifier.allCases {
             var settings = Settings()
