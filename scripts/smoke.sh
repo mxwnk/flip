@@ -55,7 +55,11 @@ logged() { since | grep -qE "$1"; }
 
 restore() {
     stop_log
-    [ -f "$SETTINGS_BACKUP" ] && cp "$SETTINGS_BACKUP" "$SUPPORT/settings.json"
+    if [ -f "$SETTINGS_BACKUP" ]; then
+        cp "$SETTINGS_BACKUP" "$SUPPORT/settings.json"
+    else
+        rm -f "$SUPPORT/settings.json"
+    fi
     [ -f "$CLIPBOARD_BACKUP" ] && pbcopy < "$CLIPBOARD_BACKUP"
     osascript -e 'tell application "Finder" to close every window' >/dev/null 2>&1
     echo
@@ -73,6 +77,12 @@ trap restore EXIT
 mkdir -p "$OUT"
 cp "$SUPPORT/settings.json" "$SETTINGS_BACKUP" 2>/dev/null
 pbpaste > "$CLIPBOARD_BACKUP" 2>/dev/null
+
+# The suite drives specific modifiers, so it writes the shipped defaults rather
+# than inheriting whichever keys this machine is configured with. Restored from
+# the trap. Written before Flip starts, because settings are read at launch.
+mkdir -p "$SUPPORT"
+printf '{"leader":"command","appSwitcher":"option"}' > "$SUPPORT/settings.json"
 
 # Before the build, so the compiler's second is also the stream's attach time.
 # Flip starts only once both are ready, so no launch line is missed.
@@ -132,7 +142,7 @@ logged "watching [0-9]+ applications" && pass "The window store is watching appl
 echo
 echo "Switching"
 mark
-"$DRIVER" hold option wait 300 key tab await "overlay shown" 4000
+"$DRIVER" hold command wait 300 key tab await "overlay shown" 4000
 shoot overlay
 logged "opened to [0-9]+ windows" && pass "The grid opens" || fail "The grid opens"
 logged "overlay shown"            && pass "The overlay is drawn" || fail "The overlay is drawn"
@@ -143,14 +153,14 @@ logged "focusing "                && pass "Releasing the leader focuses a window
 
 # "Did not happen" cannot be polled for, so this one keeps a real wait.
 mark
-"$DRIVER" hold option wait 300 key tab await "overlay shown" 4000 key escape wait 500 release wait 500
+"$DRIVER" hold command wait 300 key tab await "overlay shown" 4000 key escape wait 500 release wait 500
 logged "opened to [0-9]+ windows" && pass "Escape: the grid opened first" || fail "Escape: the grid opened first"
 if logged "focusing "; then fail "Escape gives up without switching"; else pass "Escape gives up without switching"; fi
 
 # A release inside the delay switches without drawing. The grace after the focus
 # is what makes the negative worth asserting: the overlay was due 400ms ago.
 mark
-"$DRIVER" hold option wait 200 key tab wait 60 release await "focusing " 3000 wait 400
+"$DRIVER" hold command wait 200 key tab wait 60 release await "focusing " 3000 wait 400
 logged "focusing " && pass "A quick tap switches" || fail "A quick tap switches"
 if logged "overlay shown"; then fail "A quick tap draws nothing"; else pass "A quick tap draws nothing"; fi
 
@@ -159,7 +169,7 @@ if logged "overlay shown"; then fail "A quick tap draws nothing"; else pass "A q
 echo
 echo "Mouse"
 mark
-"$DRIVER" hold option wait 300 key tab await "overlay shown" 4000
+"$DRIVER" hold command wait 300 key tab await "overlay shown" 4000
 read -r _ px py pw ph <<<"$("$DRIVER" awaitwindow Flip 500 2000)"
 COUNT=$(since | grep -oE "opened to [0-9]+ windows" | tail -1 | grep -oE "[0-9]+")
 if [ -n "${pw:-}" ] && [ -n "${COUNT:-}" ]; then
@@ -174,7 +184,7 @@ fi
 # Nothing is logged when the selection moves, so the picture is the evidence:
 # same panel, same tiles, only the ring in a different place.
 mark
-"$DRIVER" hold option wait 300 key tab await "overlay shown" 4000
+"$DRIVER" hold command wait 300 key tab await "overlay shown" 4000
 read -r wid wx wy ww _ <<<"$("$DRIVER" awaitwindow Flip 500 2000)"
 if [ -n "${wid:-}" ]; then
     # The dimmed backdrop rather than a tile, so hovering cannot move the
@@ -207,7 +217,7 @@ fi
 echo
 echo "Raising"
 mark
-"$DRIVER" hold option wait 300 key tab await "overlay shown" 4000 key escape release wait 300
+"$DRIVER" hold command wait 300 key tab await "overlay shown" 4000 key escape release wait 300
 COUNT=$(since | grep -oE "opened to [0-9]+ windows" | tail -1 | grep -oE "[0-9]+")
 
 RAISE_MISMATCH=0
@@ -219,7 +229,7 @@ if [ -n "${COUNT:-}" ] && [ "$COUNT" -ge 2 ]; then
         # COUNT-2 presses: the grid opens on index 1 and moving wraps, so COUNT-1
         # lands back on the one just taken. Selection is in-process state, so the
         # pause only has to outlast the event tap.
-        ARGS=(hold option wait 300 key tab await "opened to [0-9]+ windows" 4000)
+        ARGS=(hold command wait 300 key tab await "opened to [0-9]+ windows" 4000)
         for _ in $(seq 3 "$COUNT"); do ARGS+=(key right wait 80); done
         ARGS+=(release await "focusing " 4000)
         "$DRIVER" "${ARGS[@]}"

@@ -124,10 +124,9 @@ final class KeyRouter {
             return event
         }
 
-        // Bare or with the leader, like Return: ⌘⌫ means something else
-        // everywhere. Acted on once, swallowed throughout, or a held key would
-        // empty the grid.
-        if isOverlayVisible, code == CGKeyCode(kVK_Delete), base.isEmpty || base == leader {
+        // Whichever modifier is holding the grid open, since either can be. Acted
+        // on once, swallowed throughout, or a held key would empty the grid.
+        if isOverlayVisible, code == CGKeyCode(kVK_Delete), holdsTheGrid(base) {
             if !isRepeat { onMain { $0.closeSelection() } }
             return nil
         }
@@ -172,6 +171,17 @@ final class KeyRouter {
         return event
     }
 
+    /// Bare, or one of the two that can be holding the grid open. Nothing else:
+    /// `⌃⌥` is a window action, and it still wins.
+    private func holdsTheGrid(_ modifiers: CGEventFlags) -> Bool {
+        guard !modifiers.isEmpty else { return true }
+
+        bindingsLock.lock()
+        defer { bindingsLock.unlock() }
+
+        return modifiers == leaderFlags || modifiers == appSwitcherFlags
+    }
+
     /// Never swallowed: other applications need modifier changes too.
     private func handleFlagsChanged(_ event: CGEvent) -> CGEvent? {
         guard isOverlayVisible, !Modifiers.anyHeld(in: event) else { return event }
@@ -188,10 +198,7 @@ final class KeyRouter {
         switch Int(code) {
         case kVK_Return:
             // Anything else is ⌃⌥↩ asking to fill the window behind the grid.
-            bindingsLock.lock()
-            let leader = leaderFlags
-            bindingsLock.unlock()
-            guard modifiers.isEmpty || modifiers == leader else { return nil }
+            guard holdsTheGrid(modifiers) else { return nil }
 
             return { [self] in
                 isOverlayVisible = false

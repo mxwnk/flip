@@ -3,6 +3,26 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 1.6.0
+
+**⌘Tab now opens the switcher, and ⌥Tab narrows to the application in front.**
+The two were the other way round, which meant the first thing anybody had to
+learn was that the key they had used for years now did something else. ⌘Tab is
+the switcher every Mac user already reaches for; Flip only changes what it lists,
+which is windows rather than applications. Narrowing to one application moves to
+⌥Tab, where stock macOS uses ⌘` — a key half the keyboards in Europe put
+somewhere else.
+
+**An existing install keeps its keys.** Both hotkeys are written into
+`settings.json` on first launch, so this moves fresh installs only. Swap them
+back in Settings › General if you prefer.
+
+**Closing a window with ⌫ works in both grids.** It answered to the switcher's
+leader alone, so in the other grid — the one held open by the other hotkey — the
+key did nothing. It now answers to whichever modifier is holding the grid open,
+and the same goes for Return. A window action still wins: ⌃⌥↩ fills the window
+behind the grid rather than committing.
+
 ## 1.5.1
 
 **Flip could refuse to launch at all, and then refuse to stay gone.** It reads a

@@ -157,9 +157,14 @@ enum ModifierRowOrder: String, Codable, CaseIterable, Identifiable {
 }
 
 struct Settings: Codable, Equatable {
-    var leader: ModifierChoice = .option
+    /// ⌘Tab is the switcher every Mac user already reaches for, so that is the
+    /// one that shows everything. Flip only changes what it lists: windows
+    /// rather than applications.
+    var leader: ModifierChoice = .command
 
-    var appSwitcher: ModifierChoice = .command
+    /// ⌥Tab narrows to the application in front, where stock macOS uses ⌘` — a
+    /// key half the keyboards in Europe put somewhere else.
+    var appSwitcher: ModifierChoice = .option
 
     /// Its own setting, not the switcher's leader: one is tapped and let go, the
     /// other is held while you read a grid.

@@ -32,6 +32,19 @@ final class AppBindingTests: XCTestCase {
 }
 
 final class SettingsTests: XCTestCase {
+    /// ⌘ opens everything and ⌥ narrows to one application: the switcher people
+    /// already reach for stays the big one. An existing settings.json is written
+    /// with both keys, so only a fresh install moves.
+    func testTheDefaultsFollowStockMacOS() {
+        XCTAssertEqual(Settings().leader, .command)
+        XCTAssertEqual(Settings().appSwitcher, .option)
+
+        let existing = Data(#"{"leader":"option","appSwitcher":"command"}"#.utf8)
+        let decoded = try? JSONDecoder().decode(Settings.self, from: existing)
+        XCTAssertEqual(decoded?.leader, .option, "an upgrade must not move anybody's keys")
+        XCTAssertEqual(decoded?.appSwitcher, .command)
+    }
+
     func testTheTwoHotkeysMustDiffer() {
         var settings = Settings()
         XCTAssertTrue(settings.isValid)
@@ -52,10 +65,6 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(decoded.showWindowsFromEverySpace)
     }
 
-    /// Must stay off: turning it on at upgrade would silently widen the grid to
-    /// windows nobody has seen in it.
-    /// Must stay the pair it always was: changing it under an upgrade takes away
-    /// a shortcut somebody's fingers know.
     func testTheDisplayMoveKeepsItsOldModifier() throws {
         XCTAssertEqual(Settings().displayMoveModifier, .shiftOption)
 

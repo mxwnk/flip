@@ -6,7 +6,7 @@
 
 <p align="center">
   A window switcher for macOS that gets out of the way.<br>
-  Hold Option, tap Tab. Let go before you can see it and it never draws at all.
+  Hold Command, tap Tab. Let go before you can see it and it never draws at all.
 </p>
 
 <p align="center">
@@ -37,8 +37,8 @@ Needs macOS 14 or newer.
 
 ## What it does
 
-- **Switches windows, not applications.** Every window on the space, most recently
-  used first, so two documents in the same app are two entries.
+- **Switches windows, not applications.** `⌘ Tab` is the key you already reach
+  for; Flip only changes what it lists. Two documents in one app are two entries.
 - **Stays out of the way.** Let go inside 150 ms and it switches without drawing
   anything at all.
 - **One key per application.** `⌥ F` reaches the Finder out of the box; `⌥ S` for
@@ -55,8 +55,8 @@ Needs macOS 14 or newer.
 
 | | |
 | --- | --- |
-| `⌥ Tab` | every window on the current space, most recently used first |
-| `⌘ Tab` | the windows of whichever application is in front |
+| `⌘ Tab` | every window on the current space, most recently used first |
+| `⌥ Tab` | the windows of whichever application is in front |
 | `⌥ F` | jump straight to the Finder — one key per application, the rest yours to choose |
 | `⌥` held, then a key | narrow the open grid to that application |
 | arrows, `esc` | move the selection, or give up |
@@ -122,7 +122,7 @@ board has no key between the left shift and Z, and Flip asks macOS which it is.
 Where command sits in the bottom row is the one thing macOS cannot answer, so
 there is a small switch under the picture for it.
 
-**Pause** in the menu bar hands `⌘ Tab` back to macOS for as long as a screen
+**Pause** in the menu bar hands both hotkeys back to macOS for as long as a screen
 share lasts.
 
 ## From the command line

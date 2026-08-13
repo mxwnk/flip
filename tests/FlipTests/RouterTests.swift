@@ -106,7 +106,7 @@ final class RouterTests: XCTestCase {
     func testDeleteClosesTheSelectionWhileTheOverlayIsOpen() {
         openOverlay()
 
-        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: leaderFlag)))
         drainMainQueue()
 
         XCTAssertEqual(presenter.closed, 1)
@@ -115,7 +115,7 @@ final class RouterTests: XCTestCase {
     /// The grid stays up, so the next key is still the router's to read.
     func testClosingLeavesTheSessionRunning() {
         openOverlay()
-        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: leaderFlag)))
         drainMainQueue()
 
         XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_RightArrow)))
@@ -125,9 +125,9 @@ final class RouterTests: XCTestCase {
     /// the grid would be empty before they let go.
     func testAHeldDeleteClosesOneWindowOnly() {
         openOverlay()
-        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: leaderFlag)))
 
-        let repeated = key(kVK_Delete, flags: .maskAlternate)
+        let repeated = key(kVK_Delete, flags: leaderFlag)
         repeated.setIntegerValueField(.keyboardEventAutorepeat, value: 1)
         XCTAssertNil(router.handle(type: .keyDown, event: repeated), "still swallowed")
 
@@ -139,15 +139,27 @@ final class RouterTests: XCTestCase {
     /// on screen would be the worst bug in this file.
     func testDeleteIsLeftAloneWhileTheOverlayIsClosed() {
         XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete)))
-        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskAlternate)))
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: leaderFlag)))
     }
 
-    /// ⌘⌫ is move-to-trash in every file manager there is, so the app switcher's
-    /// modifier does not close windows even with the grid up.
-    func testTheAppSwitcherModifierDoesNotClose() {
+    /// Either hotkey can be the one holding the grid open, so ⌫ has to work
+    /// under both. Nothing reaches an application meanwhile: the grid is up and
+    /// the key is swallowed.
+    func testEitherHotkeyCloses() {
+        openOverlay()
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: appSwitcherFlag)))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.closed, 1)
+    }
+
+    /// A window action is not a hotkey holding the grid: ⌃⌥⌫ is nobody's close.
+    func testAWindowActionModifierDoesNotClose() {
         openOverlay()
 
-        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_Delete, flags: .maskCommand)))
+        XCTAssertNotNil(router.handle(
+            type: .keyDown, event: key(kVK_Delete, flags: [.maskControl, .maskAlternate])
+        ))
         drainMainQueue()
 
         XCTAssertEqual(presenter.closed, 0)
@@ -195,9 +207,10 @@ final class RouterTests: XCTestCase {
 
     // MARK: - The two leaders
 
+    /// The switcher's leader stays at its default; only the shortcut leader
+    /// moves, which is the separation these tests are about.
     private func separateLeaders() -> Settings {
         var settings = Settings()
-        settings.leader = .option
         settings.shortcutLeader = .controlCommand
 
         return settings
@@ -231,7 +244,7 @@ final class RouterTests: XCTestCase {
         router.apply([AppBinding(key: "u", bundleID: "com.example.app")], settings: separateLeaders())
         openOverlay()
 
-        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_ANSI_U, flags: .maskAlternate)))
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_ANSI_U, flags: leaderFlag)))
         drainMainQueue()
 
         XCTAssertEqual(presenter.opened, 2, "the grid narrowed rather than the application opening")
@@ -245,8 +258,13 @@ final class RouterTests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// Read from the settings rather than typed, so swapping the defaults moves
+    /// these tests with them instead of quietly testing the wrong key.
+    private var leaderFlag: CGEventFlags { Settings().leader.flags }
+    private var appSwitcherFlag: CGEventFlags { Settings().appSwitcher.flags }
+
     private func openOverlay() {
-        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Tab, flags: .maskAlternate)))
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Tab, flags: leaderFlag)))
         drainMainQueue()
     }
 

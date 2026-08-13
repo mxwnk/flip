@@ -79,7 +79,7 @@ func describe(_ rect: CGRect) -> String {
 }
 
 let keys: [String: CGKeyCode] = [
-    "tab": 48, "escape": 53, "return": 36, "space": 49,
+    "tab": 48, "escape": 53, "return": 36, "space": 49, "delete": 51,
     "left": 123, "right": 124, "down": 125, "up": 126,
     "a": 0, "s": 1, "c": 8, "f1": 122,
 ]
