@@ -3,7 +3,22 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
-## 1.6.0
+## 2.0.0
+
+**Flip is configured by one file, `config.json`, and reads no other.** It holds
+everything the settings window can change — both switcher leaders, the shortcut
+and window leaders, the grid, the exclusions and the bindings — flat, one key per
+setting. An edit made by hand is picked up while Flip runs, settings included:
+those used to need a restart. Nothing carries over from a 1.x install, so this is
+a major version: Flip starts from the defaults and you set it up once.
+
+**Modifiers are spelled one way throughout the file.** Every modifier setting is
+an array of keywords — `"leader": ["command"]`, `"windowLeader": ["option",
+"control"]`, `"displayMoveModifier": ["command", "option", "control"]` — rather
+than a word per setting with a spelling of its own. The words are `command`,
+`option`, `control` and `shift`, and they are read in any order. A combination a
+setting does not offer is an error rather than a silent fallback: Flip logs it,
+runs on the defaults and leaves the file alone for you to look at.
 
 **⌘Tab now opens the switcher, and ⌥Tab narrows to the application in front.**
 The two were the other way round, which meant the first thing anybody had to
@@ -11,18 +26,7 @@ learn was that the key they had used for years now did something else. ⌘Tab is
 the switcher every Mac user already reaches for; Flip only changes what it lists,
 which is windows rather than applications. Narrowing to one application moves to
 ⌥Tab, where stock macOS uses ⌘` — a key half the keyboards in Europe put
-somewhere else.
-
-**An existing install keeps its keys.** Both hotkeys are written into
-`config.json` on first launch, so this moves fresh installs only. Swap them
-back in Settings › Switcher if you prefer.
-
-**Every setting lives in one file.** `settings.json` and `bindings.json` are
-merged into `config.json` on first launch, and removed once it is written. It
-holds everything the settings window can change — both switcher leaders, the
-shortcut and window leaders, the grid, the exclusions and the bindings — flat, one
-key per setting. An edit made by hand is picked up while Flip runs, which is new
-for the settings: they used to need a restart.
+somewhere else. Swap them back in Settings › Switcher if you prefer.
 
 **Closing a window with ⌫ works in both grids.** It answered to the switcher's
 leader alone, so in the other grid — the one held open by the other hotkey — the

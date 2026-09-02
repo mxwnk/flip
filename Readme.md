@@ -196,9 +196,10 @@ replacing the app outside the installer leaves behind.
 
 **Where do my settings live?** In `config.json` in `~/Library/Application
 Support/Flip/`, as readable JSON: every setting the settings window can change,
-plus the bindings, one key each. Edits made by hand are picked up while Flip runs.
-An older install's `settings.json` and `bindings.json` are merged into it on first
-launch.
+plus the bindings, one key each. Modifiers are keywords — `"windowLeader":
+["option", "control"]` — the same four words wherever they appear. Edits made by
+hand are picked up while Flip runs. It is the only file Flip reads; there is
+nowhere else a setting can be hiding.
 
 **Something is wrong and I want to report it.** **Copy Diagnostics** in the menu
 puts the version, both permissions, every setting and Flip's recent log on the

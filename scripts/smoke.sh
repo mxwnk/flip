@@ -91,8 +91,8 @@ try:
 except Exception:
     config = {}
 
-config["leader"] = "command"
-config["appSwitcher"] = "option"
+config["leader"] = ["command"]
+config["appSwitcher"] = ["option"]
 json.dump(config, open(sys.argv[1], "w"), indent=2, sort_keys=True)
 PY
 
