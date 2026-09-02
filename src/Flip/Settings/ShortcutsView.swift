@@ -4,15 +4,14 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ShortcutsView: View {
-    @ObservedObject var store: BindingStore
-    @ObservedObject var settings: SettingsStore
+    @ObservedObject var config: ConfigStore
 
-    private var leader: ModifierChoice { settings.settings.shortcutLeader }
+    private var leader: ModifierChoice { config.settings.shortcutLeader }
 
     var body: some View {
         Form {
             Section {
-                LeaderPicker(choice: $settings.settings.shortcutLeader)
+                LeaderPicker(choice: $config.settings.shortcutLeader)
                     .padding(.vertical, 2)
             } header: {
                 Text("Leader")
@@ -23,31 +22,31 @@ struct ShortcutsView: View {
                         + "\(leader.label)S no longer saves.", tone: .orange)
                 } else {
                     Caption("Held while you press one of the keys below. The switcher's own "
-                        + "leader is set in General and can be a different key.")
+                        + "leader is set on the Switcher page and can be a different key.")
                 }
             }
 
             Section {
-                if store.bindings.isEmpty {
+                if config.bindings.isEmpty {
                     // Every other page says when it is empty.
                     Caption("No shortcuts yet.")
                 }
 
-                ForEach(store.bindings) { binding in
+                ForEach(config.bindings) { binding in
                     BindingRow(
                         binding: binding,
-                        issue: store.issue(
+                        issue: config.issue(
                             for: binding,
                             leader: leader.flags,
-                            navigation: settings.settings.windowLeader,
-                            displayMove: settings.settings.displayMoveModifier
+                            navigation: config.settings.windowLeader,
+                            displayMove: config.settings.displayMoveModifier
                         ),
                         leader: leader.label,
-                        store: store
+                        config: config
                     )
                 }
 
-                Button("Add Shortcut", systemImage: "plus") { store.add() }
+                Button("Add Shortcut", systemImage: "plus") { config.add() }
                     .buttonStyle(.borderless)
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
@@ -57,8 +56,8 @@ struct ShortcutsView: View {
 
                     Spacer(minLength: 16)
 
-                    Button("Reveal bindings.json") {
-                        NSWorkspace.shared.activateFileViewerSelecting([store.fileURL])
+                    Button("Reveal config.json") {
+                        NSWorkspace.shared.activateFileViewerSelecting([config.fileURL])
                     }
                     .buttonStyle(.link)
                     .font(.caption)
@@ -75,7 +74,7 @@ struct ShortcutsView: View {
 /// the settings window on the way past; escape or a second click gives up.
 private struct KeyRecorder: View {
     let id: UUID
-    @ObservedObject var store: BindingStore
+    @ObservedObject var config: ConfigStore
 
     @State private var isRecording = false
     @State private var monitor: Any?
@@ -96,7 +95,7 @@ private struct KeyRecorder: View {
     }
 
     private var label: String {
-        let key = store.key(for: id)
+        let key = config.key(for: id)
 
         return key.isEmpty ? "key" : key.uppercased()
     }
@@ -109,7 +108,7 @@ private struct KeyRecorder: View {
     private var ink: Color {
         if isRecording { return .white }
 
-        return store.key(for: id).isEmpty ? .secondary : .primary
+        return config.key(for: id).isEmpty ? .secondary : .primary
     }
 
     private func start() {
@@ -118,7 +117,7 @@ private struct KeyRecorder: View {
         session += 1
         let armed = session
         isRecording = true
-        store.onKeyCapture?(true)
+        config.onKeyCapture?(true)
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             record(event)
 
@@ -140,7 +139,7 @@ private struct KeyRecorder: View {
               let key = KeyboardLayout.bindingKey(for: CGKeyCode(event.keyCode))
         else { return }
 
-        store.setKey(key, for: id)
+        config.setKey(key, for: id)
     }
 
     private func stop() {
@@ -150,16 +149,16 @@ private struct KeyRecorder: View {
         self.monitor = nil
         isRecording = false
         session += 1
-        store.onKeyCapture?(false)
+        config.onKeyCapture?(false)
     }
 }
 
 private struct BindingRow: View {
     let binding: AppBinding
-    let issue: BindingStore.Issue?
+    let issue: ConfigStore.Issue?
     /// Passed in, or the row claims ⌥ whatever the leader actually is.
     let leader: String
-    @ObservedObject var store: BindingStore
+    @ObservedObject var config: ConfigStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -168,14 +167,14 @@ private struct BindingRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
 
-                KeyRecorder(id: binding.id, store: store)
+                KeyRecorder(id: binding.id, config: config)
 
                 applicationPicker
 
                 Spacer(minLength: 0)
 
                 Button {
-                    store.remove(binding.id)
+                    config.remove(binding.id)
                 } label: {
                     Image(systemName: "minus.circle")
                 }
@@ -204,7 +203,7 @@ private struct BindingRow: View {
         Menu {
             ForEach(AppCatalog.running(), id: \.bundleID) { application in
                 Button(application.name) {
-                    store.setBundleID(application.bundleID, for: binding.id)
+                    config.setBundleID(application.bundleID, for: binding.id)
                 }
             }
 
@@ -235,6 +234,6 @@ private struct BindingRow: View {
               let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier
         else { return }
 
-        store.setBundleID(bundleID, for: binding.id)
+        config.setBundleID(bundleID, for: binding.id)
     }
 }

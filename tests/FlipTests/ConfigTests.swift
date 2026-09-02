@@ -188,15 +188,16 @@ final class ModifiersTests: XCTestCase {
 }
 
 @MainActor
-final class BindingStoreTests: XCTestCase {
+final class ConfigStoreTests: XCTestCase {
     /// Temporary, because the store writes on every change and the real file is
     /// the user's live configuration.
-    private func makeStore() -> BindingStore {
-        let file = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("flip-tests-\(UUID().uuidString)")
-            .appendingPathComponent("bindings.json")
+    private func makeStore() -> ConfigStore {
+        ConfigStore(file: directory().appendingPathComponent("config.json"))
+    }
 
-        return BindingStore(file: file)
+    private func directory() -> URL {
+        URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("flip-tests-\(UUID().uuidString)")
     }
 
     func testAFreshStoreSeedsFromTheDefaults() {
@@ -214,7 +215,7 @@ final class BindingStoreTests: XCTestCase {
         store.setKey("5", for: store.bindings.last!.id)
         store.setBundleID("com.example.app", for: store.bindings.last!.id)
 
-        let reopened = BindingStore(file: store.fileURL)
+        let reopened = ConfigStore(file: store.fileURL)
         reopened.load()
 
         XCTAssertEqual(reopened.bindings.count, DefaultBindings.all.count + 1)
@@ -309,6 +310,70 @@ final class BindingStoreTests: XCTestCase {
         store.setUsesLeader(false, for: store.bindings[1].id)
 
         XCTAssertNil(store.issue(for: store.bindings[0]))
+    }
+
+    func testEverySettingAndEveryBindingLiveInTheOneFile() throws {
+        let store = makeStore()
+        store.load()
+        store.settings.leader = .controlCommand
+        store.settings.showThumbnails = false
+        store.add()
+        store.setKey("5", for: store.bindings.last!.id)
+
+        let reopened = ConfigStore(file: store.fileURL)
+        reopened.load()
+
+        XCTAssertEqual(reopened.settings.leader, .controlCommand)
+        XCTAssertFalse(reopened.settings.showThumbnails)
+        XCTAssertEqual(reopened.bindings.last?.key, "5")
+    }
+
+    /// Flat, so a hand edit reads as one key per setting rather than as two
+    /// halves of a document.
+    func testTheFileKeepsEverySettingAtTheTopLevel() throws {
+        let store = makeStore()
+        store.load()
+
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(contentsOf: store.fileURL)) as? [String: Any]
+        )
+
+        XCTAssertNotNil(object["leader"])
+        XCTAssertNotNil(object["shortcutLeader"])
+        XCTAssertNotNil(object["bindings"] as? [[String: Any]])
+    }
+
+    /// The two files Flip kept before this one. Both are read once, and only
+    /// removed after the merged file is on disk.
+    func testTheTwoOlderFilesAreMergedAndThenRemoved() throws {
+        let directory = directory()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let settingsFile = directory.appendingPathComponent("settings.json")
+        let bindingsFile = directory.appendingPathComponent("bindings.json")
+        try Data(#"{"leader":"option","appSwitcher":"command"}"#.utf8).write(to: settingsFile)
+        try Data(#"[{"key":"s","bundleID":"com.spotify.client"}]"#.utf8).write(to: bindingsFile)
+
+        let store = ConfigStore(file: directory.appendingPathComponent("config.json"))
+        store.load()
+
+        XCTAssertEqual(store.settings.leader, .option)
+        XCTAssertEqual(store.bindings.map(\.bundleID), ["com.spotify.client"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.fileURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: settingsFile.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: bindingsFile.path))
+    }
+
+    /// Only when there is nothing to migrate: an older file that lost its
+    /// bindings on the way would otherwise come back with the Finder on F.
+    func testAConfigWithoutBindingsIsNotReseeded() throws {
+        let store = makeStore()
+        store.load()
+        for binding in store.bindings { store.remove(binding.id) }
+
+        let reopened = ConfigStore(file: store.fileURL)
+        reopened.load()
+
+        XCTAssertTrue(reopened.bindings.isEmpty)
     }
 
     func testRemovingLeavesTheRest() {

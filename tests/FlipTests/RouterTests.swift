@@ -180,7 +180,7 @@ final class RouterTests: XCTestCase {
 
     /// The router matches window actions before it looks at any binding, so a
     /// leader that collides with one leaves the binding unreachable. This is the
-    /// behaviour `BindingStore.issue` now warns about rather than a wish.
+    /// behaviour `ConfigStore.issue` now warns about rather than a wish.
     func testAWindowActionBeatsABindingOnTheSameKeys() {
         var settings = Settings()
         settings.leader = .optionControl

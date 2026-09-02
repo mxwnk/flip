@@ -10,7 +10,7 @@ final class OverlayPresenter: SwitcherPresenting {
     private let store: WindowStore
     private let frontmost: FrontmostApp
     private let thumbnails: ThumbnailStore
-    private let settings: SettingsStore
+    private let config: ConfigStore
 
     private let model = OverlayModel()
     private var panels: [NSPanel] = []
@@ -33,12 +33,12 @@ final class OverlayPresenter: SwitcherPresenting {
         store: WindowStore,
         frontmost: FrontmostApp,
         thumbnails: ThumbnailStore,
-        settings: SettingsStore
+        config: ConfigStore
     ) {
         self.store = store
         self.frontmost = frontmost
         self.thumbnails = thumbnails
-        self.settings = settings
+        self.config = config
 
         // The panel and its SwiftUI machinery are the expensive part; not
         // paying for them at ⌥Tab is what the design is arranged around.
@@ -87,7 +87,7 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func targetScreens() -> [NSScreen] {
-        switch settings.settings.overlayPlacement {
+        switch config.settings.overlayPlacement {
         case .activeWindow:
             return [ActiveScreen.current()]
         case .primaryDisplay:
@@ -276,7 +276,7 @@ final class OverlayPresenter: SwitcherPresenting {
         switch source {
         case .allWindows:
             // Exclusions apply here only: naming an application by key is explicit.
-            let excluded = Set(settings.settings.excludedBundleIDs)
+            let excluded = Set(config.settings.excludedBundleIDs)
             return store.windows(includingMinimized: true, fromEverySpace: everySpace)
                 .filter { window in window.bundleID.map { !excluded.contains($0) } ?? true }
         case .application(let bundleID):
@@ -286,7 +286,7 @@ final class OverlayPresenter: SwitcherPresenting {
         }
     }
 
-    private var everySpace: Bool { settings.settings.showWindowsFromEverySpace }
+    private var everySpace: Bool { config.settings.showWindowsFromEverySpace }
 
     private func open(_ source: Source, step: Int) {
         // Same question: walk the list, do not rebuild it under the selection.
@@ -372,7 +372,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
     /// Selection made, nothing drawn — the fast path the delay exists for.
     private func scheduleReveal() {
-        let delay = settings.settings.overlayDelay.seconds
+        let delay = config.settings.overlayDelay.seconds
         guard delay > 0 else { return show() }
 
         reveal = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
@@ -408,7 +408,7 @@ final class OverlayPresenter: SwitcherPresenting {
     // MARK: - Thumbnails
 
     private func alreadyCaptured(_ windows: [WindowInfo]) -> [CGWindowID: CGImage] {
-        guard settings.settings.showThumbnails else { return [:] }
+        guard config.settings.showThumbnails else { return [:] }
 
         var known: [CGWindowID: CGImage] = [:]
         for window in windows where !window.isMinimized {
@@ -420,7 +420,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
     private func requestMissingThumbnails(for windows: [WindowInfo]) {
         // Off means never captured, which is what makes Screen Recording optional.
-        guard settings.settings.showThumbnails else { return }
+        guard config.settings.showThumbnails else { return }
 
         // Selected tile first.
         let selected = model.selected

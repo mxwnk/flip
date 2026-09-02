@@ -21,7 +21,7 @@ OUT="$ROOT/build/smoke"
 DRIVER="$OUT/driver"
 LOG="$OUT/flip.log"
 SUPPORT="$HOME/Library/Application Support/Flip"
-SETTINGS_BACKUP="$OUT/settings.json.backup"
+CONFIG_BACKUP="$OUT/config.json.backup"
 CLIPBOARD_BACKUP="$OUT/clipboard.backup"
 
 PASSED=0
@@ -55,10 +55,10 @@ logged() { since | grep -qE "$1"; }
 
 restore() {
     stop_log
-    if [ -f "$SETTINGS_BACKUP" ]; then
-        cp "$SETTINGS_BACKUP" "$SUPPORT/settings.json"
+    if [ -f "$CONFIG_BACKUP" ]; then
+        cp "$CONFIG_BACKUP" "$SUPPORT/config.json"
     else
-        rm -f "$SUPPORT/settings.json"
+        rm -f "$SUPPORT/config.json"
     fi
     [ -f "$CLIPBOARD_BACKUP" ] && pbcopy < "$CLIPBOARD_BACKUP"
     osascript -e 'tell application "Finder" to close every window' >/dev/null 2>&1
@@ -75,14 +75,26 @@ restore() {
 trap restore EXIT
 
 mkdir -p "$OUT"
-cp "$SUPPORT/settings.json" "$SETTINGS_BACKUP" 2>/dev/null
+cp "$SUPPORT/config.json" "$CONFIG_BACKUP" 2>/dev/null
 pbpaste > "$CLIPBOARD_BACKUP" 2>/dev/null
 
 # The suite drives specific modifiers, so it writes the shipped defaults rather
-# than inheriting whichever keys this machine is configured with. Restored from
-# the trap. Written before Flip starts, because settings are read at launch.
+# than inheriting whichever keys this machine is configured with. Only those two
+# keys, so the bindings in the same file survive a run that never reaches its
+# trap. Written before Flip starts, because the configuration is read at launch.
 mkdir -p "$SUPPORT"
-printf '{"leader":"command","appSwitcher":"option"}' > "$SUPPORT/settings.json"
+python3 - "$SUPPORT/config.json" <<'PY'
+import json, sys
+
+try:
+    config = json.load(open(sys.argv[1]))
+except Exception:
+    config = {}
+
+config["leader"] = "command"
+config["appSwitcher"] = "option"
+json.dump(config, open(sys.argv[1], "w"), indent=2, sort_keys=True)
+PY
 
 # Before the build, so the compiler's second is also the stream's attach time.
 # Flip starts only once both are ready, so no launch line is missed.

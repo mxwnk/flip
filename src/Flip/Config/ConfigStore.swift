@@ -2,10 +2,19 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-/// The bindings, as readable JSON in Application Support: inspectable, diffable,
-/// portable between machines.
+/// The configuration, as readable JSON in Application Support: inspectable,
+/// diffable, portable between machines. One file and one writer, so every save
+/// is the whole document.
 @MainActor
-final class BindingStore: ObservableObject {
+final class ConfigStore: ObservableObject {
+    @Published var settings = Settings() {
+        didSet {
+            guard !isApplying, settings != oldValue else { return }
+
+            commit()
+        }
+    }
+
     @Published private(set) var bindings: [AppBinding] = []
 
     var onChange: (() -> Void)?
@@ -14,12 +23,12 @@ final class BindingStore: ObservableObject {
     /// otherwise swallow one already bound bare, F1 above all.
     var onKeyCapture: ((Bool) -> Void)?
 
-    private let log = Logger(subsystem: Bundle.identifier, category: "bindings")
+    private let log = Logger(subsystem: Bundle.identifier, category: "config")
 
     /// Injectable so tests cannot write over the real configuration.
     let fileURL: URL
 
-    init(file: URL = ApplicationSupport.file("bindings.json")) {
+    init(file: URL = ApplicationSupport.file("config.json")) {
         self.fileURL = file
     }
 
@@ -27,23 +36,70 @@ final class BindingStore: ObservableObject {
 
     func load() {
         guard let data = try? Data(contentsOf: fileURL) else {
-            log.notice("no bindings file yet, seeding from the defaults")
-            bindings = DefaultBindings.all
-            save()
+            seed()
             return
         }
 
         do {
-            bindings = try JSONDecoder().decode([AppBinding].self, from: data)
+            apply(try JSONDecoder().decode(Config.self, from: data))
             log.notice("loaded \(self.bindings.count, privacy: .public) bindings")
+            // A file written by an older version is written back complete.
+            save()
         } catch {
             // Defaults beat no hotkeys; the broken file is left for inspection.
-            log.error("bindings file unreadable (\(error.localizedDescription, privacy: .public)), using defaults")
-            bindings = DefaultBindings.all
+            log.error("config unreadable (\(error.localizedDescription, privacy: .public)), using defaults")
+            apply(Config())
         }
     }
 
-    private func save() {
+    /// A fresh install, or the two files Flip kept before this one. Those are
+    /// removed only once the merged file is on disk.
+    private func seed() {
+        let settings = decode(Settings.self, from: legacySettingsFile)
+        let bindings = decode([AppBinding].self, from: legacyBindingsFile)
+
+        guard settings != nil || bindings != nil else {
+            log.notice("no config file yet, writing the defaults")
+            apply(Config())
+            save()
+            return
+        }
+
+        log.notice("merging settings.json and bindings.json into config.json")
+        apply(Config(settings: settings ?? Settings(), bindings: bindings ?? DefaultBindings.all))
+        guard save() else { return }
+
+        try? FileManager.default.removeItem(at: legacySettingsFile)
+        try? FileManager.default.removeItem(at: legacyBindingsFile)
+    }
+
+    private var legacySettingsFile: URL {
+        fileURL.deletingLastPathComponent().appendingPathComponent("settings.json")
+    }
+
+    private var legacyBindingsFile: URL {
+        fileURL.deletingLastPathComponent().appendingPathComponent("bindings.json")
+    }
+
+    private func decode<T: Decodable>(_ type: T.Type, from file: URL) -> T? {
+        guard let data = try? Data(contentsOf: file) else { return nil }
+
+        return try? JSONDecoder().decode(type, from: data)
+    }
+
+    private var isApplying = false
+
+    /// Both halves at once, without the save the settings would otherwise
+    /// trigger halfway through.
+    private func apply(_ config: Config) {
+        isApplying = true
+        bindings = config.bindings
+        settings = config.settings
+        isApplying = false
+    }
+
+    @discardableResult
+    private func save() -> Bool {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
 
@@ -52,11 +108,15 @@ final class BindingStore: ObservableObject {
                 at: fileURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            let data = try encoder.encode(bindings)
+            let data = try encoder.encode(Config(settings: settings, bindings: bindings))
             try data.write(to: fileURL, options: .atomic)
             lastWritten = data
+
+            return true
         } catch {
-            log.error("could not save bindings: \(error.localizedDescription, privacy: .public)")
+            log.error("could not save the configuration: \(error.localizedDescription, privacy: .public)")
+
+            return false
         }
     }
 
@@ -100,12 +160,12 @@ final class BindingStore: ObservableObject {
     /// Content, not timestamps: every save is a write and would loop.
     private func reloadIfChangedOnDisk() {
         guard let data = try? Data(contentsOf: fileURL), data != lastWritten,
-              let decoded = try? JSONDecoder().decode([AppBinding].self, from: data)
+              let config = try? JSONDecoder().decode(Config.self, from: data)
         else { return }
 
-        log.notice("bindings.json changed on disk, reloading \(decoded.count, privacy: .public) bindings")
+        log.notice("config.json changed on disk, reloading \(config.bindings.count, privacy: .public) bindings")
         lastWritten = data
-        bindings = decoded
+        apply(config)
         onChange?()
     }
 
@@ -114,7 +174,7 @@ final class BindingStore: ObservableObject {
         onChange?()
     }
 
-    // MARK: - Editing
+    // MARK: - Editing bindings
 
     func add() {
         bindings.append(AppBinding(key: "", bundleID: ""))
@@ -150,6 +210,18 @@ final class BindingStore: ObservableObject {
 
         bindings[index].usesLeader = usesLeader
         commit()
+    }
+
+    // MARK: - Editing exclusions
+
+    func excluding(_ bundleID: String) {
+        guard !settings.excludedBundleIDs.contains(bundleID) else { return }
+
+        settings.excludedBundleIDs.append(bundleID)
+    }
+
+    func stopExcluding(_ bundleID: String) {
+        settings.excludedBundleIDs.removeAll { $0 == bundleID }
     }
 
     // MARK: - Problems worth showing

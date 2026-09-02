@@ -39,8 +39,7 @@ done
 
 restore() {
     echo "==> Restoring your configuration"
-    [ -f "$BACKUP/settings.json" ] && cp "$BACKUP/settings.json" "$SUPPORT/settings.json"
-    [ -f "$BACKUP/bindings.json" ] && cp "$BACKUP/bindings.json" "$SUPPORT/bindings.json"
+    [ -f "$BACKUP/config.json" ] && cp "$BACKUP/config.json" "$SUPPORT/config.json"
     rm -rf "$BACKUP"
 
     osascript -e 'tell application "System Events" to tell process "Flip" to click menu item "Quit Flip" of menu 1 of menu bar item 1 of menu bar 1' >/dev/null 2>&1 || true
@@ -51,17 +50,15 @@ restore() {
     python3 - "$SUPPORT" <<'PY'
 import json, sys
 support = sys.argv[1]
-settings = json.load(open(f"{support}/settings.json"))
-bindings = json.load(open(f"{support}/bindings.json"))
-print(f"    exclusions: {settings['excludedBundleIDs']}")
-print(f"    bindings:   {len(bindings)}")
+config = json.load(open(f"{support}/config.json"))
+print(f"    exclusions: {config['excludedBundleIDs']}")
+print(f"    bindings:   {len(config['bindings'])}")
 PY
 }
 trap restore EXIT
 
 echo "==> Backing up"
-cp "$SUPPORT/settings.json" "$BACKUP/settings.json"
-cp "$SUPPORT/bindings.json" "$BACKUP/bindings.json"
+cp "$SUPPORT/config.json" "$BACKUP/config.json"
 
 echo "==> Opening the demonstration applications"
 for app in "${APPS[@]}"; do open -a "$app"; done
@@ -89,16 +86,15 @@ for line in listing:
     name, _, identifier = line.partition("\t")
     (keep if name in names else excluded).add(identifier)
 
-settings = json.load(open(f"{support}/settings.json"))
-settings["excludedBundleIDs"] = sorted(excluded)
-json.dump(settings, open(f"{support}/settings.json", "w"), indent=2, sort_keys=True)
+config = json.load(open(f"{support}/config.json"))
+config["excludedBundleIDs"] = sorted(excluded)
 
-bindings = json.load(open(f"{support}/bindings.json"))
 taken = {key for key, _ in temporary}
-bindings = [b for b in bindings if b["key"] not in taken]
+bindings = [b for b in config["bindings"] if b["key"] not in taken]
 bindings += [{"bundleID": bundle, "key": key, "usesLeader": True}
              for key, bundle in temporary]
-json.dump(bindings, open(f"{support}/bindings.json", "w"), indent=2, sort_keys=True)
+config["bindings"] = bindings
+json.dump(config, open(f"{support}/config.json", "w"), indent=2, sort_keys=True)
 
 print(f"    showing {len(keep)} applications, hiding {len(excluded)}")
 PY

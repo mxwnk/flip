@@ -14,8 +14,15 @@ which is windows rather than applications. Narrowing to one application moves to
 somewhere else.
 
 **An existing install keeps its keys.** Both hotkeys are written into
-`settings.json` on first launch, so this moves fresh installs only. Swap them
-back in Settings › General if you prefer.
+`config.json` on first launch, so this moves fresh installs only. Swap them
+back in Settings › Switcher if you prefer.
+
+**Every setting lives in one file.** `settings.json` and `bindings.json` are
+merged into `config.json` on first launch, and removed once it is written. It
+holds everything the settings window can change — both switcher leaders, the
+shortcut and window leaders, the grid, the exclusions and the bindings — flat, one
+key per setting. An edit made by hand is picked up while Flip runs, which is new
+for the settings: they used to need a restart.
 
 **Closing a window with ⌫ works in both grids.** It answered to the switcher's
 leader alone, so in the other grid — the one held open by the other hotkey — the

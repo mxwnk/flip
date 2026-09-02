@@ -3,7 +3,7 @@ import SwiftUI
 /// The application itself. Everything about the grid it draws is on the
 /// Switcher page.
 struct GeneralView: View {
-    @ObservedObject var settings: SettingsStore
+    @ObservedObject var config: ConfigStore
     @State private var startsAtLogin = LoginItem.isEnabled
 
     var body: some View {
@@ -29,7 +29,7 @@ struct GeneralView: View {
             }
 
             Section {
-                Toggle("Check for updates", isOn: $settings.settings.checkForUpdates)
+                Toggle("Check for updates", isOn: $config.settings.checkForUpdates)
             } footer: {
                 Caption("Asks GitHub once a day whether a newer release exists, and says so in the "
                     + "menu. Nothing is downloaded or installed.")
