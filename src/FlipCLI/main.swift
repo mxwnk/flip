@@ -13,6 +13,7 @@ USAGE
   flip focus <id>              bring the window with that id forward
   flip arrange <where>         move the focused window
   flip switch                  open the switcher
+  flip permissions             report both privacy grants, nonzero if one is missing
   flip pause                   hand ⌘Tab back to macOS
   flip resume                  take it again
 
@@ -62,6 +63,9 @@ case "arrange":
 case "switch":
     command = .switcher
 
+case "permissions":
+    command = .permissions
+
 case "pause":
     command = .pause
 
@@ -94,6 +98,17 @@ case .windows(let windows):
     guard let json = try? encoder.encode(windows) else { fail("could not render the answer") }
 
     print(String(decoding: json, as: UTF8.self))
+
+case .permissions(let granted):
+    // The same two words the application logs, so a report pasted from either
+    // place reads the same.
+    let mark = { (given: Bool) in given ? "granted" : "MISSING" }
+    print("accessibility:    \(mark(granted.accessibility))")
+    print("screen recording: \(mark(granted.screenRecording))")
+
+    // A missing grant is not an error to report but an answer to act on, so it
+    // leaves through the status rather than through `fail`.
+    exit(granted.isComplete ? 0 : 1)
 
 case .ok:
     // Silence on success, so it composes in a script without being filtered out.

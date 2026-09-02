@@ -233,6 +233,17 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             }
             return .ok
 
+        case .permissions:
+            // Answered from this thread on purpose: both are C calls with no
+            // AppKit behind them, and the socket must never wait on the main
+            // thread to hear back.
+            let status = Permissions.current()
+
+            return .permissions(ControlPermissions(
+                accessibility: status.accessibility,
+                screenRecording: status.screenRecording
+            ))
+
         case .pause, .resume:
             let wanted = command.isPause
             Task { @MainActor [weak self] in

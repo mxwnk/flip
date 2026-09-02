@@ -10,6 +10,8 @@ CGEventTap. macOS 14+, built with SwiftPM; Xcode is needed only for the tests.
 - `make verify` checks the designated requirement has not drifted
 - `make test` runs the unit tests. XCTest needs Xcode, so the target points
   `DEVELOPER_DIR` at it rather than changing `xcode-select`
+- `make permissions` reports both privacy grants and opens the panes for what is
+  missing. Granting cannot be scripted; `make permissions-reset` revokes
 - `make icon` redraws the app icon
 - `scripts/demo.sh` stages a reproducible scene and performs the demonstration
   sequence. It rewrites the user's configuration and restores it from a trap, so

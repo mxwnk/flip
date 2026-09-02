@@ -35,19 +35,55 @@ final class ControlTests: XCTestCase {
         XCTAssertLessThanOrEqual(ControlSocket.path.utf8.count, ControlSocket.maximumPathLength)
     }
 
+    /// Keys sorted, because JSONEncoder does not promise an order and comparing
+    /// two encodings of the same value is the point of the check.
+    private let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }()
+
     func testTheCommandsSurviveTheWire() throws {
         let commands: [ControlCommand] = [
             .list, .focus(4711), .arrange("left-half"), .switcher, .pause, .resume,
+            .permissions,
         ]
 
         for command in commands {
-            let encoded = try JSONEncoder().encode(command)
+            let encoded = try encoder.encode(command)
             let decoded = try JSONDecoder().decode(ControlCommand.self, from: encoded)
 
             XCTAssertEqual(
-                try JSONEncoder().encode(decoded), encoded,
+                try encoder.encode(decoded), encoded,
                 "\(command) did not survive a round trip"
             )
         }
+    }
+
+    /// The answers travel the same wire and are just as easy to break by adding
+    /// a case on one side only.
+    func testTheAnswersSurviveTheWire() throws {
+        let responses: [ControlResponse] = [
+            .windows([ControlWindow(id: 7, app: "Finder", title: "Downloads", minimized: false)]),
+            .permissions(ControlPermissions(accessibility: true, screenRecording: false)),
+            .ok,
+            .failure("no window with id 7"),
+        ]
+
+        for response in responses {
+            let encoded = try encoder.encode(response)
+            let decoded = try JSONDecoder().decode(ControlResponse.self, from: encoded)
+
+            XCTAssertEqual(
+                try encoder.encode(decoded), encoded,
+                "\(response) did not survive a round trip"
+            )
+        }
+    }
+
+    func testAGrantIsOnlyCompleteWithBoth() {
+        XCTAssertTrue(ControlPermissions(accessibility: true, screenRecording: true).isComplete)
+        XCTAssertFalse(ControlPermissions(accessibility: true, screenRecording: false).isComplete)
+        XCTAssertFalse(ControlPermissions(accessibility: false, screenRecording: true).isComplete)
     }
 }
