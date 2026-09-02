@@ -10,13 +10,13 @@ protocol LeaderChoice: CaseIterable, Hashable, Identifiable {
 }
 
 /// Closed: a leader with no modifier would swallow ordinary typing.
-enum ModifierChoice: String, Codable, CaseIterable, Identifiable, LeaderChoice {
+enum ModifierChoice: String, Codable, CaseIterable, Identifiable, LeaderChoice, ModifierSet {
     case option
     case control
     case command
-    case optionControl = "option-control"
-    case optionCommand = "option-command"
-    case controlCommand = "control-command"
+    case optionControl
+    case optionCommand
+    case controlCommand
 
     var id: String { rawValue }
 
@@ -30,6 +30,10 @@ enum ModifierChoice: String, Codable, CaseIterable, Identifiable, LeaderChoice {
         case .controlCommand: return [.maskControl, .maskCommand]
         }
     }
+
+    init(from decoder: Decoder) throws { self = try Self.decoded(from: decoder) }
+
+    func encode(to encoder: Encoder) throws { try encoded(to: encoder) }
 
     var label: String {
         switch self {
@@ -111,7 +115,7 @@ enum OverlayPlacement: String, Codable, CaseIterable, Identifiable {
 
 /// Shares the arrows with the halves, so the two must differ. Neither is
 /// expressible as a `ModifierChoice`, so they cannot collide.
-enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable, LeaderChoice {
+enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable, LeaderChoice, ModifierSet {
     case shiftOption
     case allThree
 
@@ -123,6 +127,10 @@ enum DisplayMoveModifier: String, Codable, CaseIterable, Identifiable, LeaderCho
         case .allThree: return [.maskControl, .maskAlternate, .maskCommand]
         }
     }
+
+    init(from decoder: Decoder) throws { self = try Self.decoded(from: decoder) }
+
+    func encode(to encoder: Encoder) throws { try encoded(to: encoder) }
 
     var label: String {
         switch self {
@@ -200,7 +208,7 @@ struct Settings: Codable, Equatable {
     init() {}
 
     /// Every field falls back instead of failing: synthesised decoding requires
-    /// all keys, so adding one would silently reset an existing file.
+    /// all of them, and a file edited by hand names only what it changes.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = Settings()
@@ -209,10 +217,8 @@ struct Settings: Codable, Equatable {
             ?? defaults.leader
         appSwitcher = try container.decodeIfPresent(ModifierChoice.self, forKey: .appSwitcher)
             ?? defaults.appSwitcher
-        // A file written before these were separable meant the leader, so a
-        // constant here would move every application key on the next launch.
         shortcutLeader = try container.decodeIfPresent(ModifierChoice.self, forKey: .shortcutLeader)
-            ?? leader
+            ?? defaults.shortcutLeader
         showThumbnails = try container.decodeIfPresent(Bool.self, forKey: .showThumbnails)
             ?? defaults.showThumbnails
         overlayDelay = try container.decodeIfPresent(OverlayDelay.self, forKey: .overlayDelay)
@@ -226,7 +232,6 @@ struct Settings: Codable, Equatable {
         displayMoveModifier = try container
             .decodeIfPresent(DisplayMoveModifier.self, forKey: .displayMoveModifier)
             ?? defaults.displayMoveModifier
-        // What the halves were nailed to before they were settable.
         windowLeader = try container.decodeIfPresent(ModifierChoice.self, forKey: .windowLeader)
             ?? defaults.windowLeader
         modifierRowOrder = try container

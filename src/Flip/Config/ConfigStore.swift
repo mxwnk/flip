@@ -36,55 +36,20 @@ final class ConfigStore: ObservableObject {
 
     func load() {
         guard let data = try? Data(contentsOf: fileURL) else {
-            seed()
-            return
-        }
-
-        do {
-            apply(try JSONDecoder().decode(Config.self, from: data))
-            log.notice("loaded \(self.bindings.count, privacy: .public) bindings")
-            // A file written by an older version is written back complete.
-            save()
-        } catch {
-            // Defaults beat no hotkeys; the broken file is left for inspection.
-            log.error("config unreadable (\(error.localizedDescription, privacy: .public)), using defaults")
-            apply(Config())
-        }
-    }
-
-    /// A fresh install, or the two files Flip kept before this one. Those are
-    /// removed only once the merged file is on disk.
-    private func seed() {
-        let settings = decode(Settings.self, from: legacySettingsFile)
-        let bindings = decode([AppBinding].self, from: legacyBindingsFile)
-
-        guard settings != nil || bindings != nil else {
             log.notice("no config file yet, writing the defaults")
             apply(Config())
             save()
             return
         }
 
-        log.notice("merging settings.json and bindings.json into config.json")
-        apply(Config(settings: settings ?? Settings(), bindings: bindings ?? DefaultBindings.all))
-        guard save() else { return }
-
-        try? FileManager.default.removeItem(at: legacySettingsFile)
-        try? FileManager.default.removeItem(at: legacyBindingsFile)
-    }
-
-    private var legacySettingsFile: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("settings.json")
-    }
-
-    private var legacyBindingsFile: URL {
-        fileURL.deletingLastPathComponent().appendingPathComponent("bindings.json")
-    }
-
-    private func decode<T: Decodable>(_ type: T.Type, from file: URL) -> T? {
-        guard let data = try? Data(contentsOf: file) else { return nil }
-
-        return try? JSONDecoder().decode(type, from: data)
+        do {
+            apply(try JSONDecoder().decode(Config.self, from: data))
+            log.notice("loaded \(self.bindings.count, privacy: .public) bindings")
+        } catch {
+            // Defaults beat no hotkeys; the broken file is left for inspection.
+            log.error("config unreadable (\(error.localizedDescription, privacy: .public)), using defaults")
+            apply(Config())
+        }
     }
 
     private var isApplying = false

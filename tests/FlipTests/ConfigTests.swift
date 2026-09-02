@@ -4,7 +4,8 @@ import XCTest
 @testable import Flip
 
 final class AppBindingTests: XCTestCase {
-    func testOlderFilesWithoutUsesLeaderDefaultToTheLeader() throws {
+    /// The common case, so it is what leaving the key out means.
+    func testABindingWithoutUsesLeaderCarriesTheLeader() throws {
         let json = Data(#"[{"key":"s","bundleID":"com.spotify.client"}]"#.utf8)
 
         let decoded = try JSONDecoder().decode([AppBinding].self, from: json)
@@ -33,16 +34,15 @@ final class AppBindingTests: XCTestCase {
 
 final class SettingsTests: XCTestCase {
     /// ⌘ opens everything and ⌥ narrows to one application: the switcher people
-    /// already reach for stays the big one. An existing settings.json is written
-    /// with both keys, so only a fresh install moves.
-    func testTheDefaultsFollowStockMacOS() {
+    /// already reach for stays the big one.
+    func testTheDefaultsFollowStockMacOS() throws {
         XCTAssertEqual(Settings().leader, .command)
         XCTAssertEqual(Settings().appSwitcher, .option)
 
-        let existing = Data(#"{"leader":"option","appSwitcher":"command"}"#.utf8)
-        let decoded = try? JSONDecoder().decode(Settings.self, from: existing)
-        XCTAssertEqual(decoded?.leader, .option, "an upgrade must not move anybody's keys")
-        XCTAssertEqual(decoded?.appSwitcher, .command)
+        let swapped = Data(#"{"leader":["option"],"appSwitcher":["command"]}"#.utf8)
+        let decoded = try JSONDecoder().decode(Settings.self, from: swapped)
+        XCTAssertEqual(decoded.leader, .option)
+        XCTAssertEqual(decoded.appSwitcher, .command)
     }
 
     func testTheTwoHotkeysMustDiffer() {
@@ -53,8 +53,8 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(settings.isValid)
     }
 
-    func testAFileMissingNewerKeysStillDecodes() throws {
-        let json = Data(#"{"leader":"option","appSwitcher":"command"}"#.utf8)
+    func testAFileNamingOnlySomeKeysStillDecodes() throws {
+        let json = Data(#"{"leader":["option"],"appSwitcher":["command"]}"#.utf8)
 
         let decoded = try JSONDecoder().decode(Settings.self, from: json)
 
@@ -65,30 +65,17 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(decoded.showWindowsFromEverySpace)
     }
 
-    func testTheDisplayMoveKeepsItsOldModifier() throws {
+    /// ⇧⌥, not the halves' own modifier: the two share the arrows.
+    func testTheDisplayMoveDefaultsToShiftOption() throws {
         XCTAssertEqual(Settings().displayMoveModifier, .shiftOption)
 
-        let old = Data(#"{"leader":"option"}"#.utf8)
+        let json = Data(#"{"leader":["option"]}"#.utf8)
         XCTAssertEqual(
-            try JSONDecoder().decode(Settings.self, from: old).displayMoveModifier, .shiftOption
+            try JSONDecoder().decode(Settings.self, from: json).displayMoveModifier, .shiftOption
         )
     }
 
-    /// The application keys used to answer to the switcher's leader. A file
-    /// written back then means that one, and defaulting to the constant instead
-    /// would move every shortcut somebody has on the first launch after an
-    /// update — silently, since nothing about the keys themselves changed.
-    func testAnOlderFileKeepsItsLeaderForTheShortcuts() throws {
-        for choice in ModifierChoice.allCases {
-            let json = Data(#"{"leader":"\#(choice.rawValue)"}"#.utf8)
-
-            let decoded = try JSONDecoder().decode(Settings.self, from: json)
-
-            XCTAssertEqual(decoded.shortcutLeader, choice, "\(choice)")
-        }
-    }
-
-    func testTheShortcutLeaderIsItsOwnOnceWritten() throws {
+    func testTheShortcutLeaderIsItsOwnSetting() throws {
         var settings = Settings()
         settings.leader = .option
         settings.shortcutLeader = .controlCommand
@@ -99,15 +86,13 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(round.shortcutLeader, .controlCommand)
     }
 
-    /// Nailed to ⌃⌥ before it was settable, so an older file has to come back
-    /// carrying exactly that — the keys are ones fingers have learned.
-    func testAnOlderFileKeepsTheWindowActionsOnControlOption() throws {
+    func testTheWindowActionsDefaultToControlOption() throws {
         XCTAssertEqual(Settings().windowLeader, .optionControl)
 
-        let old = Data(#"{"leader":"command"}"#.utf8)
+        let json = Data(#"{"leader":["command"]}"#.utf8)
 
         XCTAssertEqual(
-            try JSONDecoder().decode(Settings.self, from: old).windowLeader, .optionControl
+            try JSONDecoder().decode(Settings.self, from: json).windowLeader, .optionControl
         )
     }
 
@@ -141,6 +126,45 @@ final class SettingsTests: XCTestCase {
         )
 
         XCTAssertTrue(round.showWindowsFromEverySpace)
+    }
+
+    /// One vocabulary for every modifier the file names, so a hand edit spells
+    /// the switcher's leader the same way it spells the display move.
+    func testEveryModifierIsWrittenAsKeywords() throws {
+        var settings = Settings()
+        settings.leader = .command
+        settings.windowLeader = .optionControl
+        settings.displayMoveModifier = .allThree
+
+        let json = String(decoding: try JSONEncoder().encode(settings), as: UTF8.self)
+
+        XCTAssertTrue(json.contains(#""leader":["command"]"#), json)
+        XCTAssertTrue(json.contains(#""windowLeader":["option","control"]"#), json)
+        XCTAssertTrue(json.contains(#""displayMoveModifier":["command","option","control"]"#), json)
+    }
+
+    func testKeywordsAreReadInAnyOrder() throws {
+        let json = Data(#"{"windowLeader":["control","option"],"displayMoveModifier":["option","command","control"]}"#.utf8)
+
+        let decoded = try JSONDecoder().decode(Settings.self, from: json)
+
+        XCTAssertEqual(decoded.windowLeader, .optionControl)
+        XCTAssertEqual(decoded.displayMoveModifier, .allThree)
+    }
+
+    /// A combination the setting does not offer is a broken file, not a silent
+    /// reset to the default: the store keeps it for inspection.
+    func testACombinationTheSettingDoesNotOfferIsRejected() {
+        let json = Data(#"{"windowLeader":["shift","command"]}"#.utf8)
+
+        XCTAssertThrowsError(try JSONDecoder().decode(Settings.self, from: json))
+    }
+
+    /// Keywords and nothing else, so there is one way to write a modifier.
+    func testASingleWordIsNotAModifier() {
+        let json = Data(#"{"windowLeader":"option-command"}"#.utf8)
+
+        XCTAssertThrowsError(try JSONDecoder().decode(Settings.self, from: json))
     }
 
     func testEveryModifierChoiceHasDistinctFlags() {
@@ -343,28 +367,8 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertNotNil(object["bindings"] as? [[String: Any]])
     }
 
-    /// The two files Flip kept before this one. Both are read once, and only
-    /// removed after the merged file is on disk.
-    func testTheTwoOlderFilesAreMergedAndThenRemoved() throws {
-        let directory = directory()
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let settingsFile = directory.appendingPathComponent("settings.json")
-        let bindingsFile = directory.appendingPathComponent("bindings.json")
-        try Data(#"{"leader":"option","appSwitcher":"command"}"#.utf8).write(to: settingsFile)
-        try Data(#"[{"key":"s","bundleID":"com.spotify.client"}]"#.utf8).write(to: bindingsFile)
-
-        let store = ConfigStore(file: directory.appendingPathComponent("config.json"))
-        store.load()
-
-        XCTAssertEqual(store.settings.leader, .option)
-        XCTAssertEqual(store.bindings.map(\.bundleID), ["com.spotify.client"])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: store.fileURL.path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: settingsFile.path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: bindingsFile.path))
-    }
-
-    /// Only when there is nothing to migrate: an older file that lost its
-    /// bindings on the way would otherwise come back with the Finder on F.
+    /// Seeding is for a file that is not there. Emptying the list is an edit
+    /// like any other, and must not come back with the Finder on F.
     func testAConfigWithoutBindingsIsNotReseeded() throws {
         let store = makeStore()
         store.load()
@@ -426,7 +430,7 @@ final class VersionComparisonTests: XCTestCase {
     }
 
     func testAFileMissingTheUpdateKeyStillChecks() throws {
-        let json = Data(#"{"leader":"option"}"#.utf8)
+        let json = Data(#"{"leader":["option"]}"#.utf8)
 
         XCTAssertTrue(try JSONDecoder().decode(Settings.self, from: json).checkForUpdates)
     }
