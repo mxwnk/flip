@@ -15,7 +15,7 @@ final class ConfigStore: ObservableObject {
         }
     }
 
-    @Published private(set) var bindings: [AppBinding] = []
+    var bindings: [AppBinding] { settings.shortcuts.bindings }
 
     var onChange: (() -> Void)?
 
@@ -37,29 +37,28 @@ final class ConfigStore: ObservableObject {
     func load() {
         guard let data = try? Data(contentsOf: fileURL) else {
             log.notice("no config file yet, writing the defaults")
-            apply(Config())
+            apply(Settings())
             save()
             return
         }
 
         do {
-            apply(try JSONDecoder().decode(Config.self, from: data))
+            apply(try JSONDecoder().decode(Settings.self, from: data))
             log.notice("loaded \(self.bindings.count, privacy: .public) bindings")
         } catch {
             // Defaults beat no hotkeys; the broken file is left for inspection.
             log.error("config unreadable (\(error.localizedDescription, privacy: .public)), using defaults")
-            apply(Config())
+            apply(Settings())
         }
     }
 
     private var isApplying = false
 
-    /// Both halves at once, without the save the settings would otherwise
-    /// trigger halfway through.
-    private func apply(_ config: Config) {
+    /// Loading is not editing: the save the assignment would otherwise trigger
+    /// would only write back what was just read.
+    private func apply(_ loaded: Settings) {
         isApplying = true
-        bindings = config.bindings
-        settings = config.settings
+        settings = loaded
         isApplying = false
     }
 
@@ -73,7 +72,7 @@ final class ConfigStore: ObservableObject {
                 at: fileURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            let data = try encoder.encode(Config(settings: settings, bindings: bindings))
+            let data = try encoder.encode(settings)
             try data.write(to: fileURL, options: .atomic)
             lastWritten = data
 
@@ -125,12 +124,13 @@ final class ConfigStore: ObservableObject {
     /// Content, not timestamps: every save is a write and would loop.
     private func reloadIfChangedOnDisk() {
         guard let data = try? Data(contentsOf: fileURL), data != lastWritten,
-              let config = try? JSONDecoder().decode(Config.self, from: data)
+              let loaded = try? JSONDecoder().decode(Settings.self, from: data)
         else { return }
 
-        log.notice("config.json changed on disk, reloading \(config.bindings.count, privacy: .public) bindings")
+        let count = loaded.shortcuts.bindings.count
+        log.notice("config.json changed on disk, reloading \(count, privacy: .public) bindings")
         lastWritten = data
-        apply(config)
+        apply(loaded)
         onChange?()
     }
 
@@ -142,13 +142,11 @@ final class ConfigStore: ObservableObject {
     // MARK: - Editing bindings
 
     func add() {
-        bindings.append(AppBinding(key: "", bundleID: ""))
-        commit()
+        settings.shortcuts.bindings.append(AppBinding(key: "", bundleID: ""))
     }
 
     func remove(_ id: UUID) {
-        bindings.removeAll { $0.id == id }
-        commit()
+        settings.shortcuts.bindings.removeAll { $0.id == id }
     }
 
     func key(for id: UUID) -> String {
@@ -156,37 +154,38 @@ final class ConfigStore: ObservableObject {
     }
 
     func setKey(_ key: String, for id: UUID) {
-        guard let index = bindings.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = index(of: id) else { return }
 
         // Longer input is only meaningful for named keys like F1.
-        bindings[index].key = key.count == 1 ? key.lowercased() : key
-        commit()
+        settings.shortcuts.bindings[index].key = key.count == 1 ? key.lowercased() : key
     }
 
     func setBundleID(_ bundleID: String, for id: UUID) {
-        guard let index = bindings.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = index(of: id) else { return }
 
-        bindings[index].bundleID = bundleID
-        commit()
+        settings.shortcuts.bindings[index].bundleID = bundleID
     }
 
     func setUsesLeader(_ usesLeader: Bool, for id: UUID) {
-        guard let index = bindings.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = index(of: id) else { return }
 
-        bindings[index].usesLeader = usesLeader
-        commit()
+        settings.shortcuts.bindings[index].usesLeader = usesLeader
+    }
+
+    private func index(of id: UUID) -> Int? {
+        bindings.firstIndex { $0.id == id }
     }
 
     // MARK: - Editing exclusions
 
     func excluding(_ bundleID: String) {
-        guard !settings.excludedBundleIDs.contains(bundleID) else { return }
+        guard !settings.excluded.contains(bundleID) else { return }
 
-        settings.excludedBundleIDs.append(bundleID)
+        settings.excluded.append(bundleID)
     }
 
     func stopExcluding(_ bundleID: String) {
-        settings.excludedBundleIDs.removeAll { $0 == bundleID }
+        settings.excluded.removeAll { $0 == bundleID }
     }
 
     // MARK: - Problems worth showing
@@ -216,8 +215,9 @@ final class ConfigStore: ObservableObject {
     func issue(
         for binding: AppBinding,
         leader: CGEventFlags = [],
-        navigation: ModifierChoice = .optionControl,
-        displayMove: DisplayMoveModifier = .shiftOption
+        arrangeLeader: ModifierChoice = .optionControl,
+        displayMove: DisplayMoveModifier = .shiftOption,
+        arrangeKeys: [WindowArrangement: String] = WindowArrangement.defaultKeys
     ) -> Issue? {
         if binding.bundleID.isEmpty { return .noApplication }
         guard let code = KeyboardLayout.keyCode(forBinding: binding.key), !binding.key.isEmpty else {
@@ -229,9 +229,10 @@ final class ConfigStore: ObservableObject {
         if binding.usesLeader,
            let action = WindowArrangement.matching(
                keyCode: code, modifiers: leader,
-               navigation: navigation, displayMove: displayMove
+               leader: arrangeLeader, displayMove: displayMove, keys: arrangeKeys
            ) {
-            let name = WindowArrangement.shortcuts(navigation: navigation, displayMove: displayMove)
+            let name = WindowArrangement
+                .shortcuts(leader: arrangeLeader, displayMove: displayMove, keys: arrangeKeys)
                 .first { $0.arrangement == action }?.name ?? "a window action"
 
             return .takenByWindowAction(name)

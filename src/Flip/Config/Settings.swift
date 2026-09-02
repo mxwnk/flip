@@ -164,7 +164,52 @@ enum ModifierRowOrder: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// The whole configuration as one document, grouped the way the settings window
+/// is: a page per group, and the exclusions every page's list obeys.
 struct Settings: Codable, Equatable {
+    var general = GeneralSettings()
+    var switcher = SwitcherSettings()
+    var shortcuts = ShortcutSettings()
+    var arrange = ArrangeSettings()
+
+    /// Kept out of the all-windows list. A key bound directly still reaches them.
+    var excluded: [String] = []
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Settings()
+
+        general = try container.value(.general, or: defaults.general)
+        switcher = try container.value(.switcher, or: defaults.switcher)
+        shortcuts = try container.value(.shortcuts, or: defaults.shortcuts)
+        arrange = try container.value(.arrange, or: defaults.arrange)
+        excluded = try container.value(.excluded, or: defaults.excluded)
+    }
+}
+
+/// The application itself, and how the settings window draws a keyboard.
+struct GeneralSettings: Codable, Equatable {
+    /// The only thing Flip ever sends a request for.
+    var checkForUpdates = true
+
+    /// Only affects the picture of the keyboard in the settings window.
+    var modifierRowOrder: ModifierRowOrder = .appleStyle
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = GeneralSettings()
+
+        checkForUpdates = try container.value(.checkForUpdates, or: defaults.checkForUpdates)
+        modifierRowOrder = try container.value(.modifierRowOrder, or: defaults.modifierRowOrder)
+    }
+}
+
+/// The grid: what opens it, where it appears and what it shows.
+struct SwitcherSettings: Codable, Equatable {
     /// ⌘Tab is the switcher every Mac user already reaches for, so that is the
     /// one that shows everything. Flip only changes what it lists: windows
     /// rather than applications.
@@ -172,11 +217,7 @@ struct Settings: Codable, Equatable {
 
     /// ⌥Tab narrows to the application in front, where stock macOS uses ⌘` — a
     /// key half the keyboards in Europe put somewhere else.
-    var appSwitcher: ModifierChoice = .option
-
-    /// Its own setting, not the switcher's leader: one is tapped and let go, the
-    /// other is held while you read a grid.
-    var shortcutLeader: ModifierChoice = .option
+    var applicationLeader: ModifierChoice = .option
 
     /// Off needs no Screen Recording grant at all.
     var showThumbnails = true
@@ -184,62 +225,80 @@ struct Settings: Codable, Equatable {
     /// A shorter tap switches with no overlay; only showing it waits.
     var overlayDelay: OverlayDelay = .short
 
+    var overlayPlacement: OverlayPlacement = .activeWindow
+
     /// Off lists only what is on the space you are looking at.
     var showWindowsFromEverySpace = false
 
-    var overlayPlacement: OverlayPlacement = .activeWindow
-
-    var displayMoveModifier: DisplayMoveModifier = .shiftOption
-
-    /// Two modifiers, for the reason in `takesArrowKeys`; which two is open.
-    var windowLeader: ModifierChoice = .optionControl
-
-    /// Only affects the picture of the keyboard in the settings window.
-    var modifierRowOrder: ModifierRowOrder = .appleStyle
-
-    /// The only thing Flip ever sends a request for.
-    var checkForUpdates = true
-
-    /// Kept out of the all-windows list. A key bound directly still reaches them.
-    var excludedBundleIDs: [String] = []
-
-    var isValid: Bool { leader != appSwitcher }
+    var isValid: Bool { leader != applicationLeader }
 
     init() {}
 
-    /// Every field falls back instead of failing: synthesised decoding requires
-    /// all of them, and a file edited by hand names only what it changes.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = Settings()
+        let defaults = SwitcherSettings()
 
-        leader = try container.decodeIfPresent(ModifierChoice.self, forKey: .leader)
-            ?? defaults.leader
-        appSwitcher = try container.decodeIfPresent(ModifierChoice.self, forKey: .appSwitcher)
-            ?? defaults.appSwitcher
-        shortcutLeader = try container.decodeIfPresent(ModifierChoice.self, forKey: .shortcutLeader)
-            ?? defaults.shortcutLeader
-        showThumbnails = try container.decodeIfPresent(Bool.self, forKey: .showThumbnails)
-            ?? defaults.showThumbnails
-        overlayDelay = try container.decodeIfPresent(OverlayDelay.self, forKey: .overlayDelay)
-            ?? defaults.overlayDelay
+        leader = try container.value(.leader, or: defaults.leader)
+        applicationLeader = try container.value(.applicationLeader, or: defaults.applicationLeader)
+        showThumbnails = try container.value(.showThumbnails, or: defaults.showThumbnails)
+        overlayDelay = try container.value(.overlayDelay, or: defaults.overlayDelay)
+        overlayPlacement = try container.value(.overlayPlacement, or: defaults.overlayPlacement)
         showWindowsFromEverySpace = try container
-            .decodeIfPresent(Bool.self, forKey: .showWindowsFromEverySpace)
-            ?? defaults.showWindowsFromEverySpace
-        overlayPlacement = try container
-            .decodeIfPresent(OverlayPlacement.self, forKey: .overlayPlacement)
-            ?? defaults.overlayPlacement
-        displayMoveModifier = try container
-            .decodeIfPresent(DisplayMoveModifier.self, forKey: .displayMoveModifier)
-            ?? defaults.displayMoveModifier
-        windowLeader = try container.decodeIfPresent(ModifierChoice.self, forKey: .windowLeader)
-            ?? defaults.windowLeader
-        modifierRowOrder = try container
-            .decodeIfPresent(ModifierRowOrder.self, forKey: .modifierRowOrder)
-            ?? defaults.modifierRowOrder
-        checkForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checkForUpdates)
-            ?? defaults.checkForUpdates
-        excludedBundleIDs = try container.decodeIfPresent([String].self, forKey: .excludedBundleIDs)
-            ?? defaults.excludedBundleIDs
+            .value(.showWindowsFromEverySpace, or: defaults.showWindowsFromEverySpace)
+    }
+}
+
+/// The application keys, and the modifier they answer to.
+struct ShortcutSettings: Codable, Equatable {
+    /// Its own setting, not the switcher's leader: one is tapped and let go, the
+    /// other is held while you read a grid.
+    var leader: ModifierChoice = .option
+
+    var bindings: [AppBinding] = DefaultBindings.all
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = ShortcutSettings()
+
+        leader = try container.value(.leader, or: defaults.leader)
+        bindings = try container.value(.bindings, or: defaults.bindings)
+    }
+}
+
+/// Moving and resizing the window in front, which is what `flip arrange` does
+/// from the command line.
+struct ArrangeSettings: Codable, Equatable {
+    /// Two modifiers, for the reason in `takesArrowKeys`; which two is open.
+    var leader: ModifierChoice = .optionControl
+
+    var displayMove: DisplayMoveModifier = .shiftOption
+
+    /// Every arrangement by the name `flip arrange` gives it. Written whole, so
+    /// the keys are in the file rather than only in the settings window.
+    var keys = WindowArrangement.defaultKeys
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = ArrangeSettings()
+
+        leader = try container.value(.leader, or: defaults.leader)
+        displayMove = try container.value(.displayMove, or: defaults.displayMove)
+        // Per arrangement, so naming one key leaves the other ten alone.
+        keys = defaults.keys.merging(
+            try container.value(.keys, or: [:]) as [WindowArrangement: String]
+        ) { _, named in named }
+    }
+}
+
+private extension KeyedDecodingContainer {
+    /// A missing key falls back rather than fails: synthesised decoding wants
+    /// them all, and a file edited by hand names only what it changes. A key
+    /// that is there and wrong is still an error.
+    func value<T: Decodable>(_ key: Key, or fallback: T) throws -> T {
+        try decodeIfPresent(T.self, forKey: key) ?? fallback
     }
 }

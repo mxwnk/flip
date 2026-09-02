@@ -61,7 +61,7 @@ public enum ControlArrangement {
     public static let names = [
         "left-half", "right-half", "top-half", "bottom-half",
         "top-left", "top-right", "bottom-left", "bottom-right",
-        "fill", "previous-display", "next-display",
+        "maximize", "previous-display", "next-display",
     ]
 }
 

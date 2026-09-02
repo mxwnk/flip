@@ -43,8 +43,8 @@ Needs macOS 14 or newer.
   anything at all.
 - **One key per application.** `⌥ F` reaches the Finder out of the box; `⌥ S` for
   Spotify and `⌥ T` for the terminal are yours to add.
-- **Moves and resizes windows** from the keyboard — halves, quarters, filling, and
-  across to the other display.
+- **Moves and resizes windows** from the keyboard — halves, quarters, maximizing
+  and across to the other display.
 - **Keyboard or mouse.** Hover or scroll to pick, click to confirm, if your hand
   is already there.
 - **Brings minimised windows back.** Choosing one lifts it out of the Dock.
@@ -77,13 +77,13 @@ Add `⇧` to any of those to go backwards.
 | `⌃⌥←` `⌃⌥→` | left or right half |
 | `⌃⌥↑` `⌃⌥↓` | top or bottom half |
 | `⌃⌥U` `⌃⌥I` `⌃⌥J` `⌃⌥K` | the four quarters |
-| `⌃⌥↩` | fill the screen, or put it back if it already fills |
+| `⌃⌥↩` | maximize, or put it back if it already fills the screen |
 | `⇧⌥←` `⇧⌥→` | previous or next display, keeping the window's place on it |
 
-Everything stops at the menu bar and the Dock. Filling is a toggle: press it on a
-window that already fills and it goes back where it was.
+Everything stops at the menu bar and the Dock. Maximizing is a toggle: press it on
+a window that already fills the screen and it goes back where it was.
 
-Both modifiers are yours, in Settings › Windows, picked as keys rather than from
+Both modifiers are yours, in Settings › Arrange, picked as keys rather than from
 a menu. The display moves take the same arrows as the halves, so the two carry
 different ones — and they cannot be given the same, whatever you pick.
 
@@ -108,7 +108,7 @@ of whichever page you are on lit up.
   is tapped and let go, this one is held while you aim, and they need not be the
   same key. Click a key and press the one you want, function keys included. The
   editor warns when a key would shadow a character you need to type.
-- **Windows** — the modifier that carries a window to another display, the one
+- **Arrange** — the modifier that carries a window to another display, the one
   that moves and resizes it, and the keys they go with, listed so you can find
   them without this page.
 - **Excluded** — applications kept out of the grid. A key bound directly to one
@@ -195,9 +195,11 @@ is the repair for a grant that is listed but no longer works, which is what
 replacing the app outside the installer leaves behind.
 
 **Where do my settings live?** In `config.json` in `~/Library/Application
-Support/Flip/`, as readable JSON: every setting the settings window can change,
-plus the bindings, one key each. Modifiers are keywords — `"windowLeader":
-["option", "control"]` — the same four words wherever they appear. Edits made by
+Support/Flip/`, as readable JSON, grouped the way the settings window is:
+`general`, `switcher`, `shortcuts`, `arrange` and `excluded`. Modifiers are
+keywords — `"leader": ["option", "control"]` — the same four words wherever they
+appear, and every key is in there too, the application shortcuts under
+`shortcuts.bindings` and the arrangements under `arrange.keys`. Edits made by
 hand are picked up while Flip runs. It is the only file Flip reads; there is
 nowhere else a setting can be hiding.
 

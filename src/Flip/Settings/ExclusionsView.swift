@@ -8,11 +8,11 @@ struct ExclusionsView: View {
     var body: some View {
         Form {
             Section {
-                if config.settings.excludedBundleIDs.isEmpty {
+                if config.settings.excluded.isEmpty {
                     Caption("Nothing excluded.")
                 }
 
-                ForEach(config.settings.excludedBundleIDs, id: \.self, content: row)
+                ForEach(config.settings.excluded, id: \.self, content: row)
 
                 Menu {
                     ForEach(candidates, id: \.bundleID) { application in
@@ -34,7 +34,7 @@ struct ExclusionsView: View {
     }
 
     private var candidates: [(bundleID: String, name: String)] {
-        AppCatalog.running().filter { !config.settings.excludedBundleIDs.contains($0.bundleID) }
+        AppCatalog.running().filter { !config.settings.excluded.contains($0.bundleID) }
     }
 
     private func row(for bundleID: String) -> some View {

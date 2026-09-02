@@ -123,7 +123,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             canReadWindowIDs: canReadWindowIDs,
             windowCount: store.windows(
                 includingMinimized: true,
-                fromEverySpace: config.settings.showWindowsFromEverySpace
+                fromEverySpace: config.settings.switcher.showWindowsFromEverySpace
             ).count
         )
     }
@@ -216,7 +216,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             return .ok
 
         case .arrange(let name):
-            guard let arrangement = WindowArrangement(controlName: name)
+            guard let arrangement = WindowArrangement(rawValue: name)
             else { return .failure("unknown arrangement '\(name)'") }
 
             store.arrange(arrangement)

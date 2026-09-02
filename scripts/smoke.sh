@@ -79,9 +79,9 @@ cp "$SUPPORT/config.json" "$CONFIG_BACKUP" 2>/dev/null
 pbpaste > "$CLIPBOARD_BACKUP" 2>/dev/null
 
 # The suite drives specific modifiers, so it writes the shipped defaults rather
-# than inheriting whichever keys this machine is configured with. Only those two
-# keys, so the bindings in the same file survive a run that never reaches its
-# trap. Written before Flip starts, because the configuration is read at launch.
+# than inheriting whichever keys this machine is configured with. Only the two
+# switcher keys, so the shortcuts in the same file survive a run that never
+# reaches its trap. Written before Flip starts: the configuration is read once.
 mkdir -p "$SUPPORT"
 python3 - "$SUPPORT/config.json" <<'PY'
 import json, sys
@@ -91,8 +91,8 @@ try:
 except Exception:
     config = {}
 
-config["leader"] = ["command"]
-config["appSwitcher"] = ["option"]
+config.setdefault("switcher", {})["leader"] = ["command"]
+config["switcher"]["applicationLeader"] = ["option"]
 json.dump(config, open(sys.argv[1], "w"), indent=2, sort_keys=True)
 PY
 

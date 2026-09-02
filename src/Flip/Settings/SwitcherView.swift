@@ -29,19 +29,19 @@ struct SwitcherView: View {
             }
 
             Section {
-                Picker("Show the grid on", selection: $config.settings.overlayPlacement) {
+                Picker("Show the grid on", selection: $config.settings.switcher.overlayPlacement) {
                     ForEach(OverlayPlacement.allCases) { choice in
                         Text(choice.label).tag(choice)
                     }
                 }
             } footer: {
-                Caption(config.settings.overlayPlacement == .everyDisplay
+                Caption(config.settings.switcher.overlayPlacement == .everyDisplay
                     ? "The same grid on each one, so it is always where you are looking."
                     : "With two displays the grid can open on the one you are not looking at.")
             }
 
             Section {
-                Picker("Show the overlay", selection: $config.settings.overlayDelay) {
+                Picker("Show the overlay", selection: $config.settings.switcher.overlayDelay) {
                     ForEach(OverlayDelay.allCases) { choice in
                         Text(choice.label).tag(choice)
                     }
@@ -51,9 +51,9 @@ struct SwitcherView: View {
             }
 
             Section {
-                Toggle("Show window thumbnails", isOn: $config.settings.showThumbnails)
+                Toggle("Show window thumbnails", isOn: $config.settings.switcher.showThumbnails)
             } footer: {
-                Caption(config.settings.showThumbnails
+                Caption(config.settings.switcher.showThumbnails
                     ? "Captured through ScreenCaptureKit, which is why Flip asks for Screen Recording."
                     : "Application icons only. Flip no longer needs the Screen Recording grant.")
             }
@@ -61,10 +61,10 @@ struct SwitcherView: View {
             Section {
                 Toggle(
                     "Show windows from every space",
-                    isOn: $config.settings.showWindowsFromEverySpace
+                    isOn: $config.settings.switcher.showWindowsFromEverySpace
                 )
             } footer: {
-                Caption(config.settings.showWindowsFromEverySpace
+                Caption(config.settings.switcher.showWindowsFromEverySpace
                     ? "Choosing one switches to its space. A space's windows are learned the first time you visit it."
                     : "Only the space you are looking at. Minimised windows are listed either way.")
             }
@@ -77,24 +77,24 @@ struct SwitcherView: View {
     /// the first of the two to be checked would answer for both.
     private var leader: Binding<ModifierChoice> {
         Binding(
-            get: { config.settings.leader },
+            get: { config.settings.switcher.leader },
             set: { choice in
-                if config.settings.appSwitcher == choice {
-                    config.settings.appSwitcher = config.settings.leader
+                if config.settings.switcher.applicationLeader == choice {
+                    config.settings.switcher.applicationLeader = config.settings.switcher.leader
                 }
-                config.settings.leader = choice
+                config.settings.switcher.leader = choice
             }
         )
     }
 
     private var appSwitcher: Binding<ModifierChoice> {
         Binding(
-            get: { config.settings.appSwitcher },
+            get: { config.settings.switcher.applicationLeader },
             set: { choice in
-                if config.settings.leader == choice {
-                    config.settings.leader = config.settings.appSwitcher
+                if config.settings.switcher.leader == choice {
+                    config.settings.switcher.leader = config.settings.switcher.applicationLeader
                 }
-                config.settings.appSwitcher = choice
+                config.settings.switcher.applicationLeader = choice
             }
         )
     }

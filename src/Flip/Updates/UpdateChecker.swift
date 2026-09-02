@@ -33,7 +33,7 @@ final class UpdateChecker {
     }
 
     func check() {
-        guard config.settings.checkForUpdates else { return }
+        guard config.settings.general.checkForUpdates else { return }
 
         Task { await ask() }
     }

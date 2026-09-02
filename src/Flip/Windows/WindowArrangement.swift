@@ -2,18 +2,21 @@ import AppKit
 import Carbon.HIToolbox
 import CoreGraphics
 
-enum WindowArrangement: CaseIterable {
-    case leftHalf
-    case rightHalf
-    case topHalf
-    case bottomHalf
-    case topLeftQuarter
-    case topRightQuarter
-    case bottomLeftQuarter
-    case bottomRightQuarter
+/// The raw value is the one name this arrangement has: `flip arrange <name>`
+/// takes it, config.json keys its shortcut by it, and a test holds it to
+/// FlipControl, which cannot see this type.
+enum WindowArrangement: String, CaseIterable, Codable, CodingKeyRepresentable {
+    case leftHalf = "left-half"
+    case rightHalf = "right-half"
+    case topHalf = "top-half"
+    case bottomHalf = "bottom-half"
+    case topLeftQuarter = "top-left"
+    case topRightQuarter = "top-right"
+    case bottomLeftQuarter = "bottom-left"
+    case bottomRightQuarter = "bottom-right"
     case maximize
-    case previousDisplay
-    case nextDisplay
+    case previousDisplay = "previous-display"
+    case nextDisplay = "next-display"
 
     /// Between displays, not within one, and on their own modifier.
     var movesToAnotherDisplay: Bool {
@@ -23,29 +26,38 @@ enum WindowArrangement: CaseIterable {
         }
     }
 
-    /// What `flip arrange` calls these; a test holds it to FlipControl.
-    var controlName: String {
+    /// What the settings window calls it.
+    var title: String {
         switch self {
-        case .leftHalf: return "left-half"
-        case .rightHalf: return "right-half"
-        case .topHalf: return "top-half"
-        case .bottomHalf: return "bottom-half"
-        case .topLeftQuarter: return "top-left"
-        case .topRightQuarter: return "top-right"
-        case .bottomLeftQuarter: return "bottom-left"
-        case .bottomRightQuarter: return "bottom-right"
-        case .maximize: return "fill"
-        case .previousDisplay: return "previous-display"
-        case .nextDisplay: return "next-display"
+        case .leftHalf: return "Left half"
+        case .rightHalf: return "Right half"
+        case .topHalf: return "Top half"
+        case .bottomHalf: return "Bottom half"
+        case .topLeftQuarter: return "Top left quarter"
+        case .topRightQuarter: return "Top right quarter"
+        case .bottomLeftQuarter: return "Bottom left quarter"
+        case .bottomRightQuarter: return "Bottom right quarter"
+        case .maximize: return "Maximize"
+        case .previousDisplay: return "Previous display"
+        case .nextDisplay: return "Next display"
         }
     }
 
-    init?(controlName: String) {
-        guard let match = Self.allCases.first(where: { $0.controlName == controlName })
-        else { return nil }
-
-        self = match
-    }
+    /// The keys out of the box. Corners are `u i j k` because those form a
+    /// square; vim's `y u / h j` only does on a US layout.
+    static let defaultKeys: [WindowArrangement: String] = [
+        .leftHalf: "left",
+        .rightHalf: "right",
+        .topHalf: "up",
+        .bottomHalf: "down",
+        .topLeftQuarter: "u",
+        .topRightQuarter: "i",
+        .bottomLeftQuarter: "j",
+        .bottomRightQuarter: "k",
+        .maximize: "return",
+        .previousDisplay: "left",
+        .nextDisplay: "right",
+    ]
 }
 
 /// The router matches against this and the settings window lists it.
@@ -56,7 +68,7 @@ struct WindowShortcut: Identifiable {
     let name: String
     let keys: String
 
-    var id: String { keys }
+    var id: String { arrangement.rawValue }
 }
 
 extension WindowArrangement {
@@ -64,52 +76,36 @@ extension WindowArrangement {
     static func matching(
         keyCode: CGKeyCode,
         modifiers: CGEventFlags,
-        navigation: ModifierChoice,
-        displayMove: DisplayMoveModifier
+        leader: ModifierChoice,
+        displayMove: DisplayMoveModifier,
+        keys: [WindowArrangement: String] = defaultKeys
     ) -> WindowArrangement? {
-        shortcuts(navigation: navigation, displayMove: displayMove)
+        shortcuts(leader: leader, displayMove: displayMove, keys: keys)
             .first { $0.keyCode == keyCode && $0.modifiers == Modifiers.significant(in: modifiers) }?
             .arrangement
     }
 
-    /// Fixed keys, settable modifiers — a pair of them, for the reason in
-    /// `ModifierChoice.takesArrowKeys`. Corners are `u i j k` because those form
-    /// a square; vim's `y u / h j` only does on a US layout.
+    /// Both the modifiers and the keys are settings; which of the two modifiers
+    /// a row carries is not, since only the display moves may share the arrows.
     static func shortcuts(
-        navigation: ModifierChoice,
-        displayMove: DisplayMoveModifier
+        leader: ModifierChoice,
+        displayMove: DisplayMoveModifier,
+        keys: [WindowArrangement: String] = defaultKeys
     ) -> [WindowShortcut] {
-        let halves = navigation.flags
-        let key = navigation.label
-        let displays = displayMove.flags
-        let move = displayMove.label
+        allCases.compactMap { arrangement in
+            guard let key = keys[arrangement],
+                  let code = KeyboardLayout.keyCode(forBinding: key)
+            else { return nil }
 
-        return [
-            WindowShortcut(arrangement: .leftHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Left half", keys: "\(key)←"),
-            WindowShortcut(arrangement: .rightHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_RightArrow), name: "Right half", keys: "\(key)→"),
-            WindowShortcut(arrangement: .topHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_UpArrow), name: "Top half", keys: "\(key)↑"),
-            WindowShortcut(arrangement: .bottomHalf, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_DownArrow), name: "Bottom half", keys: "\(key)↓"),
-            WindowShortcut(arrangement: .topLeftQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_U), name: "Top left quarter", keys: "\(key)U"),
-            WindowShortcut(arrangement: .topRightQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_I), name: "Top right quarter", keys: "\(key)I"),
-            WindowShortcut(arrangement: .bottomLeftQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_J), name: "Bottom left quarter", keys: "\(key)J"),
-            WindowShortcut(arrangement: .bottomRightQuarter, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_ANSI_K), name: "Bottom right quarter", keys: "\(key)K"),
-            WindowShortcut(arrangement: .maximize, modifiers: halves,
-                           keyCode: CGKeyCode(kVK_Return), name: "Fill the screen", keys: "\(key)↩"),
-            WindowShortcut(arrangement: .previousDisplay, modifiers: displays,
-                           keyCode: CGKeyCode(kVK_LeftArrow), name: "Previous display",
-                           keys: "\(move)←"),
-            WindowShortcut(arrangement: .nextDisplay, modifiers: displays,
-                           keyCode: CGKeyCode(kVK_RightArrow), name: "Next display",
-                           keys: "\(move)→"),
-        ]
+            let displaced = arrangement.movesToAnotherDisplay
+            let flags = displaced ? displayMove.flags : leader.flags
+            let label = displaced ? displayMove.label : leader.label
+
+            return WindowShortcut(
+                arrangement: arrangement, modifiers: flags, keyCode: code,
+                name: arrangement.title, keys: label + KeyboardLayout.symbol(forBinding: key)
+            )
+        }
     }
 }
 

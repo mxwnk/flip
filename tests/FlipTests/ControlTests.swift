@@ -8,7 +8,7 @@ import FlipControl
 /// asserted here instead.
 final class ControlTests: XCTestCase {
     func testEveryArrangementHasAName() {
-        let names = WindowArrangement.allCases.map(\.controlName)
+        let names = WindowArrangement.allCases.map(\.rawValue)
 
         XCTAssertEqual(Set(names).count, names.count, "two arrangements answer to the same name")
         XCTAssertEqual(Set(names), Set(ControlArrangement.names))
@@ -17,15 +17,15 @@ final class ControlTests: XCTestCase {
     func testEveryNameTheCommandOffersResolves() {
         for name in ControlArrangement.names {
             XCTAssertNotNil(
-                WindowArrangement(controlName: name),
+                WindowArrangement(rawValue: name),
                 "`flip arrange \(name)` is offered but reaches nothing"
             )
         }
     }
 
     func testAnUnknownNameResolvesToNothing() {
-        XCTAssertNil(WindowArrangement(controlName: "middle"))
-        XCTAssertNil(WindowArrangement(controlName: ""))
+        XCTAssertNil(WindowArrangement(rawValue: "middle"))
+        XCTAssertNil(WindowArrangement(rawValue: ""))
     }
 
     /// A unix socket path is copied into a fixed-size buffer, so a home

@@ -5,16 +5,29 @@ publishes it as the release notes, so what is written here is what people read.
 
 ## 2.0.0
 
-**Flip is configured by one file, `config.json`, and reads no other.** It holds
-everything the settings window can change — both switcher leaders, the shortcut
-and window leaders, the grid, the exclusions and the bindings — flat, one key per
-setting. An edit made by hand is picked up while Flip runs, settings included:
-those used to need a restart. Nothing carries over from a 1.x install, so this is
-a major version: Flip starts from the defaults and you set it up once.
+**Flip is configured by one file, `config.json`, and reads no other.** It is
+grouped the way the settings window is — `general`, `switcher`, `shortcuts`,
+`arrange` and `excluded` — so a setting sits under the page whose switch changes
+it, and the application keys are the `bindings` inside `shortcuts`. An edit made
+by hand is picked up while Flip runs, settings included: those used to need a
+restart. Nothing carries over from a 1.x install, so this is a major version:
+Flip starts from the defaults and you set it up once.
+
+**Every arrangement key is in the file too.** `arrange.keys` names all eleven —
+`"left-half": "left"`, `"maximize": "return"`, `"top-left": "u"` — by the same
+name `flip arrange` takes, so the keys can be read and changed where the rest of
+the configuration is rather than only being listed in the settings window.
+Naming one leaves the other ten alone; a name no arrangement answers to is an
+error. Keys are written the way a binding is: a character, or a name for the ones
+that type nothing — `left`, `right`, `up`, `down`, `return`, `f1` to `f12`.
+
+**Filling the screen is called maximizing.** `flip arrange fill` is now
+`flip arrange maximize`, and the settings window says Maximize. The behaviour is
+unchanged, toggle and all.
 
 **Modifiers are spelled one way throughout the file.** Every modifier setting is
-an array of keywords — `"leader": ["command"]`, `"windowLeader": ["option",
-"control"]`, `"displayMoveModifier": ["command", "option", "control"]` — rather
+an array of keywords — `switcher.leader` is `["command"]`, `arrange.leader` is
+`["option", "control"]`, `arrange.displayMove` is `["option", "shift"]` — rather
 than a word per setting with a spelling of its own. The words are `command`,
 `option`, `control` and `shift`, and they are read in any order. A combination a
 setting does not offer is an error rather than a silent fallback: Flip logs it,
