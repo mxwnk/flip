@@ -135,6 +135,7 @@ flip list                    # every window Flip knows, as JSON
 flip focus 27461             # bring one forward
 flip arrange left-half       # move the focused window
 flip switch                  # open the switcher
+flip permissions             # what macOS has granted; nonzero if one is missing
 flip pause                   # hand ⌘Tab back to macOS, then `flip resume`
 ```
 
@@ -176,9 +177,28 @@ Control-clicking and choosing Open no longer works for this on macOS 26.
 is pinned to the same certificate on every release, and the pipeline refuses to
 publish one where it has drifted.
 
-**Where do my settings live?** As readable JSON in `~/Library/Application
-Support/Flip/`. Edits to `bindings.json` are picked up while Flip runs; changes to
-`settings.json` need a restart.
+**Can I handle the permissions from the terminal?** You can check them and you can
+take them away, but you cannot grant them:
+
+```sh
+flip permissions                                 # both grants; nonzero if one is missing
+open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+tccutil reset Accessibility dev.mxwnk.Flip       # start over, then restart Flip
+```
+
+Granting is the one step macOS keeps for the switch in System Settings: the
+database behind it is protected by SIP, and every recipe that writes to it either
+needs SIP turned off or leaves a row macOS then declines to honour. What
+`flip permissions` is for is the other half — a setup script that stops and says
+which one is missing instead of starting a Flip that quietly does nothing. Reset
+is the repair for a grant that is listed but no longer works, which is what
+replacing the app outside the installer leaves behind.
+
+**Where do my settings live?** In `config.json` in `~/Library/Application
+Support/Flip/`, as readable JSON: every setting the settings window can change,
+plus the bindings, one key each. Edits made by hand are picked up while Flip runs.
+An older install's `settings.json` and `bindings.json` are merged into it on first
+launch.
 
 **Something is wrong and I want to report it.** **Copy Diagnostics** in the menu
 puts the version, both permissions, every setting and Flip's recent log on the

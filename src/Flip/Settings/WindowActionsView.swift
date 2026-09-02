@@ -4,22 +4,22 @@ import SwiftUI
 /// four corners need four keys that form a square, and moving those around is a
 /// different question from which modifier you hold.
 struct WindowActionsView: View {
-    @ObservedObject var settings: SettingsStore
+    @ObservedObject var config: ConfigStore
 
-    private var navigation: ModifierChoice { settings.settings.windowLeader }
+    private var navigation: ModifierChoice { config.settings.windowLeader }
 
     /// Split so each modifier is listed with the keys it actually carries, which
     /// is the only way to see that the two do not tread on each other.
     private var shortcuts: [WindowShortcut] {
         WindowArrangement.shortcuts(
-            navigation: navigation, displayMove: settings.settings.displayMoveModifier
+            navigation: navigation, displayMove: config.settings.displayMoveModifier
         )
     }
 
     var body: some View {
         Form {
             Section {
-                LeaderPicker(choice: $settings.settings.displayMoveModifier)
+                LeaderPicker(choice: $config.settings.displayMoveModifier)
                     .padding(.vertical, 2)
 
                 ForEach(shortcuts.filter(\.arrangement.movesToAnotherDisplay)) { shortcut in
@@ -35,7 +35,7 @@ struct WindowActionsView: View {
             }
 
             Section {
-                LeaderPicker(choice: $settings.settings.windowLeader)
+                LeaderPicker(choice: $config.settings.windowLeader)
                     .padding(.vertical, 2)
 
                 ForEach(shortcuts.filter { !$0.arrangement.movesToAnotherDisplay }) { shortcut in

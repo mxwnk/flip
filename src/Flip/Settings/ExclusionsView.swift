@@ -3,20 +3,20 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ExclusionsView: View {
-    @ObservedObject var settings: SettingsStore
+    @ObservedObject var config: ConfigStore
 
     var body: some View {
         Form {
             Section {
-                if settings.settings.excludedBundleIDs.isEmpty {
+                if config.settings.excludedBundleIDs.isEmpty {
                     Caption("Nothing excluded.")
                 }
 
-                ForEach(settings.settings.excludedBundleIDs, id: \.self, content: row)
+                ForEach(config.settings.excludedBundleIDs, id: \.self, content: row)
 
                 Menu {
                     ForEach(candidates, id: \.bundleID) { application in
-                        Button(application.name) { settings.excluding(application.bundleID) }
+                        Button(application.name) { config.excluding(application.bundleID) }
                     }
                     Divider()
                     Button("Choose Application…") { chooseApplication() }
@@ -34,7 +34,7 @@ struct ExclusionsView: View {
     }
 
     private var candidates: [(bundleID: String, name: String)] {
-        AppCatalog.running().filter { !settings.settings.excludedBundleIDs.contains($0.bundleID) }
+        AppCatalog.running().filter { !config.settings.excludedBundleIDs.contains($0.bundleID) }
     }
 
     private func row(for bundleID: String) -> some View {
@@ -49,7 +49,7 @@ struct ExclusionsView: View {
             Spacer(minLength: 0)
 
             Button {
-                settings.stopExcluding(bundleID)
+                config.stopExcluding(bundleID)
             } label: {
                 Image(systemName: "minus.circle")
             }
@@ -70,6 +70,6 @@ struct ExclusionsView: View {
               let bundleID = Bundle(url: url)?.bundleIdentifier
         else { return }
 
-        settings.excluding(bundleID)
+        config.excluding(bundleID)
     }
 }

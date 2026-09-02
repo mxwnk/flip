@@ -3,7 +3,7 @@ import SwiftUI
 /// Everything about the grid: what opens it, where it appears and what it shows.
 /// General is left with the application itself.
 struct SwitcherView: View {
-    @ObservedObject var settings: SettingsStore
+    @ObservedObject var config: ConfigStore
 
     var body: some View {
         Form {
@@ -29,19 +29,19 @@ struct SwitcherView: View {
             }
 
             Section {
-                Picker("Show the grid on", selection: $settings.settings.overlayPlacement) {
+                Picker("Show the grid on", selection: $config.settings.overlayPlacement) {
                     ForEach(OverlayPlacement.allCases) { choice in
                         Text(choice.label).tag(choice)
                     }
                 }
             } footer: {
-                Caption(settings.settings.overlayPlacement == .everyDisplay
+                Caption(config.settings.overlayPlacement == .everyDisplay
                     ? "The same grid on each one, so it is always where you are looking."
                     : "With two displays the grid can open on the one you are not looking at.")
             }
 
             Section {
-                Picker("Show the overlay", selection: $settings.settings.overlayDelay) {
+                Picker("Show the overlay", selection: $config.settings.overlayDelay) {
                     ForEach(OverlayDelay.allCases) { choice in
                         Text(choice.label).tag(choice)
                     }
@@ -51,9 +51,9 @@ struct SwitcherView: View {
             }
 
             Section {
-                Toggle("Show window thumbnails", isOn: $settings.settings.showThumbnails)
+                Toggle("Show window thumbnails", isOn: $config.settings.showThumbnails)
             } footer: {
-                Caption(settings.settings.showThumbnails
+                Caption(config.settings.showThumbnails
                     ? "Captured through ScreenCaptureKit, which is why Flip asks for Screen Recording."
                     : "Application icons only. Flip no longer needs the Screen Recording grant.")
             }
@@ -61,10 +61,10 @@ struct SwitcherView: View {
             Section {
                 Toggle(
                     "Show windows from every space",
-                    isOn: $settings.settings.showWindowsFromEverySpace
+                    isOn: $config.settings.showWindowsFromEverySpace
                 )
             } footer: {
-                Caption(settings.settings.showWindowsFromEverySpace
+                Caption(config.settings.showWindowsFromEverySpace
                     ? "Choosing one switches to its space. A space's windows are learned the first time you visit it."
                     : "Only the space you are looking at. Minimised windows are listed either way.")
             }
@@ -77,24 +77,24 @@ struct SwitcherView: View {
     /// the first of the two to be checked would answer for both.
     private var leader: Binding<ModifierChoice> {
         Binding(
-            get: { settings.settings.leader },
+            get: { config.settings.leader },
             set: { choice in
-                if settings.settings.appSwitcher == choice {
-                    settings.settings.appSwitcher = settings.settings.leader
+                if config.settings.appSwitcher == choice {
+                    config.settings.appSwitcher = config.settings.leader
                 }
-                settings.settings.leader = choice
+                config.settings.leader = choice
             }
         )
     }
 
     private var appSwitcher: Binding<ModifierChoice> {
         Binding(
-            get: { settings.settings.appSwitcher },
+            get: { config.settings.appSwitcher },
             set: { choice in
-                if settings.settings.leader == choice {
-                    settings.settings.leader = settings.settings.appSwitcher
+                if config.settings.leader == choice {
+                    config.settings.leader = config.settings.appSwitcher
                 }
-                settings.settings.appSwitcher = choice
+                config.settings.appSwitcher = choice
             }
         )
     }

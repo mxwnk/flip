@@ -10,7 +10,7 @@ final class UpdateChecker {
     private static let latest = URL(string: "https://api.github.com/repos/mxwnk/flip/releases/latest")!
 
     private let log = Logger(subsystem: Bundle.identifier, category: "updates")
-    private let settings: SettingsStore
+    private let config: ConfigStore
     private var daily: Timer?
 
     /// Only when genuinely newer, so a development copy running ahead of the
@@ -18,8 +18,8 @@ final class UpdateChecker {
     private(set) var available: String?
     var onFound: (() -> Void)?
 
-    init(settings: SettingsStore) {
-        self.settings = settings
+    init(config: ConfigStore) {
+        self.config = config
     }
 
     func start() {
@@ -33,7 +33,7 @@ final class UpdateChecker {
     }
 
     func check() {
-        guard settings.settings.checkForUpdates else { return }
+        guard config.settings.checkForUpdates else { return }
 
         Task { await ask() }
     }

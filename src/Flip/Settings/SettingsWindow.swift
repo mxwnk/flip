@@ -7,13 +7,11 @@ import SwiftUI
 /// is not enough on its own.
 @MainActor
 final class SettingsWindow {
-    private let settings: SettingsStore
-    private let bindings: BindingStore
+    private let config: ConfigStore
     private var window: NSWindow?
 
-    init(settings: SettingsStore, bindings: BindingStore) {
-        self.settings = settings
-        self.bindings = bindings
+    init(config: ConfigStore) {
+        self.config = config
     }
 
     func show() {
@@ -36,7 +34,7 @@ final class SettingsWindow {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
 
-        let host = NSHostingView(rootView: SettingsView(settings: settings, bindings: bindings))
+        let host = NSHostingView(rootView: SettingsView(config: config))
         // Otherwise the hosting view sizes to every row at once.
         host.sizingOptions = []
         window.contentView = host
@@ -61,8 +59,7 @@ final class SettingsWindow {
 }
 
 private struct SettingsView: View {
-    @ObservedObject var settings: SettingsStore
-    @ObservedObject var bindings: BindingStore
+    @ObservedObject var config: ConfigStore
 
     @State private var tab: SettingsTab = .general
 
@@ -75,12 +72,12 @@ private struct SettingsView: View {
         case .switcher:
             return [CGKeyCode(kVK_Tab)]
         case .shortcuts:
-            return Set(bindings.bindings.compactMap { KeyboardLayout.keyCode(forBinding: $0.key) })
+            return Set(config.bindings.compactMap { KeyboardLayout.keyCode(forBinding: $0.key) })
         case .windows:
             return Set(
                 WindowArrangement.shortcuts(
-                    navigation: settings.settings.windowLeader,
-                    displayMove: settings.settings.displayMoveModifier
+                    navigation: config.settings.windowLeader,
+                    displayMove: config.settings.displayMoveModifier
                 )
                     .map(\.keyCode)
             )
@@ -94,12 +91,12 @@ private struct SettingsView: View {
         case .general:
             return []
         case .switcher:
-            return settings.settings.leader.flags.union(settings.settings.appSwitcher.flags)
+            return config.settings.leader.flags.union(config.settings.appSwitcher.flags)
         case .shortcuts:
-            return settings.settings.shortcutLeader.flags
+            return config.settings.shortcutLeader.flags
         case .windows:
-            return settings.settings.windowLeader.flags
-                .union(settings.settings.displayMoveModifier.flags)
+            return config.settings.windowLeader.flags
+                .union(config.settings.displayMoveModifier.flags)
         case .excluded:
             return []
         }
@@ -163,7 +160,7 @@ private struct SettingsView: View {
             KeyboardMap(
                 keys: litKeys,
                 modifiers: litModifiers,
-                order: $settings.settings.modifierRowOrder
+                order: $config.settings.modifierRowOrder
             )
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
@@ -173,11 +170,11 @@ private struct SettingsView: View {
     @ViewBuilder
     private var page: some View {
         switch tab {
-        case .general: GeneralView(settings: settings)
-        case .switcher: SwitcherView(settings: settings)
-        case .shortcuts: ShortcutsView(store: bindings, settings: settings)
-        case .windows: WindowActionsView(settings: settings)
-        case .excluded: ExclusionsView(settings: settings)
+        case .general: GeneralView(config: config)
+        case .switcher: SwitcherView(config: config)
+        case .shortcuts: ShortcutsView(config: config)
+        case .windows: WindowActionsView(config: config)
+        case .excluded: ExclusionsView(config: config)
         }
     }
 }

@@ -18,7 +18,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private let store = WindowStore()
     private let thumbnails = ThumbnailStore()
     private lazy var presenter = OverlayPresenter(
-        store: store, frontmost: frontmost, thumbnails: thumbnails, settings: settings
+        store: store, frontmost: frontmost, thumbnails: thumbnails, config: config
     )
     private var router: KeyRouter?
     private var control: ControlServer?
@@ -29,10 +29,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     /// worse than one that resumed.
     private var isPaused = false
 
-    private let bindings = BindingStore()
-    private let settings = SettingsStore()
-    private lazy var settingsWindow = SettingsWindow(settings: settings, bindings: bindings)
-    private lazy var updates = UpdateChecker(settings: settings)
+    private let config = ConfigStore()
+    private lazy var settingsWindow = SettingsWindow(config: config)
+    private lazy var updates = UpdateChecker(config: config)
     private lazy var aboutWindow = AboutWindow(
         onCopyDiagnostics: { [weak self] in self?.diagnostics() ?? "" }
     )
@@ -56,16 +55,15 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         status = Permissions.request()
         Permissions.report(status)
 
-        bindings.load()
-        bindings.watchForExternalEdits()
+        config.load()
+        config.watchForExternalEdits()
         // A key being recorded must reach the settings window, not the binding
         // it is already on. Must not resume out of a deliberate pause.
-        bindings.onKeyCapture = { [weak self] capturing in
+        config.onKeyCapture = { [weak self] capturing in
             guard let self else { return }
 
             tap?.setEnabled(!capturing && !isPaused)
         }
-        settings.load()
         LoginItem.migrateFromLegacyAgent()
 
         menuBar = MenuBarItem(
@@ -120,12 +118,12 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         Diagnostics.report(
             status: status,
             isPaused: isPaused,
-            settings: settings.settings,
-            bindingCount: bindings.bindings.count,
+            settings: config.settings,
+            bindingCount: config.bindings.count,
             canReadWindowIDs: canReadWindowIDs,
             windowCount: store.windows(
                 includingMinimized: true,
-                fromEverySpace: settings.settings.showWindowsFromEverySpace
+                fromEverySpace: config.settings.showWindowsFromEverySpace
             ).count
         )
     }
@@ -265,11 +263,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         let reapply = { [weak self, weak router] in
             guard let self, let router else { return }
 
-            router.apply(bindings.bindings, settings: settings.settings)
+            router.apply(config.bindings, settings: config.settings)
         }
         reapply()
-        bindings.onChange = reapply
-        settings.onChange = reapply
+        config.onChange = reapply
         KeyboardLayout.observeInputSourceChanges(onChange: reapply)
     }
 
