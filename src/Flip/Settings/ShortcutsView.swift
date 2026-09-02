@@ -6,12 +6,12 @@ import UniformTypeIdentifiers
 struct ShortcutsView: View {
     @ObservedObject var config: ConfigStore
 
-    private var leader: ModifierChoice { config.settings.shortcutLeader }
+    private var leader: ModifierChoice { config.settings.shortcuts.leader }
 
     var body: some View {
         Form {
             Section {
-                LeaderPicker(choice: $config.settings.shortcutLeader)
+                LeaderPicker(choice: $config.settings.shortcuts.leader)
                     .padding(.vertical, 2)
             } header: {
                 Text("Leader")
@@ -38,8 +38,9 @@ struct ShortcutsView: View {
                         issue: config.issue(
                             for: binding,
                             leader: leader.flags,
-                            navigation: config.settings.windowLeader,
-                            displayMove: config.settings.displayMoveModifier
+                            arrangeLeader: config.settings.arrange.leader,
+                            displayMove: config.settings.arrange.displayMove,
+                            arrangeKeys: config.settings.arrange.keys
                         ),
                         leader: leader.label,
                         config: config
@@ -49,20 +50,9 @@ struct ShortcutsView: View {
                 Button("Add Shortcut", systemImage: "plus") { config.add() }
                     .buttonStyle(.borderless)
             } footer: {
-                HStack(alignment: .firstTextBaseline) {
-                    Caption("Hold \(leader.label) and press a key to reach an application. "
-                        + "Pressing it again while that application is in front walks its "
-                        + "windows. Click a key to record another one; F1 to F12 count.")
-
-                    Spacer(minLength: 16)
-
-                    Button("Reveal config.json") {
-                        NSWorkspace.shared.activateFileViewerSelecting([config.fileURL])
-                    }
-                    .buttonStyle(.link)
-                    .font(.caption)
-                    .fixedSize()
-                }
+                Caption("Hold \(leader.label) and press a key to reach an application. "
+                    + "Pressing it again while that application is in front walks its "
+                    + "windows. Click a key to record another one; F1 to F12 count.")
             }
         }
         .formStyle(.grouped)

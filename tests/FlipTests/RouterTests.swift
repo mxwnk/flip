@@ -183,7 +183,7 @@ final class RouterTests: XCTestCase {
     /// behaviour `ConfigStore.issue` now warns about rather than a wish.
     func testAWindowActionBeatsABindingOnTheSameKeys() {
         var settings = Settings()
-        settings.leader = .optionControl
+        settings.switcher.leader = .optionControl
         router.apply([AppBinding(key: "u", bundleID: "com.example.app")], settings: settings)
 
         XCTAssertNil(router.handle(
@@ -211,7 +211,7 @@ final class RouterTests: XCTestCase {
     /// moves, which is the separation these tests are about.
     private func separateLeaders() -> Settings {
         var settings = Settings()
-        settings.shortcutLeader = .controlCommand
+        settings.shortcuts.leader = .controlCommand
 
         return settings
     }
@@ -260,8 +260,8 @@ final class RouterTests: XCTestCase {
 
     /// Read from the settings rather than typed, so swapping the defaults moves
     /// these tests with them instead of quietly testing the wrong key.
-    private var leaderFlag: CGEventFlags { Settings().leader.flags }
-    private var appSwitcherFlag: CGEventFlags { Settings().appSwitcher.flags }
+    private var leaderFlag: CGEventFlags { Settings().switcher.leader.flags }
+    private var appSwitcherFlag: CGEventFlags { Settings().switcher.applicationLeader.flags }
 
     private func openOverlay() {
         XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_Tab, flags: leaderFlag)))

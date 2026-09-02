@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The application itself. Everything about the grid it draws is on the
@@ -29,12 +30,29 @@ struct GeneralView: View {
             }
 
             Section {
-                Toggle("Check for updates", isOn: $config.settings.checkForUpdates)
+                Toggle("Check for updates", isOn: $config.settings.general.checkForUpdates)
             } footer: {
                 Caption("Asks GitHub once a day whether a newer release exists, and says so in the "
                     + "menu. Nothing is downloaded or installed.")
             }
+
+            Section {
+                Button("Open config.json", systemImage: "doc.text") {
+                    NSWorkspace.shared.open(config.fileURL)
+                }
+                .buttonStyle(.borderless)
+                // Blue whatever the system accent is: this opens something
+                // outside Flip, and the page has nothing else to click.
+                .foregroundStyle(.blue)
+            } footer: {
+                Caption("Everything these pages can change, plus the shortcuts, as readable JSON "
+                    + "in \(folder). An edit made by hand is picked up while Flip runs.")
+            }
         }
         .formStyle(.grouped)
+    }
+
+    private var folder: String {
+        (config.fileURL.deletingLastPathComponent().path as NSString).abbreviatingWithTildeInPath
     }
 }

@@ -73,11 +73,12 @@ private struct SettingsView: View {
             return [CGKeyCode(kVK_Tab)]
         case .shortcuts:
             return Set(config.bindings.compactMap { KeyboardLayout.keyCode(forBinding: $0.key) })
-        case .windows:
+        case .arrange:
             return Set(
                 WindowArrangement.shortcuts(
-                    navigation: config.settings.windowLeader,
-                    displayMove: config.settings.displayMoveModifier
+                    leader: config.settings.arrange.leader,
+                    displayMove: config.settings.arrange.displayMove,
+                    keys: config.settings.arrange.keys
                 )
                     .map(\.keyCode)
             )
@@ -91,12 +92,13 @@ private struct SettingsView: View {
         case .general:
             return []
         case .switcher:
-            return config.settings.leader.flags.union(config.settings.appSwitcher.flags)
+            return config.settings.switcher.leader.flags
+                .union(config.settings.switcher.applicationLeader.flags)
         case .shortcuts:
-            return config.settings.shortcutLeader.flags
-        case .windows:
-            return config.settings.windowLeader.flags
-                .union(config.settings.displayMoveModifier.flags)
+            return config.settings.shortcuts.leader.flags
+        case .arrange:
+            return config.settings.arrange.leader.flags
+                .union(config.settings.arrange.displayMove.flags)
         case .excluded:
             return []
         }
@@ -120,7 +122,7 @@ private struct SettingsView: View {
             Section("Settings") {
                 row(.switcher)
                 row(.shortcuts)
-                row(.windows)
+                row(.arrange)
                 row(.excluded)
             }
         }
@@ -160,7 +162,7 @@ private struct SettingsView: View {
             KeyboardMap(
                 keys: litKeys,
                 modifiers: litModifiers,
-                order: $config.settings.modifierRowOrder
+                order: $config.settings.general.modifierRowOrder
             )
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
@@ -173,7 +175,7 @@ private struct SettingsView: View {
         case .general: GeneralView(config: config)
         case .switcher: SwitcherView(config: config)
         case .shortcuts: ShortcutsView(config: config)
-        case .windows: WindowActionsView(config: config)
+        case .arrange: ArrangeView(config: config)
         case .excluded: ExclusionsView(config: config)
         }
     }

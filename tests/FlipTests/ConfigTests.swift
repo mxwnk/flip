@@ -36,133 +36,178 @@ final class SettingsTests: XCTestCase {
     /// ⌘ opens everything and ⌥ narrows to one application: the switcher people
     /// already reach for stays the big one.
     func testTheDefaultsFollowStockMacOS() throws {
-        XCTAssertEqual(Settings().leader, .command)
-        XCTAssertEqual(Settings().appSwitcher, .option)
+        XCTAssertEqual(Settings().switcher.leader, .command)
+        XCTAssertEqual(Settings().switcher.applicationLeader, .option)
 
-        let swapped = Data(#"{"leader":["option"],"appSwitcher":["command"]}"#.utf8)
+        let swapped = Data(#"{"switcher":{"leader":["option"],"applicationLeader":["command"]}}"#.utf8)
         let decoded = try JSONDecoder().decode(Settings.self, from: swapped)
-        XCTAssertEqual(decoded.leader, .option)
-        XCTAssertEqual(decoded.appSwitcher, .command)
+        XCTAssertEqual(decoded.switcher.leader, .option)
+        XCTAssertEqual(decoded.switcher.applicationLeader, .command)
     }
 
     func testTheTwoHotkeysMustDiffer() {
         var settings = Settings()
-        XCTAssertTrue(settings.isValid)
+        XCTAssertTrue(settings.switcher.isValid)
 
-        settings.appSwitcher = settings.leader
-        XCTAssertFalse(settings.isValid)
+        settings.switcher.applicationLeader = settings.switcher.leader
+        XCTAssertFalse(settings.switcher.isValid)
     }
 
-    func testAFileNamingOnlySomeKeysStillDecodes() throws {
-        let json = Data(#"{"leader":["option"],"appSwitcher":["command"]}"#.utf8)
+    /// A group is a page of the settings window, so a file that names one page
+    /// leaves the other four at their defaults rather than failing.
+    func testAFileNamingOnlySomeGroupsStillDecodes() throws {
+        let json = Data(#"{"switcher":{"leader":["option"]}}"#.utf8)
 
         let decoded = try JSONDecoder().decode(Settings.self, from: json)
 
-        XCTAssertEqual(decoded.leader, .option)
-        XCTAssertTrue(decoded.showThumbnails)
-        XCTAssertEqual(decoded.overlayDelay, .short)
-        XCTAssertTrue(decoded.excludedBundleIDs.isEmpty)
-        XCTAssertFalse(decoded.showWindowsFromEverySpace)
+        XCTAssertEqual(decoded.switcher.leader, .option)
+        XCTAssertTrue(decoded.switcher.showThumbnails)
+        XCTAssertEqual(decoded.switcher.overlayDelay, .short)
+        XCTAssertEqual(decoded.shortcuts.leader, .option)
+        XCTAssertEqual(decoded.arrange.leader, .optionControl)
+        XCTAssertTrue(decoded.general.checkForUpdates)
+        XCTAssertTrue(decoded.excluded.isEmpty)
     }
 
     /// ⇧⌥, not the halves' own modifier: the two share the arrows.
     func testTheDisplayMoveDefaultsToShiftOption() throws {
-        XCTAssertEqual(Settings().displayMoveModifier, .shiftOption)
+        XCTAssertEqual(Settings().arrange.displayMove, .shiftOption)
 
-        let json = Data(#"{"leader":["option"]}"#.utf8)
+        let json = Data(#"{"arrange":{"leader":["option","command"]}}"#.utf8)
         XCTAssertEqual(
-            try JSONDecoder().decode(Settings.self, from: json).displayMoveModifier, .shiftOption
+            try JSONDecoder().decode(Settings.self, from: json).arrange.displayMove, .shiftOption
         )
     }
 
-    func testTheShortcutLeaderIsItsOwnSetting() throws {
+    /// Three groups name a leader, and each one is its own: the switcher's is
+    /// held while you read a grid, the shortcuts' is tapped and let go.
+    func testEachGroupHasItsOwnLeader() throws {
         var settings = Settings()
-        settings.leader = .option
-        settings.shortcutLeader = .controlCommand
+        settings.switcher.leader = .option
+        settings.shortcuts.leader = .controlCommand
+        settings.arrange.leader = .optionCommand
 
         let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
 
-        XCTAssertEqual(round.leader, .option)
-        XCTAssertEqual(round.shortcutLeader, .controlCommand)
-    }
-
-    func testTheWindowActionsDefaultToControlOption() throws {
-        XCTAssertEqual(Settings().windowLeader, .optionControl)
-
-        let json = Data(#"{"leader":["command"]}"#.utf8)
-
-        XCTAssertEqual(
-            try JSONDecoder().decode(Settings.self, from: json).windowLeader, .optionControl
-        )
+        XCTAssertEqual(round.switcher.leader, .option)
+        XCTAssertEqual(round.shortcuts.leader, .controlCommand)
+        XCTAssertEqual(round.arrange.leader, .optionCommand)
     }
 
     func testEveryWindowLeaderSurvivesARoundTrip() throws {
         for choice in ModifierChoice.allCases {
             var settings = Settings()
-            settings.windowLeader = choice
+            settings.arrange.leader = choice
             let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
 
-            XCTAssertEqual(round.windowLeader, choice)
+            XCTAssertEqual(round.arrange.leader, choice)
         }
     }
 
     func testBothDisplayMoveChoicesSurviveARoundTrip() throws {
         for choice in DisplayMoveModifier.allCases {
             var settings = Settings()
-            settings.displayMoveModifier = choice
+            settings.arrange.displayMove = choice
             let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
 
-            XCTAssertEqual(round.displayMoveModifier, choice)
+            XCTAssertEqual(round.arrange.displayMove, choice)
         }
     }
 
     func testWindowsFromEverySpaceIsOffUntilAsked() throws {
-        XCTAssertFalse(Settings().showWindowsFromEverySpace)
+        XCTAssertFalse(Settings().switcher.showWindowsFromEverySpace)
 
         var settings = Settings()
-        settings.showWindowsFromEverySpace = true
+        settings.switcher.showWindowsFromEverySpace = true
         let round = try JSONDecoder().decode(
             Settings.self, from: JSONEncoder().encode(settings)
         )
 
-        XCTAssertTrue(round.showWindowsFromEverySpace)
+        XCTAssertTrue(round.switcher.showWindowsFromEverySpace)
+    }
+
+    /// The file is the settings window on disk: a page per group, and the
+    /// exclusions and bindings where the page that edits them is.
+    func testTheGroupsAreTheSettingsPages() throws {
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: try JSONEncoder().encode(Settings()))
+                as? [String: Any]
+        )
+
+        XCTAssertEqual(Set(object.keys), ["general", "switcher", "shortcuts", "arrange", "excluded"])
+        XCTAssertNotNil((object["shortcuts"] as? [String: Any])?["bindings"])
+        XCTAssertNotNil(object["excluded"] as? [String])
+    }
+
+    /// Every arrangement is in the file, by the name `flip arrange` gives it —
+    /// the keys used to live only in the source.
+    func testEveryArrangementKeyIsInTheFile() throws {
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: try JSONEncoder().encode(Settings()))
+                as? [String: Any]
+        )
+        let keys = try XCTUnwrap(
+            (object["arrange"] as? [String: Any])?["keys"] as? [String: String]
+        )
+
+        XCTAssertEqual(Set(keys.keys), Set(WindowArrangement.allCases.map(\.rawValue)))
+        XCTAssertEqual(keys["left-half"], "left")
+        XCTAssertEqual(keys["maximize"], "return")
+    }
+
+    func testNamingOneArrangementKeyLeavesTheRest() throws {
+        let json = Data(#"{"arrange":{"keys":{"maximize":"m"}}}"#.utf8)
+
+        let decoded = try JSONDecoder().decode(Settings.self, from: json)
+
+        XCTAssertEqual(decoded.arrange.keys[.maximize], "m")
+        XCTAssertEqual(decoded.arrange.keys[.leftHalf], "left")
+        XCTAssertEqual(decoded.arrange.keys.count, WindowArrangement.allCases.count)
+    }
+
+    /// A name no arrangement answers to, like a modifier combination nothing
+    /// offers: the file is wrong and says so.
+    func testAnUnknownArrangementNameIsRejected() {
+        let json = Data(#"{"arrange":{"keys":{"middle":"m"}}}"#.utf8)
+
+        XCTAssertThrowsError(try JSONDecoder().decode(Settings.self, from: json))
     }
 
     /// One vocabulary for every modifier the file names, so a hand edit spells
     /// the switcher's leader the same way it spells the display move.
     func testEveryModifierIsWrittenAsKeywords() throws {
         var settings = Settings()
-        settings.leader = .command
-        settings.windowLeader = .optionControl
-        settings.displayMoveModifier = .allThree
+        settings.switcher.leader = .command
+        settings.arrange.leader = .optionControl
+        settings.arrange.displayMove = .allThree
 
         let json = String(decoding: try JSONEncoder().encode(settings), as: UTF8.self)
 
         XCTAssertTrue(json.contains(#""leader":["command"]"#), json)
-        XCTAssertTrue(json.contains(#""windowLeader":["option","control"]"#), json)
-        XCTAssertTrue(json.contains(#""displayMoveModifier":["command","option","control"]"#), json)
+        XCTAssertTrue(json.contains(#""leader":["option","control"]"#), json)
+        XCTAssertTrue(json.contains(#""displayMove":["command","option","control"]"#), json)
     }
 
     func testKeywordsAreReadInAnyOrder() throws {
-        let json = Data(#"{"windowLeader":["control","option"],"displayMoveModifier":["option","command","control"]}"#.utf8)
+        let json = Data(#"{"arrange":{"leader":["control","option"],"displayMove":["option","command","control"]}}"#.utf8)
 
         let decoded = try JSONDecoder().decode(Settings.self, from: json)
 
-        XCTAssertEqual(decoded.windowLeader, .optionControl)
-        XCTAssertEqual(decoded.displayMoveModifier, .allThree)
+        XCTAssertEqual(decoded.arrange.leader, .optionControl)
+        XCTAssertEqual(decoded.arrange.displayMove, .allThree)
     }
 
     /// A combination the setting does not offer is a broken file, not a silent
     /// reset to the default: the store keeps it for inspection.
     func testACombinationTheSettingDoesNotOfferIsRejected() {
-        let json = Data(#"{"windowLeader":["shift","command"]}"#.utf8)
+        let json = Data(#"{"arrange":{"leader":["shift","command"]}}"#.utf8)
 
         XCTAssertThrowsError(try JSONDecoder().decode(Settings.self, from: json))
     }
 
     /// Keywords and nothing else, so there is one way to write a modifier.
     func testASingleWordIsNotAModifier() {
-        let json = Data(#"{"windowLeader":"option-command"}"#.utf8)
+        let json = Data(#"{"arrange":{"leader":"option-command"}}"#.utf8)
 
         XCTAssertThrowsError(try JSONDecoder().decode(Settings.self, from: json))
     }
@@ -219,6 +264,15 @@ final class ConfigStoreTests: XCTestCase {
         ConfigStore(file: directory().appendingPathComponent("config.json"))
     }
 
+    /// The seed is a binding like any other, so a test about one binding starts
+    /// by saying that it is the only one.
+    private func makeEmptyStore() -> ConfigStore {
+        let store = makeStore()
+        store.settings.shortcuts.bindings = []
+
+        return store
+    }
+
     private func directory() -> URL {
         URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("flip-tests-\(UUID().uuidString)")
@@ -248,7 +302,7 @@ final class ConfigStoreTests: XCTestCase {
     }
 
     func testKeysAreStoredLowercased() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
         store.setKey("S", for: store.bindings[0].id)
 
@@ -257,7 +311,7 @@ final class ConfigStoreTests: XCTestCase {
 
     /// Named keys are longer than one character and must keep their case.
     func testNamedKeysAreLeftAlone() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
         store.setKey("F1", for: store.bindings[0].id)
 
@@ -275,14 +329,14 @@ final class ConfigStoreTests: XCTestCase {
     }
 
     func testAnEmptyApplicationIsReported() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
 
         XCTAssertEqual(store.issue(for: store.bindings[0]), .noApplication)
     }
 
     func testTwoBindingsOnTheSameKeyClash() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
         store.add()
         for binding in store.bindings {
@@ -296,7 +350,7 @@ final class ConfigStoreTests: XCTestCase {
     /// The router matches window actions before bindings, so ⌃⌥ as the leader
     /// makes u i j k and Return unreachable — silently, until this said so.
     func testALeaderThatCollidesWithAWindowActionIsReported() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
         store.setBundleID("com.example.app", for: store.bindings[0].id)
         store.setKey("u", for: store.bindings[0].id)
@@ -310,7 +364,7 @@ final class ConfigStoreTests: XCTestCase {
 
     /// A bare binding never carries the leader, so it cannot collide with one.
     func testABareBindingIsNotAffectedByTheLeader() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
         store.setBundleID("com.example.app", for: store.bindings[0].id)
         store.setKey("u", for: store.bindings[0].id)
@@ -324,7 +378,7 @@ final class ConfigStoreTests: XCTestCase {
     /// The same key is fine on both sides of the modifier: Alt-F1 and a bare F1
     /// are different bindings.
     func testTheSameKeyWithAndWithoutTheLeaderDoesNotClash() {
-        let store = makeStore()
+        let store = makeEmptyStore()
         store.add()
         store.add()
         for binding in store.bindings {
@@ -339,22 +393,22 @@ final class ConfigStoreTests: XCTestCase {
     func testEverySettingAndEveryBindingLiveInTheOneFile() throws {
         let store = makeStore()
         store.load()
-        store.settings.leader = .controlCommand
-        store.settings.showThumbnails = false
+        store.settings.switcher.leader = .controlCommand
+        store.settings.switcher.showThumbnails = false
         store.add()
         store.setKey("5", for: store.bindings.last!.id)
 
         let reopened = ConfigStore(file: store.fileURL)
         reopened.load()
 
-        XCTAssertEqual(reopened.settings.leader, .controlCommand)
-        XCTAssertFalse(reopened.settings.showThumbnails)
+        XCTAssertEqual(reopened.settings.switcher.leader, .controlCommand)
+        XCTAssertFalse(reopened.settings.switcher.showThumbnails)
         XCTAssertEqual(reopened.bindings.last?.key, "5")
     }
 
-    /// Flat, so a hand edit reads as one key per setting rather than as two
-    /// halves of a document.
-    func testTheFileKeepsEverySettingAtTheTopLevel() throws {
+    /// A group per page of the settings window, so a hand edit is found where
+    /// the switch that changes it is.
+    func testTheFileIsGroupedLikeTheSettingsWindow() throws {
         let store = makeStore()
         store.load()
 
@@ -362,9 +416,9 @@ final class ConfigStoreTests: XCTestCase {
             JSONSerialization.jsonObject(with: Data(contentsOf: store.fileURL)) as? [String: Any]
         )
 
-        XCTAssertNotNil(object["leader"])
-        XCTAssertNotNil(object["shortcutLeader"])
-        XCTAssertNotNil(object["bindings"] as? [[String: Any]])
+        XCTAssertEqual(Set(object.keys), ["general", "switcher", "shortcuts", "arrange", "excluded"])
+        XCTAssertNotNil((object["switcher"] as? [String: Any])?["leader"])
+        XCTAssertNotNil((object["shortcuts"] as? [String: Any])?["bindings"] as? [[String: Any]])
     }
 
     /// Seeding is for a file that is not there. Emptying the list is an edit
@@ -430,8 +484,13 @@ final class VersionComparisonTests: XCTestCase {
     }
 
     func testAFileMissingTheUpdateKeyStillChecks() throws {
-        let json = Data(#"{"leader":["option"]}"#.utf8)
+        let json = Data(#"{"switcher":{"leader":["option"]}}"#.utf8)
 
-        XCTAssertTrue(try JSONDecoder().decode(Settings.self, from: json).checkForUpdates)
+        XCTAssertTrue(
+            try JSONDecoder().decode(Settings.self, from: json).general.checkForUpdates
+        )
     }
 }
+
+
+

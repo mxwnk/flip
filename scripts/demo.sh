@@ -51,8 +51,8 @@ restore() {
 import json, sys
 support = sys.argv[1]
 config = json.load(open(f"{support}/config.json"))
-print(f"    exclusions: {config['excludedBundleIDs']}")
-print(f"    bindings:   {len(config['bindings'])}")
+print(f"    exclusions: {config['excluded']}")
+print(f"    bindings:   {len(config['shortcuts']['bindings'])}")
 PY
 }
 trap restore EXIT
@@ -87,13 +87,14 @@ for line in listing:
     (keep if name in names else excluded).add(identifier)
 
 config = json.load(open(f"{support}/config.json"))
-config["excludedBundleIDs"] = sorted(excluded)
+config["excluded"] = sorted(excluded)
 
 taken = {key for key, _ in temporary}
-bindings = [b for b in config["bindings"] if b["key"] not in taken]
+shortcuts = config.setdefault("shortcuts", {})
+bindings = [b for b in shortcuts.get("bindings", []) if b["key"] not in taken]
 bindings += [{"bundleID": bundle, "key": key, "usesLeader": True}
              for key, bundle in temporary]
-config["bindings"] = bindings
+shortcuts["bindings"] = bindings
 json.dump(config, open(f"{support}/config.json", "w"), indent=2, sort_keys=True)
 
 print(f"    showing {len(keep)} applications, hiding {len(excluded)}")

@@ -87,7 +87,7 @@ final class OverlayPresenter: SwitcherPresenting {
     }
 
     private func targetScreens() -> [NSScreen] {
-        switch config.settings.overlayPlacement {
+        switch config.settings.switcher.overlayPlacement {
         case .activeWindow:
             return [ActiveScreen.current()]
         case .primaryDisplay:
@@ -276,7 +276,7 @@ final class OverlayPresenter: SwitcherPresenting {
         switch source {
         case .allWindows:
             // Exclusions apply here only: naming an application by key is explicit.
-            let excluded = Set(config.settings.excludedBundleIDs)
+            let excluded = Set(config.settings.excluded)
             return store.windows(includingMinimized: true, fromEverySpace: everySpace)
                 .filter { window in window.bundleID.map { !excluded.contains($0) } ?? true }
         case .application(let bundleID):
@@ -286,7 +286,7 @@ final class OverlayPresenter: SwitcherPresenting {
         }
     }
 
-    private var everySpace: Bool { config.settings.showWindowsFromEverySpace }
+    private var everySpace: Bool { config.settings.switcher.showWindowsFromEverySpace }
 
     private func open(_ source: Source, step: Int) {
         // Same question: walk the list, do not rebuild it under the selection.
@@ -372,7 +372,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
     /// Selection made, nothing drawn — the fast path the delay exists for.
     private func scheduleReveal() {
-        let delay = config.settings.overlayDelay.seconds
+        let delay = config.settings.switcher.overlayDelay.seconds
         guard delay > 0 else { return show() }
 
         reveal = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
@@ -408,7 +408,7 @@ final class OverlayPresenter: SwitcherPresenting {
     // MARK: - Thumbnails
 
     private func alreadyCaptured(_ windows: [WindowInfo]) -> [CGWindowID: CGImage] {
-        guard config.settings.showThumbnails else { return [:] }
+        guard config.settings.switcher.showThumbnails else { return [:] }
 
         var known: [CGWindowID: CGImage] = [:]
         for window in windows where !window.isMinimized {
@@ -420,7 +420,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
     private func requestMissingThumbnails(for windows: [WindowInfo]) {
         // Off means never captured, which is what makes Screen Recording optional.
-        guard config.settings.showThumbnails else { return }
+        guard config.settings.switcher.showThumbnails else { return }
 
         // Selected tile first.
         let selected = model.selected

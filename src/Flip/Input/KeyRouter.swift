@@ -40,7 +40,8 @@ final class KeyRouter {
     private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
     private var shortcutLeaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var displayMove: DisplayMoveModifier = .shiftOption
-    private var windowLeader: ModifierChoice = .optionControl
+    private var arrangeLeader: ModifierChoice = .optionControl
+    private var arrangeKeys = WindowArrangement.defaultKeys
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
@@ -64,11 +65,12 @@ final class KeyRouter {
         bindingsLock.lock()
         leaderBindings = leader
         bareBindings = bare
-        leaderFlags = settings.leader.flags
-        appSwitcherFlags = settings.appSwitcher.flags
-        shortcutLeaderFlags = settings.shortcutLeader.flags
-        displayMove = settings.displayMoveModifier
-        windowLeader = settings.windowLeader
+        leaderFlags = settings.switcher.leader.flags
+        appSwitcherFlags = settings.switcher.applicationLeader.flags
+        shortcutLeaderFlags = settings.shortcuts.leader.flags
+        displayMove = settings.arrange.displayMove
+        arrangeLeader = settings.arrange.leader
+        arrangeKeys = settings.arrange.keys
         bindingsLock.unlock()
 
         log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare")
@@ -140,12 +142,13 @@ final class KeyRouter {
         // As pressed, not `base`: shift is part of a window binding.
         bindingsLock.lock()
         let displayMoveModifier = displayMove
-        let navigation = windowLeader
+        let arrange = arrangeLeader
+        let keys = arrangeKeys
         bindingsLock.unlock()
 
         if let arrangement = WindowArrangement.matching(
             keyCode: code, modifiers: flags,
-            navigation: navigation, displayMove: displayMoveModifier
+            leader: arrange, displayMove: displayMoveModifier, keys: keys
         ) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil

@@ -36,11 +36,11 @@ final class WindowShortcutTests: XCTestCase {
     private func forEachChoice(
         _ body: (ModifierChoice, DisplayMoveModifier, [WindowShortcut]) -> Void
     ) {
-        for navigation in ModifierChoice.allCases {
+        for leader in ModifierChoice.allCases {
             for move in DisplayMoveModifier.allCases {
                 body(
-                    navigation, move,
-                    WindowArrangement.shortcuts(navigation: navigation, displayMove: move)
+                    leader, move,
+                    WindowArrangement.shortcuts(leader: leader, displayMove: move)
                 )
             }
         }
@@ -51,33 +51,32 @@ final class WindowShortcutTests: XCTestCase {
     func testNoWindowLeaderCanEverBeADisplayMove() {
         let moves = Set(DisplayMoveModifier.allCases.map(\.flags.rawValue))
 
-        for navigation in ModifierChoice.allCases {
-            XCTAssertFalse(moves.contains(navigation.flags.rawValue), "\(navigation)")
+        for leader in ModifierChoice.allCases {
+            XCTAssertFalse(moves.contains(leader.flags.rawValue), "\(leader)")
         }
     }
 
     func testEveryActionHasExactlyOneShortcut() {
-        forEachChoice { navigation, move, shortcuts in
-            XCTAssertEqual(Set(shortcuts.map(\.arrangement)).count, WindowArrangement.allCases.count, "\(navigation)/\(move)")
-            XCTAssertEqual(shortcuts.count, WindowArrangement.allCases.count, "\(navigation)/\(move)")
+        forEachChoice { leader, move, shortcuts in
+            XCTAssertEqual(Set(shortcuts.map(\.arrangement)).count, WindowArrangement.allCases.count, "\(leader)/\(move)")
+            XCTAssertEqual(shortcuts.count, WindowArrangement.allCases.count, "\(leader)/\(move)")
         }
     }
 
     func testNoTwoShortcutsShareAKey() {
-        forEachChoice { navigation, move, shortcuts in
+        forEachChoice { leader, move, shortcuts in
             let combinations = shortcuts.map { "\($0.modifiers.rawValue)-\($0.keyCode)" }
 
-            XCTAssertEqual(Set(combinations).count, combinations.count, "\(navigation)/\(move)")
+            XCTAssertEqual(Set(combinations).count, combinations.count, "\(leader)/\(move)")
         }
     }
 
     func testEveryShortcutIsFoundByItsOwnKey() {
-        forEachChoice { navigation, move, shortcuts in
+        forEachChoice { leader, move, shortcuts in
             for shortcut in shortcuts {
                 XCTAssertEqual(
-                    WindowArrangement.matching(
-                        keyCode: shortcut.keyCode, modifiers: shortcut.modifiers,
-                        navigation: navigation, displayMove: move
+                    WindowArrangement.matching(                        keyCode: shortcut.keyCode, modifiers: shortcut.modifiers,
+                        leader: leader, displayMove: move
                     ),
                     shortcut.arrangement,
                     shortcut.keys
@@ -88,13 +87,12 @@ final class WindowShortcutTests: XCTestCase {
 
     /// The bug in full: the hardware adds fn, and the lookup has to survive it.
     func testShortcutsMatchEvenWithTheFunctionBitSet() {
-        forEachChoice { navigation, move, shortcuts in
+        forEachChoice { leader, move, shortcuts in
             for shortcut in shortcuts {
                 XCTAssertEqual(
-                    WindowArrangement.matching(
-                        keyCode: shortcut.keyCode,
+                    WindowArrangement.matching(                        keyCode: shortcut.keyCode,
                         modifiers: shortcut.modifiers.union(.maskSecondaryFn),
-                        navigation: navigation, displayMove: move
+                        leader: leader, displayMove: move
                     ),
                     shortcut.arrangement,
                     "\(shortcut.keys) with fn"
@@ -108,7 +106,7 @@ final class WindowShortcutTests: XCTestCase {
     /// display move sitting one key away from ⌃⌥← for the left half — so the rule
     /// is about this arrangement, not about matching nothing at all.
     func testAnExtraModifierIsNotAMatch() {
-        forEachChoice { navigation, move, shortcuts in
+        forEachChoice { leader, move, shortcuts in
             for shortcut in shortcuts {
                 // Whichever of the four this shortcut does not already carry.
                 // CGEventFlags is an option set, not a sequence, so the candidates
@@ -118,10 +116,9 @@ final class WindowShortcutTests: XCTestCase {
                 else { continue }
 
                 XCTAssertNotEqual(
-                    WindowArrangement.matching(
-                        keyCode: shortcut.keyCode,
+                    WindowArrangement.matching(                        keyCode: shortcut.keyCode,
                         modifiers: shortcut.modifiers.union(extra),
-                        navigation: navigation, displayMove: move
+                        leader: leader, displayMove: move
                     ),
                     shortcut.arrangement,
                     shortcut.keys
@@ -137,12 +134,11 @@ final class WindowShortcutTests: XCTestCase {
             [.maskControl, .maskAlternate, .maskCommand],
         ]
 
-        forEachChoice { navigation, move, _ in
+        forEachChoice { leader, move, _ in
             for modifiers in held {
-                XCTAssertNil(WindowArrangement.matching(
-                    keyCode: CGKeyCode(kVK_Tab), modifiers: modifiers,
-                    navigation: navigation, displayMove: move
-                ), "\(navigation)/\(move)")
+                XCTAssertNil(WindowArrangement.matching(                    keyCode: CGKeyCode(kVK_Tab), modifiers: modifiers,
+                    leader: leader, displayMove: move
+                ), "\(leader)/\(move)")
             }
         }
     }
@@ -153,17 +149,17 @@ final class WindowShortcutTests: XCTestCase {
     func testTheDisplayMovesNeverCollideWithTheHalves() {
         let moves: Set<WindowArrangement> = [.previousDisplay, .nextDisplay]
 
-        forEachChoice { navigation, move, shortcuts in
+        forEachChoice { leader, move, shortcuts in
             let displays = shortcuts.filter { moves.contains($0.arrangement) }
             let others = shortcuts.filter { !moves.contains($0.arrangement) }
 
-            XCTAssertEqual(displays.count, 2, "\(navigation)/\(move)")
+            XCTAssertEqual(displays.count, 2, "\(leader)/\(move)")
             for display in displays {
                 let taken = others.contains { other in
                     other.keyCode == display.keyCode && other.modifiers == display.modifiers
                 }
 
-                XCTAssertFalse(taken, "\(navigation)/\(move): \(display.keys) is taken")
+                XCTAssertFalse(taken, "\(leader)/\(move): \(display.keys) is taken")
             }
         }
     }
@@ -171,7 +167,7 @@ final class WindowShortcutTests: XCTestCase {
     /// Shift means backwards to the switcher, so a display move carrying it must
     /// not sit on a key the switcher also reads.
     func testTheShiftChoiceStaysOffTheSwitcherKeys() {
-        let shortcuts = WindowArrangement.shortcuts(navigation: .optionControl, displayMove: .shiftOption)
+        let shortcuts = WindowArrangement.shortcuts(leader: .optionControl, displayMove: .shiftOption)
 
         for shortcut in shortcuts where shortcut.modifiers.contains(.maskShift) {
             XCTAssertNotEqual(shortcut.keyCode, CGKeyCode(kVK_Tab), shortcut.keys)
@@ -179,7 +175,7 @@ final class WindowShortcutTests: XCTestCase {
     }
 
     func testTheThreeModifierChoiceUsesAllThree() {
-        let shortcuts = WindowArrangement.shortcuts(navigation: .optionControl, displayMove: .allThree)
+        let shortcuts = WindowArrangement.shortcuts(leader: .optionControl, displayMove: .allThree)
         let displays = shortcuts.filter { $0.keys.contains("⌃⌥⌘") }
 
         XCTAssertEqual(Set(displays.map(\.arrangement)), [.previousDisplay, .nextDisplay])
@@ -237,5 +233,45 @@ final class DisplayMappingTests: XCTestCase {
 
             XCTAssertTrue(right.insetBy(dx: -0.001, dy: -0.001).contains(moved), "\(arrangement)")
         }
+    }
+}
+/// The keys are a setting now, so the table has to follow the file rather than
+/// the constants it was written with.
+final class ArrangeKeyTests: XCTestCase {
+    func testAKeyFromTheConfigurationMovesTheShortcut() {
+        var keys = WindowArrangement.defaultKeys
+        keys[.maximize] = "m"
+
+        let shortcuts = WindowArrangement.shortcuts(
+            leader: .optionControl, displayMove: .shiftOption, keys: keys
+        )
+        let maximize = shortcuts.first { $0.arrangement == .maximize }
+
+        XCTAssertEqual(maximize?.keyCode, KeyboardLayout.keyCode(forBinding: "m"))
+        XCTAssertEqual(maximize?.keys, "⌃⌥M")
+    }
+
+    func testTheKeyItLeavesBehindStopsMatching() {
+        var keys = WindowArrangement.defaultKeys
+        keys[.maximize] = "m"
+
+        XCTAssertNil(WindowArrangement.matching(
+            keyCode: CGKeyCode(kVK_Return), modifiers: ModifierChoice.optionControl.flags,
+            leader: .optionControl, displayMove: .shiftOption, keys: keys
+        ))
+    }
+
+    /// A key the current layout cannot produce drops its row instead of taking
+    /// the whole table down with it.
+    func testAKeyNoKeyboardProducesIsLeftOut() {
+        var keys = WindowArrangement.defaultKeys
+        keys[.maximize] = "nonsense"
+
+        let shortcuts = WindowArrangement.shortcuts(
+            leader: .optionControl, displayMove: .shiftOption, keys: keys
+        )
+
+        XCTAssertEqual(shortcuts.count, WindowArrangement.allCases.count - 1)
+        XCTAssertFalse(shortcuts.contains { $0.arrangement == .maximize })
     }
 }

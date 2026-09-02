@@ -29,12 +29,12 @@ enum Diagnostics {
         lines.append("Window ids: \(canReadWindowIDs ? "available" : "UNSUPPORTED ON THIS SYSTEM")")
         lines.append("")
 
-        lines.append("Switch windows with: \(settings.leader.label)")
-        lines.append("Switch within an application with: \(settings.appSwitcher.label)")
-        lines.append("Overlay delay: \(settings.overlayDelay.label)")
-        lines.append("Thumbnails: \(settings.showThumbnails ? "on" : "off")")
+        lines.append("Switch windows with: \(settings.switcher.leader.label)")
+        lines.append("Switch within an application with: \(settings.switcher.applicationLeader.label)")
+        lines.append("Overlay delay: \(settings.switcher.overlayDelay.label)")
+        lines.append("Thumbnails: \(settings.switcher.showThumbnails ? "on" : "off")")
         lines.append("Shortcuts: \(bindingCount)")
-        lines.append("Excluded applications: \(settings.excludedBundleIDs.count)")
+        lines.append("Excluded applications: \(settings.excluded.count)")
         lines.append("Windows tracked: \(windowCount)")
         lines.append("")
 

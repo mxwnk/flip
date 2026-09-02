@@ -5,11 +5,19 @@ import Foundation
 /// Characters to the physical keys that produce them. Hard-coded kVK_ANSI_*
 /// would bind the wrong key: QWERTZ types "z" where QWERTY says "y".
 enum KeyboardLayout {
-    private static let namedKeys: [String: CGKeyCode] = [
-        "F1": CGKeyCode(kVK_F1), "F2": CGKeyCode(kVK_F2), "F3": CGKeyCode(kVK_F3),
-        "F4": CGKeyCode(kVK_F4), "F5": CGKeyCode(kVK_F5), "F6": CGKeyCode(kVK_F6),
-        "F7": CGKeyCode(kVK_F7), "F8": CGKeyCode(kVK_F8), "F9": CGKeyCode(kVK_F9),
-        "F10": CGKeyCode(kVK_F10), "F11": CGKeyCode(kVK_F11), "F12": CGKeyCode(kVK_F12),
+    /// The keys that produce no character of their own. The name is what a
+    /// binding and an arrangement are written as in config.json; the symbol is
+    /// what the settings window draws on the keycap.
+    private static let namedKeys: [(name: String, code: CGKeyCode, symbol: String)] = [
+        ("f1", CGKeyCode(kVK_F1), "F1"), ("f2", CGKeyCode(kVK_F2), "F2"),
+        ("f3", CGKeyCode(kVK_F3), "F3"), ("f4", CGKeyCode(kVK_F4), "F4"),
+        ("f5", CGKeyCode(kVK_F5), "F5"), ("f6", CGKeyCode(kVK_F6), "F6"),
+        ("f7", CGKeyCode(kVK_F7), "F7"), ("f8", CGKeyCode(kVK_F8), "F8"),
+        ("f9", CGKeyCode(kVK_F9), "F9"), ("f10", CGKeyCode(kVK_F10), "F10"),
+        ("f11", CGKeyCode(kVK_F11), "F11"), ("f12", CGKeyCode(kVK_F12), "F12"),
+        ("left", CGKeyCode(kVK_LeftArrow), "←"), ("right", CGKeyCode(kVK_RightArrow), "→"),
+        ("up", CGKeyCode(kVK_UpArrow), "↑"), ("down", CGKeyCode(kVK_DownArrow), "↓"),
+        ("return", CGKeyCode(kVK_Return), "↩"),
     ]
 
     private static let lock = NSLock()
@@ -31,14 +39,24 @@ enum KeyboardLayout {
     static func keyCode(forBinding key: String) -> CGKeyCode? {
         if key.count == 1, let character = key.first { return keyCode(for: character) }
 
-        return namedKeys[key.uppercased()]
+        return named(key)?.code
+    }
+
+    /// What to draw on a keycap: an arrow rather than the word for it, and the
+    /// character itself for everything a keyboard types.
+    static func symbol(forBinding key: String) -> String {
+        named(key)?.symbol ?? key.uppercased()
+    }
+
+    private static func named(_ key: String) -> (name: String, code: CGKeyCode, symbol: String)? {
+        namedKeys.first { $0.name.caseInsensitiveCompare(key) == .orderedSame }
     }
 
     /// The inverse, for writing down a key that was pressed. Named keys win: F1
-    /// is stored as "F1" rather than as whatever the layout says that key types,
+    /// is stored as "f1" rather than as whatever the layout says that key types,
     /// which on some of them is a character nobody can produce on purpose.
     static func bindingKey(for code: CGKeyCode) -> String? {
-        if let named = namedKeys.first(where: { $0.value == code })?.key { return named }
+        if let named = namedKeys.first(where: { $0.code == code })?.name { return named }
         guard let character = character(for: code) else { return nil }
 
         return String(character)
