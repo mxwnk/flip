@@ -23,8 +23,11 @@ REQUIREMENT := resources/designated-requirement.txt
 STAGING   := build/dmg
 DMG       := build/$(APP_NAME)-$(VERSION).dmg
 INSTALLED := $(HOME)/Applications/$(APP_NAME).app
+# The command of the copy that is actually running, so asking about its grants
+# asks about the bundle TCC has an opinion about.
+INSTALLED_CLI := $(INSTALLED)/Contents/Helpers/flip
 
-.PHONY: all cert uncert build bundle sign install run stop restart logs test smoke icon dmg dmg-layout verify settings login link unlink clean
+.PHONY: all cert uncert build bundle sign install run stop restart logs test smoke icon dmg dmg-layout verify permissions permissions-reset settings login link unlink clean
 
 all: install
 
@@ -167,6 +170,24 @@ verify: sign
 		diff $(REQUIREMENT) build/requirement.actual; \
 		exit 1; \
 	fi
+
+## permissions: report both privacy grants, and open the panes if one is missing
+# Granting itself cannot be scripted. TCC's database is protected by SIP, and
+# only the switch in System Settings writes to it — every "grant it from the
+# terminal" recipe either needs SIP off or is a way to lose the grants entirely.
+# Asked of the running copy over the socket, because a grant belongs to the
+# application's signature and the command has its own.
+permissions:
+	@$(INSTALLED_CLI) permissions || $(MAKE) --no-print-directory settings
+
+## permissions-reset: revoke both grants, to grant them again from scratch
+# The repair for a grant macOS still lists but no longer honours, which is what a
+# copy replaced outside the installer leaves behind. Flip has to be restarted
+# afterwards: the event tap is gone the moment Accessibility is.
+permissions-reset:
+	@tccutil reset Accessibility $(BUNDLE_ID)
+	@tccutil reset ScreenCapture $(BUNDLE_ID)
+	@echo "Both revoked. Now: make restart, then grant them again with make permissions."
 
 ## settings: open the two privacy panes Flip needs
 settings:

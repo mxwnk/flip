@@ -10,6 +10,7 @@ public enum ControlCommand: Codable, Sendable {
     case switcher
     case pause
     case resume
+    case permissions
 
     public var isPause: Bool {
         if case .pause = self { return true }
@@ -31,8 +32,24 @@ public struct ControlWindow: Codable, Sendable {
     }
 }
 
+/// The two privacy grants as the application sees them for its own signature,
+/// which is the only copy TCC has an opinion about: the command is a separate
+/// binary and would answer for itself.
+public struct ControlPermissions: Codable, Sendable {
+    public let accessibility: Bool
+    public let screenRecording: Bool
+
+    public init(accessibility: Bool, screenRecording: Bool) {
+        self.accessibility = accessibility
+        self.screenRecording = screenRecording
+    }
+
+    public var isComplete: Bool { accessibility && screenRecording }
+}
+
 public enum ControlResponse: Codable, Sendable {
     case windows([ControlWindow])
+    case permissions(ControlPermissions)
     case ok
     case failure(String)
 }

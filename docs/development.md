@@ -4,11 +4,12 @@ Conventions and the invariants that break silently are in
 [AGENTS.md](../AGENTS.md).
 
 ```sh
-make cert       # once, interactive: creates the signing identity
-make run        # build, sign, install to ~/Applications, launch
-make test       # 81 unit tests
-make smoke      # 30 checks against a running copy, before a release
-make logs       # follow along; almost everything interesting is logged
+make cert         # once, interactive: creates the signing identity
+make run          # build, sign, install to ~/Applications, launch
+make test         # 127 unit tests
+make smoke        # 30 checks against a running copy, before a release
+make logs         # follow along; almost everything interesting is logged
+make permissions  # report Accessibility and Screen Recording
 ```
 
 SwiftPM compiles and the Makefile assembles the bundle, so Xcode is needed only
@@ -40,6 +41,28 @@ granted again after every install.
 Signing against a certificate pins the requirement to the bundle identifier
 instead. `make verify` checks it against `resources/designated-requirement.txt`,
 and the release pipeline refuses to package a build where it has drifted.
+
+## The two privacy grants
+
+Both are keyed to the application's signature, so they are asked of the running
+copy over the socket: the command is a separate binary and would answer for
+itself.
+
+```sh
+make permissions        # report both, and open the panes for what is missing
+make permissions-reset  # revoke both, to grant them again from scratch
+```
+
+Granting is the one step that cannot be scripted. The database behind those
+switches is protected by SIP — `tccutil` only resets, and anything that writes to
+it directly needs SIP off and leaves a row macOS then declines to honour. What is
+scriptable is the check: `flip permissions` exits nonzero when one is missing, so
+a setup script can stop and say which, rather than starting a Flip that quietly
+does nothing.
+
+Reset is the repair for a grant macOS still lists but no longer honours, which is
+what replacing the app outside the installer leaves behind. Flip has to be
+restarted afterwards: the event tap is gone the moment Accessibility is.
 
 ## Why it is quick
 

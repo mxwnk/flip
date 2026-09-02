@@ -23,6 +23,13 @@ key did nothing. It now answers to whichever modifier is holding the grid open,
 and the same goes for Return. A window action still wins: ⌃⌥↩ fills the window
 behind the grid rather than committing.
 
+**`flip permissions` reports what macOS has granted**, and exits nonzero when
+something is missing — enough for a setup script to stop and say which, instead of
+starting a Flip that quietly does nothing. It asks the running application rather
+than answering for itself: a grant belongs to Flip's signature, and the command
+has its own. Granting still cannot be scripted, and nothing that claims otherwise
+should be trusted with it.
+
 ## 1.5.1
 
 **Flip could refuse to launch at all, and then refuse to stay gone.** It reads a
