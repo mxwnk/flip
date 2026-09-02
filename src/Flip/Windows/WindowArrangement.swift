@@ -204,7 +204,7 @@ enum WindowArranger {
     }
 
     private static func moved(_ window: CGRect, from screen: NSScreen, by step: Int) -> CGRect? {
-        let screens = NSScreen.screens
+        let screens = ScreenGeometry.inArrangementOrder(NSScreen.screens, by: \.frame)
         guard screens.count > 1, let index = screens.firstIndex(of: screen) else { return nil }
 
         let target = screens[(index + step % screens.count + screens.count) % screens.count]

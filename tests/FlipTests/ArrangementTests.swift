@@ -196,3 +196,27 @@ final class FillToggleTests: XCTestCase {
         }
     }
 }
+
+/// Which display is "next". The window server hands them over in the order it
+/// registered them, which is by display number and not by where they stand.
+final class DisplayOrderTests: XCTestCase {
+    private func order(_ frames: [CGRect]) -> [CGRect] {
+        ScreenGeometry.inArrangementOrder(frames) { $0 }
+    }
+
+    func testDisplaysAreOrderedLeftToRight() {
+        let left = CGRect(x: -1920, y: 0, width: 1920, height: 1080)
+        let middle = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        let right = CGRect(x: 1920, y: 0, width: 1920, height: 1080)
+
+        XCTAssertEqual(order([middle, right, left]), [left, middle, right])
+    }
+
+    /// Cocoa measures upwards, so the display standing above has the larger y.
+    func testDisplaysInAColumnAreOrderedTopToBottom() {
+        let top = CGRect(x: 0, y: 1080, width: 1920, height: 1080)
+        let bottom = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+
+        XCTAssertEqual(order([bottom, top]), [top, bottom])
+    }
+}

@@ -35,6 +35,18 @@ enum ScreenGeometry {
         )
     }
 
+    /// Left to right, then top to bottom, which is how the displays are laid out
+    /// in System Settings. `NSScreen.screens` is the order the window server
+    /// registered them in, so stepping through it moves by display number
+    /// instead — and the display to the right is as likely to be behind you.
+    nonisolated static func inArrangementOrder<T>(_ items: [T], by frame: (T) -> CGRect) -> [T] {
+        items.sorted {
+            let (one, other) = (frame($0), frame($1))
+
+            return one.minX == other.minX ? one.minY > other.minY : one.minX < other.minX
+        }
+    }
+
     static func screen(containing cocoaRect: CGRect) -> NSScreen? {
         let centre = CGPoint(x: cocoaRect.midX, y: cocoaRect.midY)
 

@@ -33,6 +33,12 @@ than a word per setting with a spelling of its own. The words are `command`,
 setting does not offer is an error rather than a silent fallback: Flip logs it,
 runs on the defaults and leaves the file alone for you to look at.
 
+**Moving a window to the next display follows the arrangement.** It stepped
+through the displays in the order the window server hands them over, which is by
+display number: with two screens side by side, ⇧⌥→ was as likely to send the
+window left as right, and on three it was anyone's guess. They are now ordered
+the way they stand in System Settings — left to right, then top to bottom.
+
 **⌘Tab now opens the switcher, and ⌥Tab narrows to the application in front.**
 The two were the other way round, which meant the first thing anybody had to
 learn was that the key they had used for years now did something else. ⌘Tab is
