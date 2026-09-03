@@ -481,6 +481,31 @@ final class ConfigStoreTests: XCTestCase {
 
         XCTAssertEqual(store.bindings.count, before - 1)
     }
+
+    func testEditingLayoutsViaStore() throws {
+        let store = makeStore()
+        store.load()
+        XCTAssertTrue(store.settings.arrange.layouts.isEmpty)
+
+        var layout = WindowLayout(name: "workspace", key: "w")
+        layout.rules.append(LayoutRule(bundleID: "com.apple.Terminal", display: "primary", arrangement: .maximize))
+        store.addLayout(layout)
+        XCTAssertEqual(store.settings.arrange.layouts.count, 1)
+        XCTAssertEqual(store.settings.arrange.layouts[0].name, "workspace")
+
+        var updated = store.settings.arrange.layouts[0]
+        updated.name = "workspace-edited"
+        store.updateLayout(updated)
+        XCTAssertEqual(store.settings.arrange.layouts[0].name, "workspace-edited")
+
+        let reopened = ConfigStore(file: store.fileURL)
+        reopened.load()
+        XCTAssertEqual(reopened.settings.arrange.layouts.count, 1)
+        XCTAssertEqual(reopened.settings.arrange.layouts[0].name, "workspace-edited")
+
+        store.removeLayout(updated.id)
+        XCTAssertTrue(store.settings.arrange.layouts.isEmpty)
+    }
 }
 
 final class VersionComparisonTests: XCTestCase {

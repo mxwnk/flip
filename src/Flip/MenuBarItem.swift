@@ -9,27 +9,31 @@ final class MenuBarItem: NSObject {
     private var inputWorking = true
     private var canReadWindowIDs = true
     private var availableUpdate: String?
+    private var layouts: [WindowLayout] = []
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
     private let onShowAbout: () -> Void
     private let onCopyDiagnostics: () -> Void
     private let onTogglePause: () -> Void
+    private let onApplyLayout: (String) -> Void
 
     init(
         onShowSettings: @escaping () -> Void,
         onShowUpdate: @escaping () -> Void,
         onShowAbout: @escaping () -> Void,
         onCopyDiagnostics: @escaping () -> Void,
-        onTogglePause: @escaping () -> Void
+        onTogglePause: @escaping () -> Void,
+        onApplyLayout: @escaping (String) -> Void
     ) {
         self.onShowSettings = onShowSettings
         self.onShowUpdate = onShowUpdate
         self.onShowAbout = onShowAbout
         self.onCopyDiagnostics = onCopyDiagnostics
         self.onTogglePause = onTogglePause
+        self.onApplyLayout = onApplyLayout
         super.init()
 
-        update(for: status, paused: false, inputWorking: true, canReadWindowIDs: true)
+        update(for: status, paused: false, inputWorking: true, canReadWindowIDs: true, layouts: [])
     }
 
     /// A switcher without Accessibility looks like a broken keyboard, so the
@@ -39,11 +43,13 @@ final class MenuBarItem: NSObject {
         for status: Permissions.Status,
         paused: Bool,
         inputWorking: Bool,
-        canReadWindowIDs: Bool
+        canReadWindowIDs: Bool,
+        layouts: [WindowLayout] = []
     ) {
         self.status = status
         self.inputWorking = inputWorking
         self.canReadWindowIDs = canReadWindowIDs
+        self.layouts = layouts
         isPaused = paused
 
         let symbol: String
@@ -103,6 +109,27 @@ final class MenuBarItem: NSObject {
             menu.addItem(action("Open Privacy Settings…", #selector(openPrivacySettings)))
         }
 
+        if !layouts.isEmpty {
+            menu.addItem(.separator())
+            let layoutsItem = NSMenuItem(title: "Layouts", action: nil, keyEquivalent: "")
+            let layoutsSubmenu = NSMenu()
+            for layout in layouts {
+                let item = NSMenuItem(
+                    title: layout.name,
+                    action: #selector(applyLayoutAction(_:)),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = layout.name
+                if let key = layout.key, !key.isEmpty {
+                    item.toolTip = "Shortcut: ⌃⌥\(key.uppercased())"
+                }
+                layoutsSubmenu.addItem(item)
+            }
+            layoutsItem.submenu = layoutsSubmenu
+            menu.addItem(layoutsItem)
+        }
+
         menu.addItem(.separator())
         let pause = action(isPaused ? "Resume" : "Pause", #selector(togglePause))
         pause.state = isPaused ? .on : .off
@@ -119,6 +146,11 @@ final class MenuBarItem: NSObject {
         menu.addItem(action("Quit Flip", #selector(quit), keyEquivalent: "q"))
 
         return menu
+    }
+
+    @objc private func applyLayoutAction(_ sender: NSMenuItem) {
+        guard let name = sender.representedObject as? String else { return }
+        onApplyLayout(name)
     }
 
     /// A report, not a control: grants can only be given in System Settings.

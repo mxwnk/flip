@@ -76,9 +76,13 @@ final class FlipApp: NSObject, NSApplicationDelegate {
                 Diagnostics.copyToPasteboard(diagnostics())
                 log.notice("diagnostics copied to the clipboard")
             },
-            onTogglePause: { [weak self] in self?.togglePause() }
+            onTogglePause: { [weak self] in self?.togglePause() },
+            onApplyLayout: { [weak self] name in
+                guard let self, let matched = layouts.layout(named: name) else { return }
+                store.applyLayout(matched)
+            }
         )
-        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking, canReadWindowIDs: canReadWindowIDs)
+        updateMenuBar()
 
         updates.onFound = { [weak self] in
             guard let self else { return }
@@ -101,13 +105,23 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func updateMenuBar() {
+        menuBar?.update(
+            for: status,
+            paused: isPaused,
+            inputWorking: inputWorking,
+            canReadWindowIDs: canReadWindowIDs,
+            layouts: config.settings.arrange.layouts
+        )
+    }
+
     private func reportIfChanged() {
         let latest = Permissions.current()
         guard latest != status else { return }
 
         status = latest
         Permissions.report(latest)
-        menuBar?.update(for: latest, paused: isPaused, inputWorking: inputWorking, canReadWindowIDs: canReadWindowIDs)
+        updateMenuBar()
 
         // Accessibility usually arrives after the first launch.
         startWindowStoreIfPermitted()
@@ -135,7 +149,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         // An overlay left on screen would have no keys to close it.
         if isPaused { presenter.cancel(); router?.overlayDidClose() }
 
-        menuBar?.update(for: status, paused: isPaused, inputWorking: inputWorking, canReadWindowIDs: canReadWindowIDs)
+        updateMenuBar()
         log.notice("\(self.isPaused ? "paused" : "resumed", privacy: .public)")
     }
 
@@ -287,6 +301,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
             layouts.update(to: config.settings.arrange.layouts)
             router.apply(config.bindings, settings: config.settings)
+            updateMenuBar()
         }
         reapply()
         config.onChange = reapply
@@ -300,7 +315,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         guard running != inputWorking else { return }
 
         inputWorking = running
-        menuBar?.update(for: status, paused: isPaused, inputWorking: running, canReadWindowIDs: canReadWindowIDs)
+        updateMenuBar()
     }
 
     /// Usually a grant that has not propagated yet. Every fifth poll, so a
