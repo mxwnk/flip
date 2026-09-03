@@ -45,8 +45,8 @@ final class ControlTests: XCTestCase {
 
     func testTheCommandsSurviveTheWire() throws {
         let commands: [ControlCommand] = [
-            .list, .focus(4711), .arrange("left-half"), .switcher, .pause, .resume,
-            .permissions,
+            .list, .focus(4711), .arrange("left-half"), .layout("coding"), .listLayouts,
+            .switcher, .pause, .resume, .permissions,
         ]
 
         for command in commands {
@@ -66,6 +66,7 @@ final class ControlTests: XCTestCase {
         let responses: [ControlResponse] = [
             .windows([ControlWindow(id: 7, app: "Finder", title: "Downloads", minimized: false)]),
             .permissions(ControlPermissions(accessibility: true, screenRecording: false)),
+            .layouts(["coding", "meeting"]),
             .ok,
             .failure("no window with id 7"),
         ]

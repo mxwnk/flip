@@ -12,6 +12,8 @@ USAGE
   flip list                    every window as JSON, most recently used first
   flip focus <id>              bring the window with that id forward
   flip arrange <where>         move the focused window
+  flip layout <name>           apply a window layout preset
+  flip layout list             list configured layout presets
   flip switch                  open the switcher
   flip permissions             report both privacy grants, nonzero if one is missing
   flip pause                   hand ⌘Tab back to macOS
@@ -24,6 +26,7 @@ EXAMPLES
   flip list | jq -r '.[] | "\\(.id)\\t\\(.app)\\t\\(.title)"'
   flip focus "$(flip list | jq '.[1].id')"
   flip arrange left-half
+  flip layout coding
 """
 
 func fail(_ message: String) -> Never {
@@ -59,6 +62,12 @@ case "arrange":
         fail("unknown arrangement '\(where_)' — try one of: \(ControlArrangement.names.joined(separator: ", "))")
     }
     command = .arrange(where_)
+
+case "layout":
+    guard let subcommand = arguments.first else {
+        fail("layout needs a preset name or 'list' — run `flip layout list`")
+    }
+    command = subcommand == "list" ? .listLayouts : .layout(subcommand)
 
 case "switch":
     command = .switcher
@@ -109,6 +118,15 @@ case .permissions(let granted):
     // A missing grant is not an error to report but an answer to act on, so it
     // leaves through the status rather than through `fail`.
     exit(granted.isComplete ? 0 : 1)
+
+case .layouts(let names):
+    if names.isEmpty {
+        print("no layouts configured in settings")
+    } else {
+        for name in names {
+            print(name)
+        }
+    }
 
 case .ok:
     // Silence on success, so it composes in a script without being filtered out.

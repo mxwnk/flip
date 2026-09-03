@@ -256,6 +256,23 @@ final class RouterTests: XCTestCase {
         XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_ANSI_A, flags: .maskAlternate)))
     }
 
+    func testLayoutPresetKeyInvokesCallbackAndSwallows() {
+        var settings = Settings()
+        settings.arrange.layouts = [
+            WindowLayout(name: "coding", key: "1", rules: [])
+        ]
+        router.apply([], settings: settings)
+
+        var triggeredLayout: String?
+        router.onApplyLayout = { name in
+            triggeredLayout = name
+        }
+
+        let event = key(kVK_ANSI_1, flags: settings.arrange.leader.flags)
+        XCTAssertNil(router.handle(type: .keyDown, event: event))
+        XCTAssertEqual(triggeredLayout, "coding")
+    }
+
     // MARK: - Helpers
 
     /// Read from the settings rather than typed, so swapping the defaults moves

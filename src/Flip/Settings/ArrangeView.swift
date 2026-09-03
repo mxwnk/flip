@@ -59,6 +59,25 @@ struct ArrangeView: View {
                         + "sit as a square on the keyboard.")
                 }
             }
+
+            if !config.settings.arrange.layouts.isEmpty {
+                Section {
+                    ForEach(config.settings.arrange.layouts) { layout in
+                        LabeledContent(layout.name) {
+                            if let key = layout.key, !key.isEmpty {
+                                Keycap("\(leader.label) \(key.uppercased())")
+                            } else {
+                                Text("\(layout.rules.count) rules")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Layout presets")
+                } footer: {
+                    Caption("Trigger configured layouts with their shortcut or via `flip layout <name>`.")
+                }
+            }
         }
         .formStyle(.grouped)
     }

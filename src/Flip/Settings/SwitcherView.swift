@@ -68,6 +68,16 @@ struct SwitcherView: View {
                     ? "Choosing one switches to its space. A space's windows are learned the first time you visit it."
                     : "Only the space you are looking at. Minimised windows are listed either way.")
             }
+
+            Section {
+                Toggle(
+                    "Group windows by application",
+                    isOn: $config.settings.switcher.groupWindowsByApp
+                )
+            } footer: {
+                Caption("Windows of the same application appear together in the switcher, "
+                    + "ordered by most recently used application.")
+            }
         }
         .formStyle(.grouped)
     }

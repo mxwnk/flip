@@ -52,4 +52,26 @@ enum ScreenGeometry {
 
         return NSScreen.screens.first { $0.frame.contains(centre) } ?? NSScreen.main
     }
+
+    /// Resolves a display: "primary", "main", "secondary", or a 1-based arrangement index ("1", "2").
+    static func screen(matching description: String) -> NSScreen? {
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else { return nil }
+
+        let normalized = description.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalized == "primary" || normalized == "main" {
+            return primary
+        }
+
+        let ordered = inArrangementOrder(screens, by: \.frame)
+        if normalized == "secondary" {
+            return ordered.first { $0 != primary }
+        }
+
+        if let index = Int(normalized), index >= 1, index <= ordered.count {
+            return ordered[index - 1]
+        }
+
+        return nil
+    }
 }

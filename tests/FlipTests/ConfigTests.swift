@@ -79,6 +79,44 @@ final class SettingsTests: XCTestCase {
         )
     }
 
+    func testGroupWindowsByAppDefaultsToFalse() {
+        XCTAssertFalse(Settings().switcher.groupWindowsByApp)
+    }
+
+    func testGroupWindowsByAppSurvivesRoundTrip() throws {
+        var settings = Settings()
+        settings.switcher.groupWindowsByApp = true
+
+        let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+        XCTAssertTrue(round.switcher.groupWindowsByApp)
+    }
+
+    func testLayoutPresetsSurviveRoundTrip() throws {
+        var settings = Settings()
+        settings.arrange.layouts = [
+            WindowLayout(
+                name: "coding",
+                key: "1",
+                rules: [
+                    LayoutRule(bundleID: "com.apple.dt.Xcode", display: "1", arrangement: .maximize),
+                    LayoutRule(bundleID: "com.apple.Safari", display: "2", arrangement: .leftHalf),
+                ]
+            )
+        ]
+
+        let round = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings))
+        XCTAssertEqual(round.arrange.layouts.count, 1)
+        XCTAssertEqual(round.arrange.layouts[0].name, "coding")
+        XCTAssertEqual(round.arrange.layouts[0].key, "1")
+        XCTAssertEqual(round.arrange.layouts[0].rules.count, 2)
+        XCTAssertEqual(round.arrange.layouts[0].rules[0].bundleID, "com.apple.dt.Xcode")
+        XCTAssertEqual(round.arrange.layouts[0].rules[0].display, "1")
+        XCTAssertEqual(round.arrange.layouts[0].rules[0].arrangement, .maximize)
+        XCTAssertEqual(round.arrange.layouts[0].rules[1].bundleID, "com.apple.Safari")
+        XCTAssertEqual(round.arrange.layouts[0].rules[1].display, "2")
+        XCTAssertEqual(round.arrange.layouts[0].rules[1].arrangement, .leftHalf)
+    }
+
     /// Three groups name a leader, and each one is its own: the switcher's is
     /// held while you read a grid, the shortcuts' is tapped and let go.
     func testEachGroupHasItsOwnLeader() throws {
