@@ -188,6 +188,21 @@ final class ConfigStore: ObservableObject {
         settings.excluded.removeAll { $0 == bundleID }
     }
 
+    // MARK: - Editing layouts
+
+    func addLayout(_ layout: WindowLayout = WindowLayout(name: "New Layout")) {
+        settings.arrange.layouts.append(layout)
+    }
+
+    func updateLayout(_ layout: WindowLayout) {
+        guard let index = settings.arrange.layouts.firstIndex(where: { $0.id == layout.id }) else { return }
+        settings.arrange.layouts[index] = layout
+    }
+
+    func removeLayout(_ id: UUID) {
+        settings.arrange.layouts.removeAll { $0.id == id }
+    }
+
     // MARK: - Problems worth showing
 
     enum Issue: Equatable {

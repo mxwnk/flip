@@ -304,30 +304,48 @@ struct ArrangeSettings: Codable, Equatable {
 }
 
 /// A rule placing an application's windows on a specific display with an arrangement.
-struct LayoutRule: Codable, Equatable {
+struct LayoutRule: Codable, Equatable, Identifiable {
+    var id = UUID()
     var bundleID: String
     var display: String
     var arrangement: WindowArrangement
 
-    init(bundleID: String, display: String = "primary", arrangement: WindowArrangement) {
+    enum CodingKeys: String, CodingKey {
+        case bundleID, display, arrangement
+    }
+
+    init(id: UUID = UUID(), bundleID: String, display: String = "primary", arrangement: WindowArrangement) {
+        self.id = id
         self.bundleID = bundleID
         self.display = display
         self.arrangement = arrangement
+    }
+
+    static func == (lhs: LayoutRule, rhs: LayoutRule) -> Bool {
+        lhs.bundleID == rhs.bundleID && lhs.display == rhs.display && lhs.arrangement == rhs.arrangement
     }
 }
 
 /// A named preset of window rules, optionally triggerable with an arrangement key.
 struct WindowLayout: Codable, Equatable, Identifiable {
+    var id = UUID()
     var name: String
     var key: String?
     var rules: [LayoutRule]
 
-    var id: String { name }
+    enum CodingKeys: String, CodingKey {
+        case name, key, rules
+    }
 
-    init(name: String, key: String? = nil, rules: [LayoutRule] = []) {
+    init(id: UUID = UUID(), name: String, key: String? = nil, rules: [LayoutRule] = []) {
+        self.id = id
         self.name = name
         self.key = key
         self.rules = rules
+    }
+
+    static func == (lhs: WindowLayout, rhs: WindowLayout) -> Bool {
+        lhs.name == rhs.name && lhs.key == rhs.key && lhs.rules == rhs.rules
     }
 }
 
