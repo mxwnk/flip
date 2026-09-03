@@ -25,6 +25,7 @@ struct OverlayView: View {
                                 window: window,
                                 thumbnail: model.thumbnails[window.id],
                                 isSelected: window.id == selectedID,
+                                isSibling: window.bundleID == selectedBundleID && window.id != selectedID,
                                 layout: model.layout
                             )
                         }
@@ -48,6 +49,10 @@ struct OverlayView: View {
         model.windows.indices.contains(model.selected) ? model.windows[model.selected].id : nil
     }
 
+    private var selectedBundleID: String? {
+        model.windows.indices.contains(model.selected) ? model.windows[model.selected].bundleID : nil
+    }
+
     /// The layout fixes the column count, so the flat list is cut to match.
     private var rows: [[WindowInfo]] {
         stride(from: 0, to: model.windows.count, by: max(model.layout.columns, 1)).map { start in
@@ -60,6 +65,7 @@ private struct TileView: View {
     let window: WindowInfo
     let thumbnail: CGImage?
     let isSelected: Bool
+    let isSibling: Bool
     let layout: OverlayLayout
 
     var body: some View {
@@ -91,10 +97,13 @@ private struct TileView: View {
         .frame(width: layout.tileWidth, height: layout.tileHeight)
         .background(
             RoundedRectangle(cornerRadius: Theme.tileRadius)
-                .fill(isSelected ? Theme.selectedTile : Theme.tile)
+                .fill(isSelected ? Theme.selectedTile : (isSibling ? Theme.siblingTile : Theme.tile))
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.tileRadius)
-                        .strokeBorder(isSelected ? Theme.selectedStroke : .clear, lineWidth: 2)
+                        .strokeBorder(
+                            isSelected ? Theme.selectedStroke : (isSibling ? Theme.siblingStroke : .clear),
+                            lineWidth: isSelected ? 2 : 1
+                        )
                 )
         )
     }

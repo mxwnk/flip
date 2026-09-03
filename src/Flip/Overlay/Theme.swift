@@ -28,7 +28,9 @@ enum Theme {
     static let panelStroke = Color.white.opacity(0.10)
     static let tile = Color.white.opacity(0.05)
     static let selectedTile = Color.white.opacity(0.16)
+    static let siblingTile = Color.white.opacity(0.09)
     static let selectedStroke = Color(red: 0.04, green: 0.52, blue: 1.0).opacity(0.95)
+    static let siblingStroke = Color(red: 0.04, green: 0.52, blue: 1.0).opacity(0.35)
     static let thumbnailBackground = Color.black.opacity(0.25)
     static let title = Color.white.opacity(0.92)
 }
