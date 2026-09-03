@@ -132,7 +132,8 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// Moves and resizes multiple windows across displays according to a layout preset.
+    /// Moves and resizes multiple windows across displays according to a layout preset,
+    /// and brings all target applications into focus.
     func applyLayout(_ layout: WindowLayout) {
         thread.perform { [self] in
             var used: Set<CGWindowID> = []
@@ -152,9 +153,32 @@ final class WindowStore: @unchecked Sendable {
                 }
             }
 
-            guard !targets.isEmpty else { return }
-
             DispatchQueue.main.async { [self] in
+                var runningPids: [pid_t] = []
+                for target in targets {
+                    if !runningPids.contains(target.pid) { runningPids.append(target.pid) }
+                }
+                for rule in layout.rules {
+                    let matchedApp = NSRunningApplication.runningApplications(withBundleIdentifier: rule.bundleID).first
+                        ?? NSWorkspace.shared.runningApplications.first { app in
+                            (app.bundleIdentifier?.localizedCaseInsensitiveContains(rule.bundleID) ?? false)
+                            || (app.localizedName?.localizedCaseInsensitiveContains(rule.bundleID) ?? false)
+                        }
+                    guard let app = matchedApp, !runningPids.contains(app.processIdentifier) else { continue }
+                    runningPids.append(app.processIdentifier)
+                }
+
+                let activateApps = {
+                    for pid in runningPids.reversed() {
+                        guard let app = NSRunningApplication(processIdentifier: pid) else { continue }
+                        if app.isHidden { app.unhide() }
+                        app.activate()
+                    }
+                }
+
+                activateApps()
+                guard !targets.isEmpty else { return }
+
                 var moves: [(element: AXUIElement, pid: pid_t, topLeft: CGRect)] = []
 
                 for target in targets {
@@ -169,12 +193,17 @@ final class WindowStore: @unchecked Sendable {
                 guard !moves.isEmpty else { return }
 
                 thread.perform {
-                    for move in moves {
+                    for move in moves.reversed() {
                         AXUIElementSetAttributeValue(
                             move.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse
                         )
                         AXBridge.setFrame(move.topLeft, of: move.element)
+                        AXUIElementSetAttributeValue(move.element, kAXMainAttribute as CFString, kCFBooleanTrue)
                         AXUIElementPerformAction(move.element, kAXRaiseAction as CFString)
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        activateApps()
                     }
                 }
             }
