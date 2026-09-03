@@ -1,11 +1,9 @@
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct LayoutsView: View {
     @ObservedObject var config: ConfigStore
-    @State private var editingLayout: WindowLayout?
-    @State private var isCreatingNew = false
+    @State private var editing: WindowLayout?
 
     private var leader: ModifierChoice { config.settings.arrange.leader }
 
@@ -17,8 +15,9 @@ struct LayoutsView: View {
             } header: {
                 Text("Leader")
             } footer: {
-                Caption("Held while you press the shortcut key of a layout preset. "
-                    + "Shared with window arrangement shortcuts.")
+                Caption("Held while you press the key of a layout preset. The same leader as the "
+                    + "one on the Arrange page, which is why a key already taken there can never "
+                    + "reach a preset.")
             }
 
             Section {
@@ -27,231 +26,130 @@ struct LayoutsView: View {
                 }
 
                 ForEach(config.settings.arrange.layouts) { layout in
-                    HStack(spacing: 8) {
-                        Text(layout.name)
-                            .font(.body.weight(.medium))
-
-                        Spacer(minLength: 0)
-
-                        if let key = layout.key, !key.isEmpty {
-                            Keycap("\(leader.label) \(key.uppercased())")
-                        }
-
-                        Text("\(layout.rules.count) \(layout.rules.count == 1 ? "rule" : "rules")")
-                            .foregroundStyle(.secondary)
-                            .font(.callout)
-
-                        Button("Edit") {
-                            editingLayout = layout
-                            isCreatingNew = false
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-
-                        Button {
-                            config.removeLayout(layout.id)
-                        } label: {
-                            Image(systemName: "minus.circle")
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundStyle(.secondary)
+                    LayoutRow(layout: layout, leader: leader, issue: issue(for: layout)) {
+                        editing = layout
+                    } onDelete: {
+                        config.removeLayout(layout.id)
                     }
-                    .padding(.vertical, 2)
                 }
 
                 Button("Add Layout", systemImage: "plus") {
-                    editingLayout = WindowLayout(name: "New Layout", key: nil, rules: [])
-                    isCreatingNew = true
+                    editing = WindowLayout(name: "", key: nil, rules: [])
                 }
                 .buttonStyle(.borderless)
             } header: {
                 Text("Presets")
             } footer: {
-                Caption("Hold \(leader.label) and press the shortcut key, or pick a layout from the menu bar to arrange and focus windows across your displays.")
+                Caption("Hold \(leader.label) and press a preset's key, or pick one from the menu "
+                    + "bar, to move every application it names onto its display and bring the "
+                    + "whole set forward.")
             }
         }
         .formStyle(.grouped)
-        .sheet(item: $editingLayout) { layout in
-            LayoutEditorSheet(
+        .sheet(item: $editing) { layout in
+            LayoutEditor(
                 layout: layout,
-                leader: leader.label,
+                leader: leader,
+                isNew: !config.hasLayout(layout.id),
+                onKeyCapture: config.onKeyCapture,
                 onSave: { updated in
-                    if isCreatingNew {
-                        config.addLayout(updated)
-                    } else {
-                        config.updateLayout(updated)
-                    }
-                    editingLayout = nil
+                    config.saveLayout(updated)
+                    editing = nil
                 },
-                onCancel: {
-                    editingLayout = nil
-                }
+                onCancel: { editing = nil }
             )
         }
     }
-}
 
-private struct LayoutEditorSheet: View {
-    @State var layout: WindowLayout
-    let leader: String
-    let onSave: (WindowLayout) -> Void
-    let onCancel: () -> Void
+    /// A preset that cannot fire looks exactly like one that can, so the reasons
+    /// it will not are said here rather than found by pressing the key.
+    private func issue(for layout: WindowLayout) -> String? {
+        let layouts = config.settings.arrange.layouts
 
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(layout.name.isEmpty ? "Layout Preset" : layout.name)
-                    .font(.headline)
-
-                Spacer()
-
-                Button("Cancel", action: onCancel)
-
-                Button("Done") {
-                    onSave(layout)
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(layout.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        if let key = layout.key, !key.isEmpty {
+            // Arrangements are matched first, so this key never reaches here.
+            if let taken = config.settings.arrange.keys.first(where: { $0.value == key })?.key,
+               !taken.movesToAnotherDisplay {
+                return "\(leader.label)\(key.uppercased()) already means \(taken.title.lowercased())."
             }
-            .padding()
 
-            Divider()
-
-            Form {
-                Section {
-                    TextField("Name", text: $layout.name)
-
-                    HStack {
-                        Text("Shortcut key")
-                        Spacer()
-                        Text(leader)
-                            .foregroundStyle(.secondary)
-                        TextField("key", text: Binding(
-                            get: { layout.key ?? "" },
-                            set: { newValue in
-                                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                                layout.key = trimmed.isEmpty ? nil : String(trimmed.prefix(1)).lowercased()
-                            }
-                        ))
-                        .frame(width: 50)
-                        .multilineTextAlignment(.center)
-                    }
-                } header: {
-                    Text("Preset details")
-                } footer: {
-                    Caption("The shortcut is triggered together with the arrange leader (\(leader)).")
-                }
-
-                Section {
-                    if layout.rules.isEmpty {
-                        Caption("No rules yet. Add rules to position specific applications.")
-                    }
-
-                    ForEach($layout.rules) { $rule in
-                        LayoutRuleRow(rule: $rule) {
-                            layout.rules.removeAll { $0.id == rule.id }
-                        }
-                    }
-
-                    Button("Add Rule", systemImage: "plus") {
-                        layout.rules.append(LayoutRule(bundleID: "", display: "primary", arrangement: .maximize))
-                    }
-                    .buttonStyle(.borderless)
-                } header: {
-                    Text("Window rules")
-                } footer: {
-                    Caption("When activated, Flip matches open windows to these rules and moves them to the chosen display and arrangement.")
-                }
+            if layouts.contains(where: { $0.id != layout.id && $0.key == key }) {
+                return "Another preset uses the same key."
             }
-            .formStyle(.grouped)
         }
-        .frame(minWidth: 480, idealWidth: 520, minHeight: 380, idealHeight: 440)
+
+        if layouts.contains(where: { $0.id != layout.id && $0.name == layout.name }) {
+            return "Another preset has the same name; the menu bar cannot tell them apart."
+        }
+
+        return layout.rules.isEmpty ? "No rules yet, so this preset does nothing." : nil
     }
 }
 
-private struct LayoutRuleRow: View {
-    @Binding var rule: LayoutRule
+private struct LayoutRow: View {
+    let layout: WindowLayout
+    let leader: ModifierChoice
+    let issue: String?
+    let onEdit: () -> Void
     let onDelete: () -> Void
 
-    private let displays: [(id: String, label: String)] = [
-        ("primary", "Primary display"),
-        ("secondary", "Secondary display"),
-        ("1", "Display 1"),
-        ("2", "Display 2"),
-        ("3", "Display 3"),
-    ]
-
-    private var arrangements: [WindowArrangement] {
-        WindowArrangement.allCases.filter { !$0.movesToAnotherDisplay }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                applicationPicker
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
+                icons
 
-                Spacer(minLength: 0)
+                Text(layout.name)
+                    .font(.body.weight(.medium))
+
+                Spacer(minLength: 8)
+
+                if let key = layout.key, !key.isEmpty {
+                    Keycap("\(leader.label) \(key.uppercased())")
+                }
+
+                Text("\(layout.rules.count) \(layout.rules.count == 1 ? "rule" : "rules")")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                    .frame(width: 52, alignment: .trailing)
+
+                Button("Edit", action: onEdit)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
 
                 Button(action: onDelete) {
                     Image(systemName: "minus.circle")
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
+                .help("Remove this preset")
             }
 
-            HStack(spacing: 12) {
-                Picker("Display", selection: $rule.display) {
-                    ForEach(displays, id: \.id) { d in
-                        Text(d.label).tag(d.id)
-                    }
-                }
-                .frame(width: 170)
+            if let issue {
+                Label(issue, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .padding(.leading, 2)
+            }
+        }
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2, perform: onEdit)
+    }
 
-                Picker("Arrangement", selection: $rule.arrangement) {
-                    ForEach(arrangements, id: \.self) { arr in
-                        Text(arr.title).tag(arr)
-                    }
+    /// What the preset holds, without opening it. Overlapped rather than spaced:
+    /// four icons in a row read as four separate rules of their own.
+    private var icons: some View {
+        let bundleIDs = layout.rules.map(\.bundleID).filter { !$0.isEmpty }.prefix(4)
+
+        return HStack(spacing: -6) {
+            ForEach(Array(bundleIDs.enumerated()), id: \.offset) { _, bundleID in
+                if let icon = AppCatalog.icon(for: bundleID) {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 18, height: 18)
                 }
             }
         }
-        .padding(.vertical, 4)
-    }
-
-    private var applicationPicker: some View {
-        Menu {
-            ForEach(AppCatalog.running(), id: \.bundleID) { application in
-                Button(application.name) {
-                    rule.bundleID = application.bundleID
-                }
-            }
-
-            Divider()
-            Button("Choose Application…") { chooseApplication() }
-        } label: {
-            HStack(spacing: 6) {
-                if let icon = AppCatalog.icon(for: rule.bundleID) {
-                    Image(nsImage: icon).resizable().frame(width: 16, height: 16)
-                }
-                Text(rule.bundleID.isEmpty ? "Choose Application…" : AppCatalog.name(for: rule.bundleID))
-                    .lineLimit(1)
-            }
-        }
-        .menuStyle(.borderlessButton)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func chooseApplication() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.application]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Choose"
-
-        guard panel.runModal() == .OK, let url = panel.url,
-              let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier
-        else { return }
-
-        rule.bundleID = bundleID
+        .frame(width: 48, alignment: .leading)
     }
 }

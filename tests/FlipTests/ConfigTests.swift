@@ -506,6 +506,25 @@ final class ConfigStoreTests: XCTestCase {
         store.removeLayout(updated.id)
         XCTAssertTrue(store.settings.arrange.layouts.isEmpty)
     }
+
+    /// The editor saves without knowing whether it is adding or editing.
+    func testSavingALayoutAddsItOnceAndThenEditsIt() throws {
+        let store = makeStore()
+        store.load()
+
+        let layout = WindowLayout(name: "workspace", key: "w")
+        XCTAssertFalse(store.hasLayout(layout.id))
+
+        store.saveLayout(layout)
+        XCTAssertTrue(store.hasLayout(layout.id))
+        XCTAssertEqual(store.settings.arrange.layouts.count, 1)
+
+        var renamed = layout
+        renamed.name = "workspace-edited"
+        store.saveLayout(renamed)
+        XCTAssertEqual(store.settings.arrange.layouts.count, 1)
+        XCTAssertEqual(store.settings.arrange.layouts[0].name, "workspace-edited")
+    }
 }
 
 final class VersionComparisonTests: XCTestCase {
