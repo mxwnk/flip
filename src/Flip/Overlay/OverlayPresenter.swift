@@ -277,13 +277,28 @@ final class OverlayPresenter: SwitcherPresenting {
         case .allWindows:
             // Exclusions apply here only: naming an application by key is explicit.
             let excluded = Set(config.settings.excluded)
-            return store.windows(includingMinimized: true, fromEverySpace: everySpace)
+            let result = store.windows(includingMinimized: true, fromEverySpace: everySpace)
                 .filter { window in window.bundleID.map { !excluded.contains($0) } ?? true }
+            guard config.settings.switcher.groupWindowsByApp else { return result }
+            return Self.groupByApplication(result)
         case .application(let bundleID):
             return store.windows(
                 ofBundleID: bundleID, includingMinimized: true, fromEverySpace: everySpace
             )
         }
+    }
+
+    nonisolated static func groupByApplication(_ windows: [WindowInfo]) -> [WindowInfo] {
+        var appOrder: [String] = []
+        var byApp: [String: [WindowInfo]] = [:]
+
+        for window in windows {
+            let key = window.bundleID ?? ""
+            if byApp[key] == nil { appOrder.append(key) }
+            byApp[key, default: []].append(window)
+        }
+
+        return appOrder.flatMap { byApp[$0] ?? [] }
     }
 
     private var everySpace: Bool { config.settings.switcher.showWindowsFromEverySpace }

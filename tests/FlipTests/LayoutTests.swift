@@ -186,3 +186,49 @@ final class HitTestTests: XCTestCase {
         XCTAssertNil(layout.index(at: CGPoint(x: screen.width - 1, y: lastRow), in: screen, count: 6))
     }
 }
+
+@MainActor
+final class ScreenMatchingTests: XCTestCase {
+    func testPrimaryScreenMatches() {
+        if !NSScreen.screens.isEmpty {
+            XCTAssertNotNil(ScreenGeometry.screen(matching: "primary"))
+            XCTAssertNotNil(ScreenGeometry.screen(matching: "main"))
+            XCTAssertNotNil(ScreenGeometry.screen(matching: "1"))
+        }
+    }
+
+    func testInvalidDisplayDescriptionReturnsNil() {
+        XCTAssertNil(ScreenGeometry.screen(matching: "999"))
+        XCTAssertNil(ScreenGeometry.screen(matching: "non-existent-display"))
+    }
+}
+
+final class ApplicationGroupingTests: XCTestCase {
+    private func fakeWindow(id: CGWindowID, bundleID: String, focusOrder: UInt64) -> WindowInfo {
+        let element = AXUIElementCreateSystemWide()
+        return WindowInfo(
+            id: id,
+            element: element,
+            pid: 100,
+            bundleID: bundleID,
+            applicationName: bundleID,
+            title: "Window \(id)",
+            isMinimized: false,
+            frame: .zero,
+            focusOrder: focusOrder
+        )
+    }
+
+    func testGroupByApplicationPreservesAppMRUAndClustersWindows() {
+        let w1 = fakeWindow(id: 1, bundleID: "com.app.A", focusOrder: 5)
+        let w2 = fakeWindow(id: 2, bundleID: "com.app.B", focusOrder: 4)
+        let w3 = fakeWindow(id: 3, bundleID: "com.app.A", focusOrder: 3)
+        let w4 = fakeWindow(id: 4, bundleID: "com.app.C", focusOrder: 2)
+        let w5 = fakeWindow(id: 5, bundleID: "com.app.B", focusOrder: 1)
+
+        let input = [w1, w2, w3, w4, w5]
+        let grouped = OverlayPresenter.groupByApplication(input)
+
+        XCTAssertEqual(grouped.map(\.id), [1, 3, 2, 5, 4])
+    }
+}

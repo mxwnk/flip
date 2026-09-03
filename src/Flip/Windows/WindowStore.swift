@@ -132,6 +132,55 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
+    /// Moves and resizes multiple windows across displays according to a layout preset.
+    func applyLayout(_ layout: WindowLayout) {
+        thread.perform { [self] in
+            var used: Set<CGWindowID> = []
+            var targets: [(element: AXUIElement, pid: pid_t, rule: LayoutRule)] = []
+
+            for rule in layout.rules {
+                let candidates = windows.values
+                    .filter { !used.contains($0.id) }
+                    .sorted { $0.focusOrder > $1.focusOrder }
+
+                if let window = candidates.first(where: {
+                    $0.bundleID.map { $0.localizedCaseInsensitiveContains(rule.bundleID) || rule.bundleID.localizedCaseInsensitiveContains($0) } ?? false
+                    || $0.applicationName.localizedCaseInsensitiveContains(rule.bundleID)
+                }) {
+                    used.insert(window.id)
+                    targets.append((window.element, window.pid, rule))
+                }
+            }
+
+            guard !targets.isEmpty else { return }
+
+            DispatchQueue.main.async { [self] in
+                var moves: [(element: AXUIElement, pid: pid_t, topLeft: CGRect)] = []
+
+                for target in targets {
+                    guard let screen = ScreenGeometry.screen(matching: target.rule.display) ?? ScreenGeometry.primary,
+                          let targetFrame = WindowArranger.frame(for: target.rule.arrangement, in: screen.visibleFrame),
+                          let topLeft = ScreenGeometry.topLeft(fromCocoa: targetFrame)
+                    else { continue }
+
+                    moves.append((target.element, target.pid, topLeft))
+                }
+
+                guard !moves.isEmpty else { return }
+
+                thread.perform {
+                    for move in moves {
+                        AXUIElementSetAttributeValue(
+                            move.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse
+                        )
+                        AXBridge.setFrame(move.topLeft, of: move.element)
+                        AXUIElementPerformAction(move.element, kAXRaiseAction as CFString)
+                    }
+                }
+            }
+        }
+    }
+
     private func focusedWindow() -> (id: CGWindowID, element: AXUIElement)? {
         if let id = lastFocusedID, let window = windows[id] { return (id, window.element) }
 

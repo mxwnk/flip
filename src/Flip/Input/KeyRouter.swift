@@ -42,6 +42,9 @@ final class KeyRouter {
     private var displayMove: DisplayMoveModifier = .shiftOption
     private var arrangeLeader: ModifierChoice = .optionControl
     private var arrangeKeys = WindowArrangement.defaultKeys
+    private var layoutBindings: [CGKeyCode: String] = [:]
+
+    var onApplyLayout: ((String) -> Void)?
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
@@ -52,6 +55,7 @@ final class KeyRouter {
     func apply(_ bindings: [AppBinding], settings: Settings) {
         var leader: [CGKeyCode: String] = [:]
         var bare: [CGKeyCode: String] = [:]
+        var layouts: [CGKeyCode: String] = [:]
 
         for binding in bindings where !binding.bundleID.isEmpty {
             guard let code = KeyboardLayout.keyCode(forBinding: binding.key) else {
@@ -60,6 +64,13 @@ final class KeyRouter {
             }
 
             if binding.usesLeader { leader[code] = binding.bundleID } else { bare[code] = binding.bundleID }
+        }
+
+        for layout in settings.arrange.layouts {
+            guard let key = layout.key, !key.isEmpty,
+                  let code = KeyboardLayout.keyCode(forBinding: key)
+            else { continue }
+            layouts[code] = layout.name
         }
 
         bindingsLock.lock()
@@ -71,9 +82,10 @@ final class KeyRouter {
         displayMove = settings.arrange.displayMove
         arrangeLeader = settings.arrange.leader
         arrangeKeys = settings.arrange.keys
+        layoutBindings = layouts
         bindingsLock.unlock()
 
-        log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare")
+        log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare, \(layouts.count, privacy: .public) layouts")
     }
 
     private func bundleID(for code: CGKeyCode, withLeader: Bool) -> String? {
@@ -144,6 +156,7 @@ final class KeyRouter {
         let displayMoveModifier = displayMove
         let arrange = arrangeLeader
         let keys = arrangeKeys
+        let layouts = layoutBindings
         bindingsLock.unlock()
 
         if let arrangement = WindowArrangement.matching(
@@ -151,6 +164,11 @@ final class KeyRouter {
             leader: arrange, displayMove: displayMoveModifier, keys: keys
         ) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
+            return nil
+        }
+
+        if base == arrange.flags, let layoutName = layouts[code] {
+            if !isRepeat { onApplyLayout?(layoutName) }
             return nil
         }
 

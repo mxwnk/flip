@@ -7,6 +7,8 @@ public enum ControlCommand: Codable, Sendable {
     case list
     case focus(UInt32)
     case arrange(String)
+    case layout(String)
+    case listLayouts
     case switcher
     case pause
     case resume
@@ -50,6 +52,7 @@ public struct ControlPermissions: Codable, Sendable {
 public enum ControlResponse: Codable, Sendable {
     case windows([ControlWindow])
     case permissions(ControlPermissions)
+    case layouts([String])
     case ok
     case failure(String)
 }

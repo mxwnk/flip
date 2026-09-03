@@ -222,6 +222,21 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             store.arrange(arrangement)
             return .ok
 
+        case .layout(let name):
+            guard let matched = layouts.layout(named: name) else {
+                let available = layouts.all.map(\.name).joined(separator: ", ")
+                let message = available.isEmpty
+                    ? "no layouts configured in settings"
+                    : "unknown layout '\(name)' — available: \(available)"
+                return .failure(message)
+            }
+
+            store.applyLayout(matched)
+            return .ok
+
+        case .listLayouts:
+            return .layouts(layouts.all.map(\.name))
+
         case .switcher:
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -253,9 +268,16 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    private let layouts = LayoutStore()
+
     private func buildRouter() {
         let router = KeyRouter(presenter: presenter, frontmost: frontmost)
         self.router = router
+
+        router.onApplyLayout = { [weak self] name in
+            guard let self, let matched = layouts.layout(named: name) else { return }
+            store.applyLayout(matched)
+        }
 
         presenter.onUnexpectedClose = { [weak router] in router?.overlayDidClose() }
 
@@ -263,6 +285,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         let reapply = { [weak self, weak router] in
             guard let self, let router else { return }
 
+            layouts.update(to: config.settings.arrange.layouts)
             router.apply(config.bindings, settings: config.settings)
         }
         reapply()
@@ -331,5 +354,30 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         }
 
         log.notice("_AXUIElementGetWindow resolved")
+    }
+}
+
+/// Thread-safe snapshot of configured window layouts, accessed from the socket thread
+/// and the event tap without holding up the main actor.
+private final class LayoutStore: @unchecked Sendable {
+    private let lock = NSLock()
+    private var snapshot: [WindowLayout] = []
+
+    func update(to layouts: [WindowLayout]) {
+        lock.lock()
+        snapshot = layouts
+        lock.unlock()
+    }
+
+    var all: [WindowLayout] {
+        lock.lock()
+        defer { lock.unlock() }
+        return snapshot
+    }
+
+    func layout(named name: String) -> WindowLayout? {
+        lock.lock()
+        defer { lock.unlock() }
+        return snapshot.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
     }
 }

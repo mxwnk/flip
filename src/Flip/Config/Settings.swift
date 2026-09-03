@@ -230,6 +230,9 @@ struct SwitcherSettings: Codable, Equatable {
     /// Off lists only what is on the space you are looking at.
     var showWindowsFromEverySpace = false
 
+    /// Groups windows of the same application together in the switcher.
+    var groupWindowsByApp = false
+
     var isValid: Bool { leader != applicationLeader }
 
     init() {}
@@ -245,6 +248,8 @@ struct SwitcherSettings: Codable, Equatable {
         overlayPlacement = try container.value(.overlayPlacement, or: defaults.overlayPlacement)
         showWindowsFromEverySpace = try container
             .value(.showWindowsFromEverySpace, or: defaults.showWindowsFromEverySpace)
+        groupWindowsByApp = try container
+            .value(.groupWindowsByApp, or: defaults.groupWindowsByApp)
     }
 }
 
@@ -279,6 +284,9 @@ struct ArrangeSettings: Codable, Equatable {
     /// the keys are in the file rather than only in the settings window.
     var keys = WindowArrangement.defaultKeys
 
+    /// User-defined multi-window layout presets.
+    var layouts: [WindowLayout] = []
+
     init() {}
 
     init(from decoder: Decoder) throws {
@@ -291,6 +299,35 @@ struct ArrangeSettings: Codable, Equatable {
         keys = defaults.keys.merging(
             try container.value(.keys, or: [:]) as [WindowArrangement: String]
         ) { _, named in named }
+        layouts = try container.value(.layouts, or: defaults.layouts)
+    }
+}
+
+/// A rule placing an application's windows on a specific display with an arrangement.
+struct LayoutRule: Codable, Equatable {
+    var bundleID: String
+    var display: String
+    var arrangement: WindowArrangement
+
+    init(bundleID: String, display: String = "primary", arrangement: WindowArrangement) {
+        self.bundleID = bundleID
+        self.display = display
+        self.arrangement = arrangement
+    }
+}
+
+/// A named preset of window rules, optionally triggerable with an arrangement key.
+struct WindowLayout: Codable, Equatable, Identifiable {
+    var name: String
+    var key: String?
+    var rules: [LayoutRule]
+
+    var id: String { name }
+
+    init(name: String, key: String? = nil, rules: [LayoutRule] = []) {
+        self.name = name
+        self.key = key
+        self.rules = rules
     }
 }
 
