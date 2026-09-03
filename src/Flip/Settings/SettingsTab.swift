@@ -8,6 +8,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case switcher
     case shortcuts
     case arrange
+    case layouts
     case excluded
 
     var id: String { rawValue }
@@ -18,6 +19,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .switcher: return "Switcher"
         case .shortcuts: return "Shortcuts"
         case .arrange: return "Arrange"
+        case .layouts: return "Layouts"
         case .excluded: return "Excluded"
         }
     }
@@ -30,6 +32,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .switcher: return "square.grid.2x2.fill"
         case .shortcuts: return "keyboard.fill"
         case .arrange: return "macwindow.on.rectangle"
+        case .layouts: return "rectangle.3.group.fill"
         case .excluded: return "eye.slash.fill"
         }
     }
@@ -42,6 +45,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .switcher: return Color(red: 0.10, green: 0.70, blue: 0.62)
         case .shortcuts: return Color(red: 0.20, green: 0.52, blue: 0.98)
         case .arrange: return Color(red: 0.42, green: 0.36, blue: 0.90)
+        case .layouts: return Color(red: 0.92, green: 0.28, blue: 0.48)
         case .excluded: return Color(red: 0.98, green: 0.55, blue: 0.20)
         }
     }
