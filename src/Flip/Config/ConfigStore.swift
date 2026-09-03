@@ -195,8 +195,23 @@ final class ConfigStore: ObservableObject {
     }
 
     func updateLayout(_ layout: WindowLayout) {
-        guard let index = settings.arrange.layouts.firstIndex(where: { $0.id == layout.id }) else { return }
+        guard let index = index(ofLayout: layout.id) else { return }
+
         settings.arrange.layouts[index] = layout
+    }
+
+    /// The editor hands back a whole preset without knowing whether it was ever
+    /// added, and a flag saying which would only be another thing to keep true.
+    func saveLayout(_ layout: WindowLayout) {
+        guard index(ofLayout: layout.id) != nil else { return addLayout(layout) }
+
+        updateLayout(layout)
+    }
+
+    func hasLayout(_ id: UUID) -> Bool { index(ofLayout: id) != nil }
+
+    private func index(ofLayout id: UUID) -> Int? {
+        settings.arrange.layouts.firstIndex { $0.id == id }
     }
 
     func removeLayout(_ id: UUID) {

@@ -1,5 +1,4 @@
 import AppKit
-import Carbon.HIToolbox
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -59,90 +58,6 @@ struct ShortcutsView: View {
     }
 }
 
-/// Click, then press the key. A text field takes only characters, and F1 to F12
-/// are good bindings. Recording swallows the keystroke so nothing is typed into
-/// the settings window on the way past; escape or a second click gives up.
-private struct KeyRecorder: View {
-    let id: UUID
-    @ObservedObject var config: ConfigStore
-
-    @State private var isRecording = false
-    @State private var monitor: Any?
-    /// So a pending timeout can only end the recording it was armed for.
-    @State private var session = 0
-
-    var body: some View {
-        Button { isRecording ? stop() : start() } label: {
-            Text(isRecording ? "press" : label)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(ink)
-                .lineLimit(1)
-                .frame(width: 54, height: 22)
-                .background(RoundedRectangle(cornerRadius: 5).fill(fill))
-        }
-        .buttonStyle(.plain)
-        .onDisappear(perform: stop)
-    }
-
-    private var label: String {
-        let key = config.key(for: id)
-
-        return key.isEmpty ? "key" : key.uppercased()
-    }
-
-    /// Lit like the keyboard below, where this key lights up too.
-    private var fill: Color {
-        isRecording ? Theme.selectedStroke : Color.primary.opacity(0.07)
-    }
-
-    private var ink: Color {
-        if isRecording { return .white }
-
-        return config.key(for: id).isEmpty ? .secondary : .primary
-    }
-
-    private func start() {
-        guard monitor == nil else { return }
-
-        session += 1
-        let armed = session
-        isRecording = true
-        config.onKeyCapture?(true)
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            record(event)
-
-            return nil
-        }
-
-        // Left armed, Flip's own keys stay off and nothing says why.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            guard session == armed else { return }
-
-            stop()
-        }
-    }
-
-    private func record(_ event: NSEvent) {
-        defer { stop() }
-
-        guard Int(event.keyCode) != kVK_Escape,
-              let key = KeyboardLayout.bindingKey(for: CGKeyCode(event.keyCode))
-        else { return }
-
-        config.setKey(key, for: id)
-    }
-
-    private func stop() {
-        guard let monitor else { return }
-
-        NSEvent.removeMonitor(monitor)
-        self.monitor = nil
-        isRecording = false
-        session += 1
-        config.onKeyCapture?(false)
-    }
-}
-
 private struct BindingRow: View {
     let binding: AppBinding
     let issue: ConfigStore.Issue?
@@ -157,7 +72,13 @@ private struct BindingRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
 
-                KeyRecorder(id: binding.id, config: config)
+                KeyRecorder(
+                    key: Binding(
+                        get: { config.key(for: binding.id) },
+                        set: { config.setKey($0, for: binding.id) }
+                    ),
+                    onCapture: config.onKeyCapture
+                )
 
                 applicationPicker
 
