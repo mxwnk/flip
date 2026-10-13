@@ -10,6 +10,7 @@ final class MenuBarItem: NSObject {
     private var canReadWindowIDs = true
     private var availableUpdate: String?
     private var layouts: [WindowLayout] = []
+    private var secureInputHolder: SecureInputHolder?
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
     private let onShowAbout: () -> Void
@@ -51,11 +52,21 @@ final class MenuBarItem: NSObject {
         self.canReadWindowIDs = canReadWindowIDs
         self.layouts = layouts
         isPaused = paused
+        refresh()
+    }
 
+    /// Rebuilt rather than mutated: the menu is cheap and rebuilding it is how
+    /// every other change here already works.
+    func showSecureInput(heldBy holder: SecureInputHolder?) {
+        secureInputHolder = holder
+        refresh()
+    }
+
+    private func refresh() {
         let symbol: String
-        if paused {
+        if isPaused {
             symbol = "pause.circle"
-        } else if status.isComplete, inputWorking, canReadWindowIDs {
+        } else if status.isComplete, inputWorking, canReadWindowIDs, secureInputHolder == nil {
             symbol = "rectangle.on.rectangle"
         } else {
             symbol = "exclamationmark.triangle"
@@ -64,7 +75,7 @@ final class MenuBarItem: NSObject {
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Flip")
         image?.isTemplate = true
         item.button?.image = image
-        item.button?.toolTip = paused ? "Flip is paused" : "Flip"
+        item.button?.toolTip = isPaused ? "Flip is paused" : "Flip"
         item.menu = buildMenu()
     }
 
@@ -103,6 +114,14 @@ final class MenuBarItem: NSObject {
             dead.isEnabled = false
             dead.toolTip = "The event tap could not be created. Flip keeps retrying."
             menu.addItem(dead)
+        }
+
+        if let secureInputHolder {
+            let blocked = NSMenuItem(title: "Keys hidden by secure input", action: nil, keyEquivalent: "")
+            blocked.isEnabled = false
+            blocked.toolTip = "\(secureInputHolder.description) has secure input on, so macOS hides "
+                + "every keystroke from Flip. Quitting it gives the keys back."
+            menu.addItem(blocked)
         }
 
         if !status.isComplete {
@@ -177,8 +196,6 @@ final class MenuBarItem: NSObject {
         onShowSettings()
     }
 
-    /// Rebuilt rather than mutated: the menu is cheap and rebuilding it is how
-    /// every other change here already works.
     func showUpdate(available version: String?) {
         availableUpdate = version
         item.menu = buildMenu()
