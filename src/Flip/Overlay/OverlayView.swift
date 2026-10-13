@@ -25,7 +25,7 @@ struct OverlayView: View {
                                 window: window,
                                 thumbnail: model.thumbnails[window.id],
                                 isSelected: window.id == selectedID,
-                                isSibling: window.bundleID == selectedBundleID && window.id != selectedID,
+                                isSibling: isSibling(window),
                                 layout: model.layout
                             )
                         }
@@ -49,8 +49,12 @@ struct OverlayView: View {
         model.windows.indices.contains(model.selected) ? model.windows[model.selected].id : nil
     }
 
-    private var selectedBundleID: String? {
-        model.windows.indices.contains(model.selected) ? model.windows[model.selected].bundleID : nil
+    /// The same process rather than the same bundle id, which a window may lack.
+    private func isSibling(_ window: WindowInfo) -> Bool {
+        guard model.windows.indices.contains(model.selected) else { return false }
+
+        let selected = model.windows[model.selected]
+        return window.pid == selected.pid && window.id != selected.id
     }
 
     /// The layout fixes the column count, so the flat list is cut to match.

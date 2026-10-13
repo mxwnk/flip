@@ -143,12 +143,7 @@ final class OverlayPresenter: SwitcherPresenting {
         anchorPointer()
     }
 
-    /// Where opening lands, which is one step on from the window in front.
-    private func selectedIndex(for count: Int, step: Int) -> Int {
-        Self.step(from: 0, by: step, of: count)
-    }
-
-    private static func step(from index: Int, by step: Int, of count: Int) -> Int {
+    private nonisolated static func step(from index: Int, by step: Int, of count: Int) -> Int {
         guard count > 0 else { return 0 }
 
         return (index + step % count + count) % count
@@ -277,10 +272,8 @@ final class OverlayPresenter: SwitcherPresenting {
         case .allWindows:
             // Exclusions apply here only: naming an application by key is explicit.
             let excluded = Set(config.settings.excluded)
-            let result = store.windows(includingMinimized: true, fromEverySpace: everySpace)
+            return store.windows(includingMinimized: true, fromEverySpace: everySpace)
                 .filter { window in window.bundleID.map { !excluded.contains($0) } ?? true }
-            guard config.settings.switcher.groupWindowsByApp else { return result }
-            return Self.groupByApplication(result)
         case .application(let bundleID):
             return store.windows(
                 ofBundleID: bundleID, includingMinimized: true, fromEverySpace: everySpace
@@ -288,17 +281,38 @@ final class OverlayPresenter: SwitcherPresenting {
         }
     }
 
+    /// Windows with no bundle id are told apart by process, not lumped together.
+    private enum ApplicationKey: Hashable {
+        case bundle(String)
+        case process(pid_t)
+
+        init(_ window: WindowInfo) {
+            self = window.bundleID.map(ApplicationKey.bundle) ?? .process(window.pid)
+        }
+    }
+
     nonisolated static func groupByApplication(_ windows: [WindowInfo]) -> [WindowInfo] {
-        var appOrder: [String] = []
-        var byApp: [String: [WindowInfo]] = [:]
+        var appOrder: [ApplicationKey] = []
+        var byApp: [ApplicationKey: [WindowInfo]] = [:]
 
         for window in windows {
-            let key = window.bundleID ?? ""
+            let key = ApplicationKey(window)
             if byApp[key] == nil { appOrder.append(key) }
             byApp[key, default: []].append(window)
         }
 
         return appOrder.flatMap { byApp[$0] ?? [] }
+    }
+
+    /// The window an opening lands on is picked from the recency order:
+    /// grouping moves the tiles, not which window was the previous one.
+    nonisolated static func opening(
+        _ recent: [WindowInfo], step: Int, grouped: Bool
+    ) -> (windows: [WindowInfo], selected: Int) {
+        let target = recent[Self.step(from: 0, by: step, of: recent.count)].id
+        let shown = grouped ? groupByApplication(recent) : recent
+
+        return (shown, shown.firstIndex { $0.id == target } ?? 0)
     }
 
     private var everySpace: Bool { config.settings.switcher.showWindowsFromEverySpace }
@@ -325,8 +339,11 @@ final class OverlayPresenter: SwitcherPresenting {
 
         // Opening steps onto the previous window; narrowing does not. Decided
         // before presenting, so captures are ordered around the real selection.
-        let selection = wasVisible ? 0 : selectedIndex(for: windows.count, step: step)
-        present(windows, from: source, selecting: selection)
+        let grouped = source == .allWindows && config.settings.switcher.groupWindowsByApp
+        let (shown, selection) = wasVisible
+            ? (grouped ? Self.groupByApplication(windows) : windows, 0)
+            : Self.opening(windows, step: step, grouped: grouped)
+        present(shown, from: source, selecting: selection)
 
         let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
         log.notice("""

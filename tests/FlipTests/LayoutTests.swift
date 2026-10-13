@@ -232,3 +232,48 @@ final class ApplicationGroupingTests: XCTestCase {
         XCTAssertEqual(grouped.map(\.id), [1, 3, 2, 5, 4])
     }
 }
+
+final class GroupedOpeningTests: XCTestCase {
+    private func window(_ id: CGWindowID, bundleID: String?, pid: pid_t = 100) -> WindowInfo {
+        WindowInfo(
+            id: id, element: AXUIElementCreateSystemWide(), pid: pid, bundleID: bundleID,
+            applicationName: bundleID ?? "unnamed", title: "Window \(id)",
+            isMinimized: false, frame: .zero, focusOrder: 0
+        )
+    }
+
+    /// A taps back to B even though A's second window now sits between them.
+    func testGroupedOpeningStillLandsOnThePreviousWindow() {
+        let recent = [window(1, bundleID: "A"), window(2, bundleID: "B"), window(3, bundleID: "A")]
+
+        let (shown, selected) = OverlayPresenter.opening(recent, step: 1, grouped: true)
+
+        XCTAssertEqual(shown.map(\.id), [1, 3, 2])
+        XCTAssertEqual(shown[selected].id, 2)
+    }
+
+    func testBackwardsGroupedOpeningLandsOnTheLeastRecentWindow() {
+        let recent = [window(1, bundleID: "A"), window(2, bundleID: "B"), window(3, bundleID: "A")]
+
+        let (shown, selected) = OverlayPresenter.opening(recent, step: -1, grouped: true)
+
+        XCTAssertEqual(shown[selected].id, 3)
+    }
+
+    func testUngroupedOpeningKeepsTheRecencyOrder() {
+        let recent = [window(1, bundleID: "A"), window(2, bundleID: "B"), window(3, bundleID: "A")]
+
+        let (shown, selected) = OverlayPresenter.opening(recent, step: 1, grouped: false)
+
+        XCTAssertEqual(shown.map(\.id), [1, 2, 3])
+        XCTAssertEqual(selected, 1)
+    }
+
+    func testWindowsWithoutABundleIdAreGroupedByProcess() {
+        let recent = [
+            window(1, bundleID: nil, pid: 1), window(2, bundleID: nil, pid: 2), window(3, bundleID: nil, pid: 1),
+        ]
+
+        XCTAssertEqual(OverlayPresenter.groupByApplication(recent).map(\.id), [1, 3, 2])
+    }
+}
