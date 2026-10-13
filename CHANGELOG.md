@@ -3,6 +3,51 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 2.1.0
+
+**Layouts put a whole set of windows in place with one key.** A layout names
+applications and where each one goes: a display, and a half, a quarter or the
+whole of it. Hold the arrangement leader, ⌃⌥ by default, and press the layout's
+key, or pick it from the new Layouts menu in the menu bar, or run
+`flip layout <name>`. Every application it names comes forward, the last rule in
+front. They are set up on a Layouts page of their own in Settings and kept in
+`config.json` under `arrange.layouts`. A layout whose key is already taken by an
+arrangement, or that shares its name or key with another layout, says so on that
+page instead of quietly doing nothing.
+
+**The switcher can keep an application's windows together.** With "Group windows
+by application" on the Switcher page, an application's windows sit side by side
+instead of being spread out by when each was last used. Tapping ⌘Tab still goes
+back to the window you were just in. Whatever is grouped, the windows sharing an
+application with the selected one are lit up.
+
+**Flip says when macOS is hiding the keyboard from it.** While any application
+holds secure input, which password fields turn on and some applications forget to
+turn off, macOS passes no keystroke to Flip, but ⌘Tab still reaches the Dock, so
+Flip looks overruled. The menu bar now shows a warning, and the menu names the
+application holding it. Quitting that application gives the keys back, so there
+is no need to log out. Copy Diagnostics reports it too.
+
+**A `flip` command that hung up early no longer shuts Flip down.** Interrupting
+`flip` before it had read the answer stopped Flip entirely, and since nothing
+restarts it, ⌘Tab went back to the Dock until the next login. A `flip` that
+connects and never finishes no longer blocks the ones after it either.
+
+**Window actions move the window you are looking at.** They moved the window Flip
+had last seen focused. After a click on the desktop, or in an application whose
+focus changes Flip had missed, that was another window. Now they ask the
+application in front, and leave everything alone when it has no window.
+
+**An application that hangs no longer stalls Flip for seconds.** The half-second
+limit on waiting for an unresponsive application covered the application but not
+its windows, which waited out macOS's default of six seconds per question. And an
+application that was not ready to answer when it launched used to stay half-known
+until Flip restarted. It is now picked up the next time it comes to the front.
+
+**Smaller fixes.** Window thumbnails are ready the first time the switcher opens
+after launch. A `config.json` edited by hand that cannot be read is logged with
+the reason. Every key typed anywhere costs Flip less work.
+
 ## 2.0.0
 
 **Flip is configured by one file, `config.json`, and reads no other.** It is
