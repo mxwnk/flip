@@ -233,8 +233,9 @@ final class WindowStore: @unchecked Sendable {
 
     // MARK: - Lifecycle
 
+    /// `onReady` gets the visible window ids on main, once the first scan is in.
     @MainActor
-    func start() {
+    func start(onReady: @escaping @MainActor ([CGWindowID]) -> Void) {
         thread.start()
 
         let running = NSWorkspace.shared.runningApplications.compactMap(Identity.init)
@@ -245,6 +246,9 @@ final class WindowStore: @unchecked Sendable {
             seedFocusOrderFromScreenOrder()
             publish()
             log.notice("watching \(self.watchers.count, privacy: .public) applications, \(self.windows.count, privacy: .public) windows")
+
+            let ids = allWindowIDs()
+            DispatchQueue.main.async { MainActor.assumeIsolated { onReady(ids) } }
         }
 
         observeWorkspace()
