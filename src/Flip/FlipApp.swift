@@ -98,6 +98,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.reportIfChanged()
+                self?.reportSecureInputIfChanged()
                 self?.retryInputIfNeeded()
             }
         }
@@ -135,6 +136,20 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         tap?.setEnabled(keyCaptures == 0 && !isPaused)
     }
 
+    private var secureInputHolder: SecureInputHolder?
+
+    private func reportSecureInputIfChanged() {
+        let latest = SecureInputHolder.current()
+        guard latest != secureInputHolder else { return }
+
+        secureInputHolder = latest
+        menuBar?.showSecureInput(heldBy: latest)
+
+        guard let latest else { return log.notice("secure input released; keys reach Flip again") }
+
+        log.error("secure input is on, held by \(latest.description, privacy: .public); no key reaches Flip")
+    }
+
     private func diagnostics() -> String {
         Diagnostics.report(
             status: status,
@@ -142,6 +157,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             settings: config.settings,
             bindingCount: config.bindings.count,
             canReadWindowIDs: canReadWindowIDs,
+            secureInputHolder: secureInputHolder,
             windowCount: store.windows(
                 includingMinimized: true,
                 fromEverySpace: config.settings.switcher.showWindowsFromEverySpace
