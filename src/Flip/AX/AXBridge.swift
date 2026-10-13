@@ -14,8 +14,13 @@ enum AXBridge {
 
     /// The default is six seconds; a short one turns a hung app into a missing
     /// window rather than a frozen switcher.
-    static func limitMessagingTimeout(of application: AXUIElement, to seconds: Float = 0.5) {
-        AXUIElementSetMessagingTimeout(application, seconds)
+    static func limitMessagingTimeout(of element: AXUIElement, to seconds: Float = 0.5) {
+        AXUIElementSetMessagingTimeout(element, seconds)
+    }
+
+    static func limitingMessagingTimeout(_ element: AXUIElement) -> AXUIElement {
+        limitMessagingTimeout(of: element)
+        return element
     }
 
     // MARK: - Attributes
