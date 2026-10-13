@@ -60,9 +60,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         // A key being recorded must reach the settings window, not the binding
         // it is already on. Must not resume out of a deliberate pause.
         config.onKeyCapture = { [weak self] capturing in
-            guard let self else { return }
-
-            tap?.setEnabled(!capturing && !isPaused)
+            self?.keyCaptureChanged(capturing)
         }
         LoginItem.migrateFromLegacyAgent()
 
@@ -128,6 +126,15 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         startInputIfPermitted()
     }
 
+    /// Counted: two recorders can overlap, and the first one stopping must not
+    /// switch the tap back on under the second.
+    private var keyCaptures = 0
+
+    private func keyCaptureChanged(_ capturing: Bool) {
+        keyCaptures = max(0, keyCaptures + (capturing ? 1 : -1))
+        tap?.setEnabled(keyCaptures == 0 && !isPaused)
+    }
+
     private func diagnostics() -> String {
         Diagnostics.report(
             status: status,
@@ -144,7 +151,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
     private func togglePause() {
         isPaused.toggle()
-        tap?.setEnabled(!isPaused)
+        tap?.setEnabled(!isPaused && keyCaptures == 0)
 
         // An overlay left on screen would have no keys to close it.
         if isPaused { presenter.cancel(); router?.overlayDidClose() }
