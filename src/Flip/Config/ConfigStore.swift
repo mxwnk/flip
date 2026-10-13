@@ -123,9 +123,15 @@ final class ConfigStore: ObservableObject {
 
     /// Content, not timestamps: every save is a write and would loop.
     private func reloadIfChangedOnDisk() {
-        guard let data = try? Data(contentsOf: fileURL), data != lastWritten,
-              let loaded = try? JSONDecoder().decode(Settings.self, from: data)
-        else { return }
+        guard let data = try? Data(contentsOf: fileURL), data != lastWritten else { return }
+
+        let loaded: Settings
+        do {
+            loaded = try JSONDecoder().decode(Settings.self, from: data)
+        } catch {
+            // Mid-edit is the usual cause; the next save of a valid file reloads.
+            return log.error("config.json changed but is unreadable, keeping the current settings: \(error.localizedDescription, privacy: .public)")
+        }
 
         let count = loaded.shortcuts.bindings.count
         log.notice("config.json changed on disk, reloading \(count, privacy: .public) bindings")
