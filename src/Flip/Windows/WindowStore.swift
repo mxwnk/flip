@@ -134,81 +134,118 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
-    /// Moves and resizes multiple windows across displays according to a layout preset,
-    /// and brings all target applications into focus.
+    // MARK: - Layouts
+
+    private struct Placement {
+        let window: WindowInfo
+        let rule: LayoutRule
+    }
+
+    private struct Move {
+        let window: WindowInfo
+        let topLeft: CGRect
+    }
+
+    /// Rules apply in order, so the last one ends up in front: that is what the
+    /// editor promises. Picking windows needs this thread, the frames need main.
     func applyLayout(_ layout: WindowLayout) {
         thread.perform { [self] in
-            var used: Set<CGWindowID> = []
-            var targets: [(element: AXUIElement, pid: pid_t, rule: LayoutRule)] = []
-
-            for rule in layout.rules {
-                let candidates = windows.values
-                    .filter { !used.contains($0.id) }
-                    .sorted { $0.focusOrder > $1.focusOrder }
-
-                if let window = candidates.first(where: {
-                    $0.bundleID.map { $0.localizedCaseInsensitiveContains(rule.bundleID) || rule.bundleID.localizedCaseInsensitiveContains($0) } ?? false
-                    || $0.applicationName.localizedCaseInsensitiveContains(rule.bundleID)
-                }) {
-                    used.insert(window.id)
-                    targets.append((window.element, window.pid, rule))
-                }
-            }
+            let placements = placements(for: layout)
 
             DispatchQueue.main.async { [self] in
-                var runningPids: [pid_t] = []
-                for target in targets {
-                    if !runningPids.contains(target.pid) { runningPids.append(target.pid) }
-                }
-                for rule in layout.rules {
-                    let matchedApp = NSRunningApplication.runningApplications(withBundleIdentifier: rule.bundleID).first
-                        ?? NSWorkspace.shared.runningApplications.first { app in
-                            (app.bundleIdentifier?.localizedCaseInsensitiveContains(rule.bundleID) ?? false)
-                            || (app.localizedName?.localizedCaseInsensitiveContains(rule.bundleID) ?? false)
-                        }
-                    guard let app = matchedApp, !runningPids.contains(app.processIdentifier) else { continue }
-                    runningPids.append(app.processIdentifier)
-                }
-
-                let activateApps = {
-                    for pid in runningPids.reversed() {
-                        guard let app = NSRunningApplication(processIdentifier: pid) else { continue }
-                        if app.isHidden { app.unhide() }
-                        app.activate()
-                    }
-                }
-
-                activateApps()
-                guard !targets.isEmpty else { return }
-
-                var moves: [(element: AXUIElement, pid: pid_t, topLeft: CGRect)] = []
-
-                for target in targets {
-                    guard let screen = ScreenGeometry.screen(matching: target.rule.display) ?? ScreenGeometry.primary,
-                          let targetFrame = WindowArranger.frame(for: target.rule.arrangement, in: screen.visibleFrame),
-                          let topLeft = ScreenGeometry.topLeft(fromCocoa: targetFrame)
-                    else { continue }
-
-                    moves.append((target.element, target.pid, topLeft))
-                }
-
-                guard !moves.isEmpty else { return }
-
-                thread.perform {
-                    for move in moves.reversed() {
-                        AXUIElementSetAttributeValue(
-                            move.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse
-                        )
-                        AXBridge.setFrame(move.topLeft, of: move.element)
-                        AXUIElementSetAttributeValue(move.element, kAXMainAttribute as CFString, kCFBooleanTrue)
-                        AXUIElementPerformAction(move.element, kAXRaiseAction as CFString)
-                    }
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        activateApps()
-                    }
+                MainActor.assumeIsolated {
+                    let moves = placements.compactMap(Self.move)
+                    let applications = Self.applicationsInFrontOrder(for: layout)
+                    thread.perform { [self] in place(moves, thenActivate: applications) }
                 }
             }
+        }
+    }
+
+    /// Each rule takes the most recent window of its application not already
+    /// taken, so two rules for one application place two of its windows.
+    private func placements(for layout: WindowLayout) -> [Placement] {
+        var taken: Set<CGWindowID> = []
+        let recentFirst = windows.values.sorted { $0.focusOrder > $1.focusOrder }
+
+        return layout.rules.compactMap { rule in
+            guard let window = recentFirst.first(where: { candidate in
+                candidate.bundleID == rule.bundleID && !taken.contains(candidate.id)
+            }) else { return nil }
+
+            taken.insert(window.id)
+            return isPlaceable(window) ? Placement(window: window, rule: rule) : nil
+        }
+    }
+
+    /// Native full screen owns its space; its frame cannot be written.
+    private func isPlaceable(_ window: WindowInfo) -> Bool {
+        guard AXBridge.bool(AXBridge.fullScreenAttribute, of: window.element) == true else { return true }
+
+        log.notice("\(window.applicationName, privacy: .public) is in full screen; the layout leaves it there")
+        return false
+    }
+
+    @MainActor
+    private static func move(for placement: Placement) -> Move? {
+        let screen = ScreenGeometry.screen(matching: placement.rule.display) ?? ScreenGeometry.primary
+        guard let screen,
+              let target = WindowArranger.frame(for: placement.rule.arrangement, in: screen.visibleFrame),
+              let topLeft = ScreenGeometry.topLeft(fromCocoa: target)
+        else { return nil }
+
+        return Move(window: placement.window, topLeft: topLeft)
+    }
+
+    /// Running applications in the order they should be activated: by rule,
+    /// each at its last mention, so the last rule's application ends in front.
+    @MainActor
+    private static func applicationsInFrontOrder(for layout: WindowLayout) -> [pid_t] {
+        var order: [pid_t] = []
+        for rule in layout.rules {
+            guard let application = NSRunningApplication
+                .runningApplications(withBundleIdentifier: rule.bundleID).first
+            else { continue }
+
+            order.removeAll { $0 == application.processIdentifier }
+            order.append(application.processIdentifier)
+        }
+
+        return order
+    }
+
+    /// Unminimising animates out of the Dock and drops a frame written during
+    /// it, so those windows get the same pause `focus` gives them.
+    private func place(_ moves: [Move], thenActivate applications: [pid_t]) {
+        let minimized = moves.filter(\.window.isMinimized)
+        for move in minimized {
+            AXUIElementSetAttributeValue(move.window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+        }
+
+        let finish = { [self] in
+            moves.forEach(frameAndRaise)
+            DispatchQueue.main.async { Self.activate(applications) }
+        }
+
+        guard !minimized.isEmpty else { return finish() }
+
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.15) { [self] in
+            thread.perform(finish)
+        }
+    }
+
+    private func frameAndRaise(_ move: Move) {
+        AXBridge.setFrame(move.topLeft, of: move.window.element)
+        AXUIElementSetAttributeValue(move.window.element, kAXMainAttribute as CFString, kCFBooleanTrue)
+        AXUIElementPerformAction(move.window.element, kAXRaiseAction as CFString)
+    }
+
+    private static func activate(_ applications: [pid_t]) {
+        for pid in applications {
+            guard let application = NSRunningApplication(processIdentifier: pid) else { continue }
+
+            if application.isHidden { application.unhide() }
+            application.activate()
         }
     }
 
