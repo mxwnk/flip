@@ -67,6 +67,10 @@ final class ControlServer: @unchecked Sendable {
             return nil
         }
 
+        // On the listener, which every connection inherits it from: set on a
+        // connection whose client already hung up, the option fails.
+        ControlSocket.suppressBrokenPipeSignal(on: handle)
+
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         _ = withUnsafeMutablePointer(to: &address.sun_path) { field in
@@ -99,9 +103,17 @@ final class ControlServer: @unchecked Sendable {
             let connection = Darwin.accept(listener, nil, nil)
             guard connection >= 0 else { return }
 
+            limitReadWait(on: connection)
             serve(connection)
             close(connection)
         }
+    }
+
+    /// One connection at a time, so a client that never finishes its request
+    /// would otherwise hold the socket for good.
+    private func limitReadWait(on connection: Int32) {
+        var limit = timeval(tv_sec: 2, tv_usec: 0)
+        setsockopt(connection, SOL_SOCKET, SO_RCVTIMEO, &limit, socklen_t(MemoryLayout<timeval>.size))
     }
 
     private func serve(_ connection: Int32) {
