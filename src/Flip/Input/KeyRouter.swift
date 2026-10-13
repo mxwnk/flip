@@ -39,9 +39,8 @@ final class KeyRouter {
     private var leaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
     private var shortcutLeaderFlags: CGEventFlags = ModifierChoice.option.flags
-    private var displayMove: DisplayMoveModifier = .shiftOption
+    private var arrangements = ArrangementTable(leader: .optionControl, displayMove: .shiftOption)
     private var arrangeLeader: ModifierChoice = .optionControl
-    private var arrangeKeys = WindowArrangement.defaultKeys
     private var layoutBindings: [CGKeyCode: String] = [:]
 
     var onApplyLayout: ((String) -> Void)?
@@ -56,6 +55,8 @@ final class KeyRouter {
         var leader: [CGKeyCode: String] = [:]
         var bare: [CGKeyCode: String] = [:]
         var layouts: [CGKeyCode: String] = [:]
+        let arrange = settings.arrange
+        let table = ArrangementTable(leader: arrange.leader, displayMove: arrange.displayMove, keys: arrange.keys)
 
         for binding in bindings where !binding.bundleID.isEmpty {
             guard let code = KeyboardLayout.keyCode(forBinding: binding.key) else {
@@ -79,9 +80,8 @@ final class KeyRouter {
         leaderFlags = settings.switcher.leader.flags
         appSwitcherFlags = settings.switcher.applicationLeader.flags
         shortcutLeaderFlags = settings.shortcuts.leader.flags
-        displayMove = settings.arrange.displayMove
+        arrangements = table
         arrangeLeader = settings.arrange.leader
-        arrangeKeys = settings.arrange.keys
         layoutBindings = layouts
         bindingsLock.unlock()
 
@@ -93,6 +93,13 @@ final class KeyRouter {
         defer { bindingsLock.unlock() }
 
         return withLeader ? leaderBindings[code] : bareBindings[code]
+    }
+
+    private func arrangement(for code: CGKeyCode, modifiers: CGEventFlags) -> WindowArrangement? {
+        bindingsLock.lock()
+        defer { bindingsLock.unlock() }
+
+        return arrangements.arrangement(keyCode: code, modifiers: modifiers)
     }
 
     private var hotkeys: (leader: CGEventFlags, appSwitcher: CGEventFlags, shortcut: CGEventFlags) {
@@ -153,16 +160,11 @@ final class KeyRouter {
 
         // As pressed, not `base`: shift is part of a window binding.
         bindingsLock.lock()
-        let displayMoveModifier = displayMove
         let arrange = arrangeLeader
-        let keys = arrangeKeys
         let layouts = layoutBindings
         bindingsLock.unlock()
 
-        if let arrangement = WindowArrangement.matching(
-            keyCode: code, modifiers: flags,
-            leader: arrange, displayMove: displayMoveModifier, keys: keys
-        ) {
+        if let arrangement = arrangement(for: code, modifiers: flags) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil
         }
