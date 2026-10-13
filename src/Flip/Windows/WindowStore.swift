@@ -212,7 +212,17 @@ final class WindowStore: @unchecked Sendable {
         }
     }
 
+    /// The active application's own answer first: the model only knows the
+    /// windows it was told about, and moving another one is worse than none.
     private func focusedWindow() -> (id: CGWindowID, element: AXUIElement)? {
+        if let pid = activePID, let watcher = watchers[pid] {
+            guard let element = watcher.focusedWindow(),
+                  let id = AXBridge.windowID(of: element)
+            else { return nil }
+
+            return (id, element)
+        }
+
         if let id = lastFocusedID, let window = windows[id] { return (id, window.element) }
 
         guard let window = windows.values.max(by: { $0.focusOrder < $1.focusOrder })
@@ -228,7 +238,9 @@ final class WindowStore: @unchecked Sendable {
         thread.start()
 
         let running = NSWorkspace.shared.runningApplications.compactMap(Identity.init)
+        let frontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier
         thread.perform { [self] in
+            activePID = frontmost
             running.forEach(adopt)
             seedFocusOrderFromScreenOrder()
             publish()
@@ -341,6 +353,8 @@ final class WindowStore: @unchecked Sendable {
 
     private func drop(_ pid: pid_t) {
         watchers[pid] = nil
+        if activePID == pid { activePID = nil }
+        if let id = lastFocusedID, windows[id]?.pid == pid { lastFocusedID = nil }
 
         // The frames go too: window server ids are reused, and a stale one would
         // put a fill back onto a dead window's place.
@@ -397,6 +411,7 @@ final class WindowStore: @unchecked Sendable {
 
         windows[id] = nil
         restoreFrames[id] = nil
+        if lastFocusedID == id { lastFocusedID = nil }
     }
 
     private func update(_ element: AXUIElement, _ change: (inout WindowInfo) -> Void) {
