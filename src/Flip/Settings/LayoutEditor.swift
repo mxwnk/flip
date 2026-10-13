@@ -19,6 +19,11 @@ struct LayoutEditor: View {
         layout.name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// A rule with no application can never match, and looks like one that does.
+    private var canSave: Bool {
+        !trimmedName.isEmpty && !layout.rules.contains { $0.bundleID.isEmpty }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -168,7 +173,7 @@ struct LayoutEditor: View {
 
             Button(isNew ? "Save" : "Done") { onSave(layout) }
                 .keyboardShortcut(.defaultAction)
-                .disabled(trimmedName.isEmpty)
+                .disabled(!canSave)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
