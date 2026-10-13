@@ -166,13 +166,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         storeIsRunning = true
         store.onWindowDefocused = { [weak self] id in self?.thumbnails.warm([id]) }
         thumbnails.expectedSize = { [weak store] id in store?.size(of: id) }
-        store.start()
-
         // Nothing has lost focus yet, so the first Alt-Tab would find empty tiles.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+        store.start { [weak self] ids in
             guard let self else { return }
 
-            let ids = store.allWindowIDs()
             log.notice("warming \(ids.count, privacy: .public) thumbnails at startup")
             thumbnails.warm(ids)
         }
