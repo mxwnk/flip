@@ -525,6 +525,32 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.arrange.layouts.count, 1)
         XCTAssertEqual(store.settings.arrange.layouts[0].name, "workspace-edited")
     }
+
+    /// An editor still open across a reload saves onto the preset it opened,
+    /// not onto a twin.
+    func testALayoutKeepsItsIdAcrossAReload() throws {
+        let store = makeStore()
+        store.load()
+        let layout = WindowLayout(name: "workspace", key: "w")
+        store.saveLayout(layout)
+
+        let reopened = ConfigStore(file: store.fileURL)
+        reopened.load()
+        var edited = layout
+        edited.name = "workspace-edited"
+        reopened.saveLayout(edited)
+
+        XCTAssertEqual(reopened.settings.arrange.layouts.map(\.id), [layout.id])
+        XCTAssertEqual(reopened.settings.arrange.layouts[0].name, "workspace-edited")
+    }
+
+    func testALayoutWrittenWithoutAnIdStillLoads() throws {
+        let json = #"{"arrange": {"layouts": [{"name": "coding", "rules": []}]}}"#
+
+        let settings = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
+
+        XCTAssertEqual(settings.arrange.layouts.map(\.name), ["coding"])
+    }
 }
 
 final class VersionComparisonTests: XCTestCase {

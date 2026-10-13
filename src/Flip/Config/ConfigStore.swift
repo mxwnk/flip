@@ -196,7 +196,7 @@ final class ConfigStore: ObservableObject {
 
     // MARK: - Editing layouts
 
-    func addLayout(_ layout: WindowLayout = WindowLayout(name: "New Layout")) {
+    func addLayout(_ layout: WindowLayout) {
         settings.arrange.layouts.append(layout)
     }
 

@@ -327,6 +327,8 @@ struct LayoutRule: Codable, Equatable, Identifiable {
 }
 
 /// A named preset of window rules, optionally triggerable with an arrangement key.
+/// The id is stored: the key, the menu and an open editor all address a preset
+/// by it, and one minted afresh on every load would orphan them all.
 struct WindowLayout: Codable, Equatable, Identifiable {
     var id = UUID()
     var name: String
@@ -334,7 +336,7 @@ struct WindowLayout: Codable, Equatable, Identifiable {
     var rules: [LayoutRule]
 
     enum CodingKeys: String, CodingKey {
-        case name, key, rules
+        case id, name, key, rules
     }
 
     init(id: UUID = UUID(), name: String, key: String? = nil, rules: [LayoutRule] = []) {
@@ -344,8 +346,13 @@ struct WindowLayout: Codable, Equatable, Identifiable {
         self.rules = rules
     }
 
-    static func == (lhs: WindowLayout, rhs: WindowLayout) -> Bool {
-        lhs.name == rhs.name && lhs.key == rhs.key && lhs.rules == rhs.rules
+    /// A file written before ids were stored, or by hand, has none to keep.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.value(.id, or: UUID())
+        name = try container.decode(String.self, forKey: .name)
+        key = try container.decodeIfPresent(String.self, forKey: .key)
+        rules = try container.value(.rules, or: [])
     }
 }
 
