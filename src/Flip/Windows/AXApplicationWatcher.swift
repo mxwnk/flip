@@ -55,7 +55,8 @@ final class AXApplicationWatcher: @unchecked Sendable {
         CFRunLoopSourceInvalidate(AXObserverGetRunLoopSource(observer))
     }
 
-    /// False for applications with no accessibility interface at all.
+    /// False for applications with no accessibility interface at all, and for
+    /// one still launching: a registration it could not complete never fires.
     @discardableResult
     func start(on runLoop: CFRunLoop) -> Bool {
         // An application that never answers must not hold this thread for the
@@ -68,7 +69,8 @@ final class AXApplicationWatcher: @unchecked Sendable {
 
         let context = Unmanaged.passUnretained(self).toOpaque()
         for subscription in Self.applicationSubscriptions {
-            AXObserverAddNotification(observer, element, subscription.name as CFString, context)
+            let result = AXObserverAddNotification(observer, element, subscription.name as CFString, context)
+            guard result != .cannotComplete else { return false }
         }
 
         CFRunLoopAddSource(runLoop, AXObserverGetRunLoopSource(observer), .defaultMode)
@@ -87,12 +89,14 @@ final class AXApplicationWatcher: @unchecked Sendable {
         }
     }
 
+    /// The timeout belongs to each element, not to the application it came
+    /// from, so every window handed out carries its own.
     func windows() -> [AXUIElement] {
-        AXBridge.elements(kAXWindowsAttribute as String, of: element)
+        AXBridge.elements(kAXWindowsAttribute as String, of: element).map(AXBridge.limitingMessagingTimeout)
     }
 
     func focusedWindow() -> AXUIElement? {
-        AXBridge.element(kAXFocusedWindowAttribute as String, of: element)
+        AXBridge.element(kAXFocusedWindowAttribute as String, of: element).map(AXBridge.limitingMessagingTimeout)
     }
 
     fileprivate func deliver(_ notification: String, from element: AXUIElement) {
@@ -100,7 +104,7 @@ final class AXApplicationWatcher: @unchecked Sendable {
         guard let event = subscriptions.first(where: { $0.name == notification })?.event
         else { return }
 
-        onEvent(self, event, element)
+        onEvent(self, event, AXBridge.limitingMessagingTimeout(element))
     }
 }
 

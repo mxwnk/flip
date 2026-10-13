@@ -14,6 +14,8 @@ final class WindowStore: @unchecked Sendable {
     private var windows: [CGWindowID: WindowInfo] = [:]
     private var focusCounter: UInt64 = 0
     private var lastFocusedID: CGWindowID?
+    /// The application in front, as the workspace last announced it.
+    private var activePID: pid_t?
     /// Cocoa coordinates, for the fill toggle. Cleared when the window goes.
     private var restoreFrames: [CGWindowID: CGRect] = [:]
 
@@ -292,7 +294,8 @@ final class WindowStore: @unchecked Sendable {
             else { return }
 
             let pid = application.processIdentifier
-            self?.thread.perform { self?.promoteFocusedWindow(of: pid); self?.publish() }
+            let identity = Identity(application)
+            self?.thread.perform { self?.activated(pid, identity: identity) }
         }
     }
 
@@ -309,8 +312,10 @@ final class WindowStore: @unchecked Sendable {
             self?.handle(event, from: watcher, element: element)
         }
 
-        // A launching application may not answer AX yet; its windows arrive later.
-        guard let runLoop = thread.cfRunLoop, watcher.start(on: runLoop) else { return }
+        // A launching application may not answer AX yet; activating it retries.
+        guard let runLoop = thread.cfRunLoop, watcher.start(on: runLoop) else {
+            return log.debug("\(identity.name, privacy: .public) does not answer accessibility yet")
+        }
 
         watchers[identity.pid] = watcher
         for element in watcher.windows() {
@@ -407,6 +412,13 @@ final class WindowStore: @unchecked Sendable {
         }
 
         change(&windows[id]!)
+    }
+
+    private func activated(_ pid: pid_t, identity: Identity?) {
+        activePID = pid
+        if let identity { adopt(identity) }
+        promoteFocusedWindow(of: pid)
+        publish()
     }
 
     private func promoteFocusedWindow(of pid: pid_t) {
