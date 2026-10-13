@@ -221,7 +221,8 @@ final class MenuBarItem: NSObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// A clean exit, which the agent's KeepAlive respects: only a crash restarts.
+    /// The login agent has no KeepAlive, so nothing restarts Flip before the
+    /// next login.
     @objc private func quit() {
         NSApp.terminate(nil)
     }
