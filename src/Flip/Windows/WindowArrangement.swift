@@ -80,9 +80,8 @@ extension WindowArrangement {
         displayMove: DisplayMoveModifier,
         keys: [WindowArrangement: String] = defaultKeys
     ) -> WindowArrangement? {
-        shortcuts(leader: leader, displayMove: displayMove, keys: keys)
-            .first { $0.keyCode == keyCode && $0.modifiers == Modifiers.significant(in: modifiers) }?
-            .arrangement
+        ArrangementTable(leader: leader, displayMove: displayMove, keys: keys)
+            .arrangement(keyCode: keyCode, modifiers: modifiers)
     }
 
     /// Both the modifiers and the keys are settings; which of the two modifiers
@@ -106,6 +105,33 @@ extension WindowArrangement {
                 name: arrangement.title, keys: label + KeyboardLayout.symbol(forBinding: key)
             )
         }
+    }
+}
+
+/// The shortcuts resolved against the keyboard layout once per settings change,
+/// so the tap answers every keystroke from a dictionary.
+struct ArrangementTable {
+    private struct Chord: Hashable {
+        let keyCode: CGKeyCode
+        let modifiers: UInt64
+    }
+
+    private let arrangements: [Chord: WindowArrangement]
+
+    init(
+        leader: ModifierChoice,
+        displayMove: DisplayMoveModifier,
+        keys: [WindowArrangement: String] = WindowArrangement.defaultKeys
+    ) {
+        let shortcuts = WindowArrangement.shortcuts(leader: leader, displayMove: displayMove, keys: keys)
+        arrangements = Dictionary(
+            shortcuts.map { (Chord(keyCode: $0.keyCode, modifiers: $0.modifiers.rawValue), $0.arrangement) },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
+
+    func arrangement(keyCode: CGKeyCode, modifiers: CGEventFlags) -> WindowArrangement? {
+        arrangements[Chord(keyCode: keyCode, modifiers: Modifiers.significant(in: modifiers).rawValue)]
     }
 }
 

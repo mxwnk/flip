@@ -195,6 +195,19 @@ final class RouterTests: XCTestCase {
         XCTAssertTrue(presenter.reached.isEmpty, "the binding is shadowed, not merely second")
     }
 
+    func testARebuiltArrangementKeyAnswersAndTheOldOneIsReleased() {
+        var settings = Settings()
+        settings.arrange.keys[.topLeftQuarter] = "g"
+        router.apply([], settings: settings)
+        let windowAction: CGEventFlags = [.maskAlternate, .maskControl]
+
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_ANSI_G, flags: windowAction)))
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_ANSI_U, flags: windowAction)))
+        drainMainQueue()
+
+        XCTAssertEqual(presenter.arranged, [.topLeftQuarter])
+    }
+
     func testABindingIsReachedWhenTheLeaderDoesNotCollide() {
         router.apply([AppBinding(key: "u", bundleID: "com.example.app")], settings: Settings())
 
