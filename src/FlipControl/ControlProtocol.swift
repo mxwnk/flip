@@ -82,4 +82,11 @@ public enum ControlSocket {
     /// A socket path is copied into a fixed-size C buffer, so a long one is
     /// truncated rather than rejected — which fails much later and confusingly.
     public static let maximumPathLength = 103
+
+    /// A write to a peer that already hung up raises SIGPIPE, whose default is
+    /// to end the whole process. Either side may go away first.
+    public static func suppressBrokenPipeSignal(on handle: Int32) {
+        var on: Int32 = 1
+        setsockopt(handle, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+    }
 }

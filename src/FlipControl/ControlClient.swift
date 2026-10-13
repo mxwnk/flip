@@ -50,6 +50,7 @@ public enum ControlClient {
 
         let handle = socket(AF_UNIX, SOCK_STREAM, 0)
         guard handle >= 0 else { throw Failure.transport("could not open a socket") }
+        ControlSocket.suppressBrokenPipeSignal(on: handle)
 
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
