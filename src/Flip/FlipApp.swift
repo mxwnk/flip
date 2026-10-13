@@ -75,10 +75,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
                 log.notice("diagnostics copied to the clipboard")
             },
             onTogglePause: { [weak self] in self?.togglePause() },
-            onApplyLayout: { [weak self] name in
-                guard let self, let matched = layouts.layout(named: name) else { return }
-                store.applyLayout(matched)
-            }
+            onApplyLayout: { [weak self] id in self?.applyLayout(id) }
         )
         updateMenuBar()
 
@@ -110,7 +107,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             paused: isPaused,
             inputWorking: inputWorking,
             canReadWindowIDs: canReadWindowIDs,
-            layouts: config.settings.arrange.layouts
+            layouts: config.settings.arrange.layouts,
+            layoutLeader: config.settings.arrange.leader.label
         )
     }
 
@@ -304,14 +302,17 @@ final class FlipApp: NSObject, NSApplicationDelegate {
 
     private let layouts = LayoutStore()
 
+    private func applyLayout(_ id: UUID) {
+        guard let layout = layouts.layout(id: id) else { return }
+
+        store.applyLayout(layout)
+    }
+
     private func buildRouter() {
         let router = KeyRouter(presenter: presenter, frontmost: frontmost)
         self.router = router
 
-        router.onApplyLayout = { [weak self] name in
-            guard let self, let matched = layouts.layout(named: name) else { return }
-            store.applyLayout(matched)
-        }
+        router.onApplyLayout = { [weak self] id in self?.applyLayout(id) }
 
         presenter.onUnexpectedClose = { [weak router] in router?.overlayDidClose() }
 
@@ -408,6 +409,12 @@ private final class LayoutStore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return snapshot
+    }
+
+    func layout(id: UUID) -> WindowLayout? {
+        lock.lock()
+        defer { lock.unlock() }
+        return snapshot.first { $0.id == id }
     }
 
     func layout(named name: String) -> WindowLayout? {

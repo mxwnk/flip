@@ -270,20 +270,51 @@ final class RouterTests: XCTestCase {
     }
 
     func testLayoutPresetKeyInvokesCallbackAndSwallows() {
+        let coding = WindowLayout(name: "coding", key: "1", rules: [])
         var settings = Settings()
-        settings.arrange.layouts = [
-            WindowLayout(name: "coding", key: "1", rules: [])
-        ]
+        settings.arrange.layouts = [coding]
         router.apply([], settings: settings)
 
-        var triggeredLayout: String?
-        router.onApplyLayout = { name in
-            triggeredLayout = name
-        }
+        var triggeredLayout: UUID?
+        router.onApplyLayout = { id in triggeredLayout = id }
 
         let event = key(kVK_ANSI_1, flags: settings.arrange.leader.flags)
         XCTAssertNil(router.handle(type: .keyDown, event: event))
-        XCTAssertEqual(triggeredLayout, "coding")
+        drainMainQueue()
+
+        XCTAssertEqual(triggeredLayout, coding.id)
+    }
+
+    /// Router and menu address presets by id, so a twin name cannot steal the key.
+    func testTwoPresetsWithOneNameEachKeepTheirOwnKey() {
+        let first = WindowLayout(name: "same", key: "1", rules: [])
+        let second = WindowLayout(name: "same", key: "2", rules: [])
+        var settings = Settings()
+        settings.arrange.layouts = [first, second]
+        router.apply([], settings: settings)
+
+        var triggeredLayout: UUID?
+        router.onApplyLayout = { id in triggeredLayout = id }
+
+        XCTAssertNil(router.handle(type: .keyDown, event: key(kVK_ANSI_2, flags: settings.arrange.leader.flags)))
+        drainMainQueue()
+
+        XCTAssertEqual(triggeredLayout, second.id)
+    }
+
+    func testShiftAddedToAPresetChordIsNotThePreset() {
+        var settings = Settings()
+        settings.arrange.layouts = [WindowLayout(name: "coding", key: "1", rules: [])]
+        router.apply([], settings: settings)
+
+        var triggered = false
+        router.onApplyLayout = { _ in triggered = true }
+
+        let shifted = settings.arrange.leader.flags.union(.maskShift)
+        XCTAssertNotNil(router.handle(type: .keyDown, event: key(kVK_ANSI_1, flags: shifted)))
+        drainMainQueue()
+
+        XCTAssertFalse(triggered)
     }
 
     // MARK: - Helpers

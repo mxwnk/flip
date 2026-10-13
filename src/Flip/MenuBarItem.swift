@@ -10,13 +10,14 @@ final class MenuBarItem: NSObject {
     private var canReadWindowIDs = true
     private var availableUpdate: String?
     private var layouts: [WindowLayout] = []
+    private var layoutLeader = ModifierChoice.optionControl.label
     private var secureInputHolder: SecureInputHolder?
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
     private let onShowAbout: () -> Void
     private let onCopyDiagnostics: () -> Void
     private let onTogglePause: () -> Void
-    private let onApplyLayout: (String) -> Void
+    private let onApplyLayout: (UUID) -> Void
 
     init(
         onShowSettings: @escaping () -> Void,
@@ -24,7 +25,7 @@ final class MenuBarItem: NSObject {
         onShowAbout: @escaping () -> Void,
         onCopyDiagnostics: @escaping () -> Void,
         onTogglePause: @escaping () -> Void,
-        onApplyLayout: @escaping (String) -> Void
+        onApplyLayout: @escaping (UUID) -> Void
     ) {
         self.onShowSettings = onShowSettings
         self.onShowUpdate = onShowUpdate
@@ -34,7 +35,7 @@ final class MenuBarItem: NSObject {
         self.onApplyLayout = onApplyLayout
         super.init()
 
-        update(for: status, paused: false, inputWorking: true, canReadWindowIDs: true, layouts: [])
+        refresh()
     }
 
     /// A switcher without Accessibility looks like a broken keyboard, so the
@@ -45,12 +46,14 @@ final class MenuBarItem: NSObject {
         paused: Bool,
         inputWorking: Bool,
         canReadWindowIDs: Bool,
-        layouts: [WindowLayout] = []
+        layouts: [WindowLayout],
+        layoutLeader: String
     ) {
         self.status = status
         self.inputWorking = inputWorking
         self.canReadWindowIDs = canReadWindowIDs
         self.layouts = layouts
+        self.layoutLeader = layoutLeader
         isPaused = paused
         refresh()
     }
@@ -139,9 +142,9 @@ final class MenuBarItem: NSObject {
                     keyEquivalent: ""
                 )
                 item.target = self
-                item.representedObject = layout.name
+                item.representedObject = layout.id
                 if let key = layout.key, !key.isEmpty {
-                    item.toolTip = "Shortcut: ⌃⌥\(key.uppercased())"
+                    item.toolTip = "Shortcut: \(layoutLeader)\(KeyboardLayout.symbol(forBinding: key))"
                 }
                 layoutsSubmenu.addItem(item)
             }
@@ -168,8 +171,8 @@ final class MenuBarItem: NSObject {
     }
 
     @objc private func applyLayoutAction(_ sender: NSMenuItem) {
-        guard let name = sender.representedObject as? String else { return }
-        onApplyLayout(name)
+        guard let id = sender.representedObject as? UUID else { return }
+        onApplyLayout(id)
     }
 
     /// A report, not a control: grants can only be given in System Settings.

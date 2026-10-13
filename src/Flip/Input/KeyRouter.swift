@@ -40,10 +40,11 @@ final class KeyRouter {
     private var appSwitcherFlags: CGEventFlags = ModifierChoice.command.flags
     private var shortcutLeaderFlags: CGEventFlags = ModifierChoice.option.flags
     private var arrangements = ArrangementTable(leader: .optionControl, displayMove: .shiftOption)
-    private var arrangeLeader: ModifierChoice = .optionControl
-    private var layoutBindings: [CGKeyCode: String] = [:]
+    private var layoutBindings: [CGKeyCode: UUID] = [:]
+    private var layoutLeaderFlags: CGEventFlags = ModifierChoice.optionControl.flags
 
-    var onApplyLayout: ((String) -> Void)?
+    /// Called on main.
+    var onApplyLayout: (@MainActor (UUID) -> Void)?
 
     init(presenter: SwitcherPresenting, frontmost: FrontmostApp) {
         self.presenter = presenter
@@ -54,7 +55,7 @@ final class KeyRouter {
     func apply(_ bindings: [AppBinding], settings: Settings) {
         var leader: [CGKeyCode: String] = [:]
         var bare: [CGKeyCode: String] = [:]
-        var layouts: [CGKeyCode: String] = [:]
+        var layouts: [CGKeyCode: UUID] = [:]
         let arrange = settings.arrange
         let table = ArrangementTable(leader: arrange.leader, displayMove: arrange.displayMove, keys: arrange.keys)
 
@@ -71,7 +72,7 @@ final class KeyRouter {
             guard let key = layout.key, !key.isEmpty,
                   let code = KeyboardLayout.keyCode(forBinding: key)
             else { continue }
-            layouts[code] = layout.name
+            layouts[code] = layout.id
         }
 
         bindingsLock.lock()
@@ -81,8 +82,8 @@ final class KeyRouter {
         appSwitcherFlags = settings.switcher.applicationLeader.flags
         shortcutLeaderFlags = settings.shortcuts.leader.flags
         arrangements = table
-        arrangeLeader = settings.arrange.leader
         layoutBindings = layouts
+        layoutLeaderFlags = settings.arrange.leader.flags
         bindingsLock.unlock()
 
         log.notice("\(leader.count, privacy: .public) leader bindings, \(bare.count, privacy: .public) bare, \(layouts.count, privacy: .public) layouts")
@@ -100,6 +101,15 @@ final class KeyRouter {
         defer { bindingsLock.unlock() }
 
         return arrangements.arrangement(keyCode: code, modifiers: modifiers)
+    }
+
+    private func layout(for code: CGKeyCode, modifiers: CGEventFlags) -> UUID? {
+        bindingsLock.lock()
+        defer { bindingsLock.unlock() }
+
+        guard Modifiers.significant(in: modifiers) == layoutLeaderFlags else { return nil }
+
+        return layoutBindings[code]
     }
 
     private var hotkeys: (leader: CGEventFlags, appSwitcher: CGEventFlags, shortcut: CGEventFlags) {
@@ -159,18 +169,14 @@ final class KeyRouter {
         }
 
         // As pressed, not `base`: shift is part of a window binding.
-        bindingsLock.lock()
-        let arrange = arrangeLeader
-        let layouts = layoutBindings
-        bindingsLock.unlock()
-
         if let arrangement = arrangement(for: code, modifiers: flags) {
             if !isRepeat { onMain { $0.arrangeWindow(arrangement) } }
             return nil
         }
 
-        if base == arrange.flags, let layoutName = layouts[code] {
-            if !isRepeat { onApplyLayout?(layoutName) }
+        // As pressed too, so shift added to a preset's chord is not the preset.
+        if let layoutID = layout(for: code, modifiers: flags) {
+            if !isRepeat { applyLayoutOnMain(layoutID) }
             return nil
         }
 
@@ -265,6 +271,12 @@ final class KeyRouter {
         }
 
         onMain { $0.reachApplication(bundleID) }
+    }
+
+    private func applyLayoutOnMain(_ id: UUID) {
+        DispatchQueue.main.async { [self] in
+            MainActor.assumeIsolated { onApplyLayout?(id) }
+        }
     }
 
     /// The decision is already made; only the effect crosses to main.
