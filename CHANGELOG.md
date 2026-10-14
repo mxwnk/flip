@@ -3,6 +3,16 @@
 The release pipeline lifts the section matching the tag out of this file and
 publishes it as the release notes, so what is written here is what people read.
 
+## 2.2.0
+
+**Each application can bring its own keyboard input source.** Name an
+application and an input source on the new Input Sources page in Settings, and
+Flip switches to that source whenever the application comes to the front:
+through Flip, the Dock, a click or ⌘Tab alike. An application not named keeps
+whichever source is on. In `config.json` this is `inputSources`, a bundle
+identifier for each input source identifier, such as
+`"com.microsoft.VSCode": "com.apple.keylayout.US"`.
+
 ## 2.1.0
 
 **Layouts put a whole set of windows in place with one key.** A layout names

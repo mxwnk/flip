@@ -175,6 +175,10 @@ struct Settings: Codable, Equatable {
     /// Kept out of the all-windows list. A key bound directly still reaches them.
     var excluded: [String] = []
 
+    /// The keyboard input source each application gets when it comes to the
+    /// front, by bundle identifier. An application not named keeps whatever is on.
+    var inputSources: [String: String] = [:]
+
     init() {}
 
     init(from decoder: Decoder) throws {
@@ -186,6 +190,7 @@ struct Settings: Codable, Equatable {
         shortcuts = try container.value(.shortcuts, or: defaults.shortcuts)
         arrange = try container.value(.arrange, or: defaults.arrange)
         excluded = try container.value(.excluded, or: defaults.excluded)
+        inputSources = try container.value(.inputSources, or: defaults.inputSources)
     }
 }
 
