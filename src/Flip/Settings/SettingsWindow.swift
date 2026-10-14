@@ -88,7 +88,7 @@ private struct SettingsView: View {
                     .compactMap { $0.key }
                     .compactMap { KeyboardLayout.keyCode(forBinding: $0) }
             )
-        case .excluded:
+        case .inputSources, .excluded:
             return []
         }
     }
@@ -107,7 +107,7 @@ private struct SettingsView: View {
                 .union(config.settings.arrange.displayMove.flags)
         case .layouts:
             return config.settings.arrange.leader.flags
-        case .excluded:
+        case .inputSources, .excluded:
             return []
         }
     }
@@ -132,6 +132,7 @@ private struct SettingsView: View {
                 row(.shortcuts)
                 row(.arrange)
                 row(.layouts)
+                row(.inputSources)
                 row(.excluded)
             }
         }
@@ -186,6 +187,7 @@ private struct SettingsView: View {
         case .shortcuts: ShortcutsView(config: config)
         case .arrange: ArrangeView(config: config)
         case .layouts: LayoutsView(config: config)
+        case .inputSources: InputSourcesView(config: config)
         case .excluded: ExclusionsView(config: config)
         }
     }

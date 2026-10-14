@@ -194,6 +194,16 @@ final class ConfigStore: ObservableObject {
         settings.excluded.removeAll { $0 == bundleID }
     }
 
+    // MARK: - Editing input sources
+
+    func setInputSource(_ sourceID: String, for bundleID: String) {
+        settings.inputSources[bundleID] = sourceID
+    }
+
+    func removeInputSource(for bundleID: String) {
+        settings.inputSources[bundleID] = nil
+    }
+
     // MARK: - Editing layouts
 
     func addLayout(_ layout: WindowLayout) {

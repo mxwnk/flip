@@ -172,7 +172,7 @@ final class SettingsTests: XCTestCase {
                 as? [String: Any]
         )
 
-        XCTAssertEqual(Set(object.keys), ["general", "switcher", "shortcuts", "arrange", "excluded"])
+        XCTAssertEqual(Set(object.keys), ["general", "switcher", "shortcuts", "arrange", "excluded", "inputSources"])
         XCTAssertNotNil((object["shortcuts"] as? [String: Any])?["bindings"])
         XCTAssertNotNil(object["excluded"] as? [String])
     }
@@ -454,7 +454,7 @@ final class ConfigStoreTests: XCTestCase {
             JSONSerialization.jsonObject(with: Data(contentsOf: store.fileURL)) as? [String: Any]
         )
 
-        XCTAssertEqual(Set(object.keys), ["general", "switcher", "shortcuts", "arrange", "excluded"])
+        XCTAssertEqual(Set(object.keys), ["general", "switcher", "shortcuts", "arrange", "excluded", "inputSources"])
         XCTAssertNotNil((object["switcher"] as? [String: Any])?["leader"])
         XCTAssertNotNil((object["shortcuts"] as? [String: Any])?["bindings"] as? [[String: Any]])
     }
