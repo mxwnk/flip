@@ -6,7 +6,7 @@
 
 <p align="center">
   A window switcher for macOS that gets out of the way.<br>
-  Hold Command, tap Tab. Let go before you can see it and it never draws at all.
+  Hold Command, tap Tab. Let go quickly and it switches without drawing anything.
 </p>
 
 <p align="center">
@@ -29,191 +29,80 @@
 brew install --cask mxwnk/tap/flip
 ```
 
-Or take the disk image from the [latest
-release](https://github.com/mxwnk/flip/releases/latest) and drag Flip into
-Applications.
+Or download the disk image from the [latest release](https://github.com/mxwnk/flip/releases/latest). Needs macOS 14 or newer.
 
-Needs macOS 14 or newer.
+## Features
 
-## What it does
+- 🪟 **Windows, not apps** – `⌘ Tab` lists every window, most recently used first
+- ⚡️ **Fast** – let go within 150 ms and it switches without drawing anything
+- 🎯 **One key per app** – `⌥ F` jumps to the Finder, add your own
+- 📐 **Arrange windows** – halves, quarters, maximize and other displays from the keyboard
+- 🗂️ **Layouts** – put a whole set of apps in place with one key
+- 🌐 **Input source per app** – the keyboard layout follows the app in front
+- 🖱️ **Keyboard or mouse** – hover, scroll and click work too
+- 💻 **Command line** – `flip list`, `flip focus`, `flip arrange` and more
 
-- **Switches windows, not applications.** `⌘ Tab` is the key you already reach
-  for; Flip only changes what it lists. Two documents in one app are two entries.
-- **Stays out of the way.** Let go inside 150 ms and it switches without drawing
-  anything at all.
-- **One key per application.** `⌥ F` reaches the Finder out of the box; `⌥ S` for
-  Spotify and `⌥ T` for the terminal are yours to add.
-- **Moves and resizes windows** from the keyboard — halves, quarters, maximizing
-  and across to the other display.
-- **Keyboard or mouse.** Hover or scroll to pick, click to confirm, if your hand
-  is already there.
-- **Brings minimised windows back.** Choosing one lifts it out of the Dock.
-- **Closes windows from the grid.** `⌥⌫` on the one you were about to go and
-  close anyway.
+## Keys
 
-## Switching windows
-
-| | |
+| Switching | |
 | --- | --- |
-| `⌘ Tab` | every window on the current space, most recently used first |
-| `⌥ Tab` | the windows of whichever application is in front |
-| `⌥ F` | jump straight to the Finder — one key per application, the rest yours to choose |
-| `⌥` held, then a key | narrow the open grid to that application |
-| arrows, `esc` | move the selection, or give up |
-| `⌥⌫` | close the selected window; the grid stays up for the next one |
-| the mouse | hover to select, wheel to step, click to confirm; click beside the grid to give up |
-| let go of `⌥` | focus what is selected, out of the Dock if it was minimised |
+| `⌘ Tab` | all windows (add `⇧` to go backwards) |
+| `⌥ Tab` | windows of the app in front |
+| `⌥ F` | jump to an app, one key per app |
+| arrows, `esc` | move the selection, or cancel |
+| `⌫` while open | close the selected window |
+| release the modifier | switch to the selected window |
 
-Add `⇧` to any of those to go backwards.
+| Arranging | |
+| --- | --- |
+| `⌃⌥ ←` `→` `↑` `↓` | halves |
+| `⌃⌥ U` `I` `J` `K` | quarters |
+| `⌃⌥ ↩` | maximize, press again to restore |
+| `⇧⌥ ←` `→` | previous or next display |
+
+Every key and modifier can be changed in **Settings** (`⌘,` from the menu bar icon).
 
 <p align="center">
   <img src="docs/overlay.png" width="820" alt="The Flip overlay: a grid of window thumbnails, one selected">
 </p>
 
-## Moving windows
+## Command line
 
-| | |
-| --- | --- |
-| `⌃⌥←` `⌃⌥→` | left or right half |
-| `⌃⌥↑` `⌃⌥↓` | top or bottom half |
-| `⌃⌥U` `⌃⌥I` `⌃⌥J` `⌃⌥K` | the four quarters |
-| `⌃⌥↩` | maximize, or put it back if it already fills the screen |
-| `⇧⌥←` `⇧⌥→` | previous or next display, keeping the window's place on it |
-
-Everything stops at the menu bar and the Dock. Maximizing is a toggle: press it on
-a window that already fills the screen and it goes back where it was.
-
-Both modifiers are yours, in Settings › Arrange, picked as keys rather than from
-a menu. The display moves take the same arrows as the halves, so the two carry
-different ones — and they cannot be given the same, whatever you pick.
-
-A pair rather than one key is the sensible choice for the halves: a single
-modifier and an arrow already means something on macOS, where option moves by
-word, control switches spaces and command goes to the end of the line. Flip lets
-you take one anyway and says what it costs.
-
-## Settings
-
-**Settings…** in the menu bar, or `⌘,`. Every change applies as you make it. The
-pages are down the side, with your keyboard drawn along the bottom and the keys
-of whichever page you are on lit up.
-
-- **General** — start at login, and the update check. Flip itself, and nothing
-  about the grid it draws.
-- **Switcher** — the two modifiers that open it, which display it appears on, how
-  long the modifier must be held before it draws anything, thumbnails or plain
-  icons, and whether windows from other spaces are listed.
-- **Shortcuts** — one key per application, and the leader they answer to, picked
-  as keys rather than from a menu. It is its own setting: the switcher's leader
-  is tapped and let go, this one is held while you aim, and they need not be the
-  same key. Click a key and press the one you want, function keys included. The
-  editor warns when a key would shadow a character you need to type.
-- **Arrange** — the modifier that carries a window to another display, the one
-  that moves and resizes it, and the keys they go with, listed so you can find
-  them without this page.
-- **Excluded** — applications kept out of the grid. A key bound directly to one
-  still reaches it.
-
-Along the bottom sits a picture of your keyboard with the keys of whichever tab
-you are on lit up, and the modifiers spelled out — `⌃` is labelled *control*, `⌥`
-is *option*. The letters come from the layout you type on and the shape from the
-keyboard you type on, which are not the same question: a German layout on an ANSI
-board has no key between the left shift and Z, and Flip asks macOS which it is.
-Where command sits in the bottom row is the one thing macOS cannot answer, so
-there is a small switch under the picture for it.
-
-**Pause** in the menu bar hands both hotkeys back to macOS for as long as a screen
-share lasts.
-
-## From the command line
-
-Homebrew puts a `flip` command on your PATH; with the disk image, `make link`
-does the same.
+Homebrew puts `flip` on your PATH; with the disk image, run `make link`.
 
 ```sh
-flip list                    # every window Flip knows, as JSON
-flip focus 27461             # bring one forward
-flip arrange left-half       # move the focused window
-flip switch                  # open the switcher
-flip permissions             # what macOS has granted; nonzero if one is missing
-flip pause                   # hand ⌘Tab back to macOS, then `flip resume`
+flip list               # every window as JSON
+flip focus 27461        # bring a window forward
+flip arrange left-half  # move the focused window
+flip layout coding      # apply a layout
+flip switch             # open the switcher
+flip pause              # hand ⌘Tab back to macOS, then `flip resume`
 ```
 
-It drives the running application over a socket rather than doing the work
-itself, so it sees exactly the windows the switcher sees. That makes the missing
-title search a script:
+## FAQ
 
-```sh
-flip focus "$(flip list | jq 'map(select(.title | test("invoice"; "i")))[0].id')"
-```
+**Why does it want Screen Recording?** Only for thumbnails. Turn them off in Settings and Flip shows app icons instead.
 
-## Questions
-
-**Why does a window switcher want Screen Recording?** Only for the thumbnails.
-Turn them off in Settings and Flip shows application icons instead — and stops
-asking for it.
-
-**macOS says the disk image "cannot be opened because Apple cannot check it for
-malicious software".** Flip is signed with its own certificate rather than
-notarised through Apple's paid programme, and macOS quarantines anything a browser
-downloads. Homebrew clears that for you — this only happens with the disk image.
-Either:
-
-1. Double-click the disk image and dismiss the warning.
-2. Open **System Settings › Privacy & Security** and scroll down to *Security*.
-3. Next to *"Flip-x.y.z.dmg" was blocked to protect your Mac*, click **Open
-   Anyway**, then confirm.
-
-Or clear it in one line, which also spares the copied app the same warning on its
-first launch:
+**macOS says the disk image can't be checked for malicious software.** Flip is signed but not notarised. Open **System Settings › Privacy & Security**, scroll to *Security* and click **Open Anyway**, or run:
 
 ```sh
 xattr -d com.apple.quarantine ~/Downloads/Flip-*.dmg
 ```
 
-Control-clicking and choosing Open no longer works for this on macOS 26.
+Homebrew does this for you.
 
-**Do I have to grant the permissions again after every update?** No. The signature
-is pinned to the same certificate on every release, and the pipeline refuses to
-publish one where it has drifted.
+**Do I have to grant permissions again after an update?** No, every release is signed with the same certificate.
 
-**Can I handle the permissions from the terminal?** You can check them and you can
-take them away, but you cannot grant them:
+**`⌘ Tab` suddenly shows the normal macOS switcher.** An app, usually a password manager, has left *Secure Input* on, and macOS hides your keystrokes from Flip. Flip shows a lock in the menu bar and explains it; quitting that app fixes it.
 
-```sh
-flip permissions                                 # both grants; nonzero if one is missing
-open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-tccutil reset Accessibility dev.mxwnk.Flip       # start over, then restart Flip
-```
+**Where are my settings?** In `~/Library/Application Support/Flip/config.json`. Edits by hand apply right away.
 
-Granting is the one step macOS keeps for the switch in System Settings: the
-database behind it is protected by SIP, and every recipe that writes to it either
-needs SIP turned off or leaves a row macOS then declines to honour. What
-`flip permissions` is for is the other half — a setup script that stops and says
-which one is missing instead of starting a Flip that quietly does nothing. Reset
-is the repair for a grant that is listed but no longer works, which is what
-replacing the app outside the installer leaves behind.
-
-**Where do my settings live?** In `config.json` in `~/Library/Application
-Support/Flip/`, as readable JSON, grouped the way the settings window is:
-`general`, `switcher`, `shortcuts`, `arrange` and `excluded`. Modifiers are
-keywords — `"leader": ["option", "control"]` — the same four words wherever they
-appear, and every key is in there too, the application shortcuts under
-`shortcuts.bindings` and the arrangements under `arrange.keys`. Edits made by
-hand are picked up while Flip runs. It is the only file Flip reads; there is
-nowhere else a setting can be hiding.
-
-**Something is wrong and I want to report it.** **Diagnostics…** in the menu
-shows the version, both permissions, every setting and Flip's recent log, with a
-Copy button — enough for an issue without opening a terminal.
+**Something is wrong.** Open **Diagnostics…** from the menu bar, copy the report and [open an issue](https://github.com/mxwnk/flip/issues).
 
 ## Contributing
 
-Open work and known gaps live in
-[issues](https://github.com/mxwnk/flip/issues). Building, testing and releasing
-are in [docs/development.md](docs/development.md); what changed in each release is
-in [CHANGELOG.md](CHANGELOG.md).
+Building, testing and releasing: [docs/development.md](docs/development.md). What changed: [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
