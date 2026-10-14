@@ -2,6 +2,10 @@
 
 The release pipeline publishes the section matching the tag as the release notes.
 
+## 2.2.1
+
+- 🔓 Locking the screen no longer greets you with the Secure Input notice when you come back
+
 ## 2.2.0
 
 - 🌐 **Input source per app** – Flip switches the keyboard layout when an app comes to the front (Settings › Input Sources, `inputSources` in `config.json`)
