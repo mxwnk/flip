@@ -137,7 +137,10 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private lazy var secureInputNotice = SecureInputNotice()
 
     private func reportSecureInputIfChanged() {
-        switch secureInput.observe(isOn: SecureInputHolder.isOn, at: Date()) {
+        let observed = secureInput.observe(
+            isOn: SecureInputHolder.isOn, isScreenLocked: SecureInputHolder.isScreenLocked, at: Date()
+        )
+        switch observed {
         case .started: secureInputStarted()
         case .ended: secureInputEnded()
         case .needsExplaining: explainSecureInput()

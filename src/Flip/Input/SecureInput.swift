@@ -22,6 +22,13 @@ struct SecureInputHolder: Equatable {
 
     static var isOn: Bool { IsSecureEventInputEnabled() }
 
+    /// The lock screen's password field holds secure input for as long as the
+    /// screen is locked, and rightly. The key is absent while unlocked.
+    static var isScreenLocked: Bool {
+        let session = CGSessionCopyCurrentDictionary() as? [String: Any]
+        return session?["CGSSessionScreenIsLocked"] as? Bool ?? false
+    }
+
     @MainActor
     static func current() -> SecureInputHolder? {
         guard IsSecureEventInputEnabled() else { return nil }
@@ -44,7 +51,8 @@ struct SecureInputHolder: Equatable {
 
 /// Decides when to explain. A focused password field holds secure input for
 /// as long as it is focused, and rightly, so only a long stretch is worth a
-/// word — and one stretch is explained once.
+/// word — and one stretch is explained once. The lock screen is such a field,
+/// so the stretch is only counted from the moment the screen is unlocked.
 struct SecureInputEpisode {
     static let patience: TimeInterval = 15
 
@@ -55,29 +63,37 @@ struct SecureInputEpisode {
         case none
     }
 
-    private(set) var startedAt: Date?
+    /// Where the patience is measured from: the start, or the last moment the
+    /// screen was seen locked.
+    private(set) var countingSince: Date?
     private var hasExplained = false
 
-    var isOn: Bool { startedAt != nil }
+    var isOn: Bool { countingSince != nil }
 
-    mutating func observe(isOn: Bool, at now: Date) -> Change {
+    mutating func observe(isOn: Bool, isScreenLocked: Bool = false, at now: Date) -> Change {
         guard isOn else { return end() }
-        guard let startedAt else { return start(at: now) }
-        guard !hasExplained, now.timeIntervalSince(startedAt) >= Self.patience else { return .none }
+        guard let countingSince else { return start(at: now) }
+        guard !isScreenLocked else { return restartCounting(at: now) }
+        guard !hasExplained, now.timeIntervalSince(countingSince) >= Self.patience else { return .none }
 
         hasExplained = true
         return .needsExplaining
     }
 
     private mutating func start(at now: Date) -> Change {
-        startedAt = now
+        countingSince = now
         return .started
     }
 
-    private mutating func end() -> Change {
-        guard startedAt != nil else { return .none }
+    private mutating func restartCounting(at now: Date) -> Change {
+        countingSince = now
+        return .none
+    }
 
-        startedAt = nil
+    private mutating func end() -> Change {
+        guard countingSince != nil else { return .none }
+
+        countingSince = nil
         hasExplained = false
         return .ended
     }
