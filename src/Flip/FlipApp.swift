@@ -76,7 +76,8 @@ final class FlipApp: NSObject, NSApplicationDelegate {
                 log.notice("diagnostics copied to the clipboard")
             },
             onTogglePause: { [weak self] in self?.togglePause() },
-            onApplyLayout: { [weak self] id in self?.applyLayout(id) }
+            onApplyLayout: { [weak self] id in self?.applyLayout(id) },
+            onExplainSecureInput: { [weak self] in self?.explainSecureInput() }
         )
         updateMenuBar()
 
@@ -136,18 +137,34 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         tap?.setEnabled(keyCaptures == 0 && !isPaused)
     }
 
-    private var secureInputHolder: SecureInputHolder?
+    private var secureInput = SecureInputEpisode()
+    private lazy var secureInputNotice = SecureInputNotice()
 
     private func reportSecureInputIfChanged() {
-        let latest = SecureInputHolder.current()
-        guard latest != secureInputHolder else { return }
+        switch secureInput.observe(isOn: SecureInputHolder.isOn, at: Date()) {
+        case .started: secureInputStarted()
+        case .ended: secureInputEnded()
+        case .needsExplaining: explainSecureInput()
+        case .none: break
+        }
+    }
 
-        secureInputHolder = latest
-        menuBar?.showSecureInput(heldBy: latest)
+    private func secureInputStarted() {
+        menuBar?.showSecureInput(isOn: true)
 
-        guard let latest else { return log.notice("secure input released; keys reach Flip again") }
+        let reported = SecureInputHolder.current()?.description ?? "nobody"
+        log.error("secure input is on, macOS attributes it to \(reported, privacy: .public); no key reaches Flip")
+    }
 
-        log.error("secure input is on, held by \(latest.description, privacy: .public); no key reaches Flip")
+    private func secureInputEnded() {
+        menuBar?.showSecureInput(isOn: false)
+        secureInputNotice.showResolved()
+        log.notice("secure input released; keys reach Flip again")
+    }
+
+    private func explainSecureInput() {
+        secureInputNotice.show()
+        log.notice("explaining secure input")
     }
 
     private func diagnostics() -> String {
@@ -157,7 +174,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             settings: config.settings,
             bindingCount: config.bindings.count,
             canReadWindowIDs: canReadWindowIDs,
-            secureInputHolder: secureInputHolder,
+            secureInputHolder: SecureInputHolder.current(),
             windowCount: store.windows(
                 includingMinimized: true,
                 fromEverySpace: config.settings.switcher.showWindowsFromEverySpace

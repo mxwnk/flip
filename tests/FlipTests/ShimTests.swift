@@ -58,7 +58,7 @@ final class ShimTests: XCTestCase {
             windowCount: 3
         )
 
-        XCTAssertTrue(report.contains("Secure input: ON, held by Vault (pid 42)"))
+        XCTAssertTrue(report.contains("Secure input: ON, macOS attributes it to Vault (pid 42)"))
     }
 
     func testAnUnnamedSecureInputHolderIsStillDescribed() {

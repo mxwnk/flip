@@ -11,13 +11,14 @@ final class MenuBarItem: NSObject {
     private var availableUpdate: String?
     private var layouts: [WindowLayout] = []
     private var layoutLeader = ModifierChoice.optionControl.label
-    private var secureInputHolder: SecureInputHolder?
+    private var isSecureInputOn = false
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
     private let onShowAbout: () -> Void
     private let onCopyDiagnostics: () -> Void
     private let onTogglePause: () -> Void
     private let onApplyLayout: (UUID) -> Void
+    private let onExplainSecureInput: () -> Void
 
     init(
         onShowSettings: @escaping () -> Void,
@@ -25,7 +26,8 @@ final class MenuBarItem: NSObject {
         onShowAbout: @escaping () -> Void,
         onCopyDiagnostics: @escaping () -> Void,
         onTogglePause: @escaping () -> Void,
-        onApplyLayout: @escaping (UUID) -> Void
+        onApplyLayout: @escaping (UUID) -> Void,
+        onExplainSecureInput: @escaping () -> Void
     ) {
         self.onShowSettings = onShowSettings
         self.onShowUpdate = onShowUpdate
@@ -33,6 +35,7 @@ final class MenuBarItem: NSObject {
         self.onCopyDiagnostics = onCopyDiagnostics
         self.onTogglePause = onTogglePause
         self.onApplyLayout = onApplyLayout
+        self.onExplainSecureInput = onExplainSecureInput
         super.init()
 
         refresh()
@@ -60,8 +63,8 @@ final class MenuBarItem: NSObject {
 
     /// Rebuilt rather than mutated: the menu is cheap and rebuilding it is how
     /// every other change here already works.
-    func showSecureInput(heldBy holder: SecureInputHolder?) {
-        secureInputHolder = holder
+    func showSecureInput(isOn: Bool) {
+        isSecureInputOn = isOn
         refresh()
     }
 
@@ -69,10 +72,13 @@ final class MenuBarItem: NSObject {
         let symbol: String
         if isPaused {
             symbol = "pause.circle"
-        } else if status.isComplete, inputWorking, canReadWindowIDs, secureInputHolder == nil {
-            symbol = "rectangle.on.rectangle"
-        } else {
+        } else if !status.isComplete || !inputWorking || !canReadWindowIDs {
             symbol = "exclamationmark.triangle"
+        } else if isSecureInputOn {
+            // Not a fault in Flip, and the lock is what macOS itself shows for it.
+            symbol = "lock.shield"
+        } else {
+            symbol = "rectangle.on.rectangle"
         }
 
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Flip")
@@ -119,12 +125,8 @@ final class MenuBarItem: NSObject {
             menu.addItem(dead)
         }
 
-        if let secureInputHolder {
-            let blocked = NSMenuItem(title: "Keys hidden by secure input", action: nil, keyEquivalent: "")
-            blocked.isEnabled = false
-            blocked.toolTip = "\(secureInputHolder.description) has secure input on, so macOS hides "
-                + "every keystroke from Flip. Quitting it gives the keys back."
-            menu.addItem(blocked)
+        if isSecureInputOn {
+            menu.addItem(action("Secure Input is blocking Flip…", #selector(explainSecureInput)))
         }
 
         if !status.isComplete {
@@ -189,6 +191,10 @@ final class MenuBarItem: NSObject {
         item.target = self
 
         return item
+    }
+
+    @objc private func explainSecureInput() {
+        onExplainSecureInput()
     }
 
     @objc private func togglePause() {
