@@ -27,7 +27,7 @@ enum Diagnostics {
         lines.append("Screen Recording: \(status.screenRecording ? "granted" : "MISSING")")
         lines.append("Start at login: \(LoginItem.isEnabled ? "on" : "off")")
         lines.append("Event tap: \(isPaused ? "paused" : "running")")
-        lines.append("Secure input: \(secureInputHolder.map { "ON, held by \($0.description)" } ?? "off")")
+        lines.append("Secure input: \(secureInputHolder.map { "ON, macOS attributes it to \($0.description)" } ?? "off")")
         lines.append("Window ids: \(canReadWindowIDs ? "available" : "UNSUPPORTED ON THIS SYSTEM")")
         lines.append("")
 
