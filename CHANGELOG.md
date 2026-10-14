@@ -5,6 +5,7 @@ The release pipeline publishes the section matching the tag as the release notes
 ## 2.2.0
 
 - 🌐 **Input source per app** – Flip switches the keyboard layout when an app comes to the front (Settings › Input Sources, `inputSources` in `config.json`)
+- 🩺 **Diagnostics window** – see the report and recent log before you copy it
 - 🔒 **Secure Input explained** – when an app hides your keystrokes from Flip, a notice says why and turns green once it's fixed
 
 ## 2.1.0

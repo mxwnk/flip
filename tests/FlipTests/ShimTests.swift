@@ -32,7 +32,7 @@ final class ShimTests: XCTestCase {
             secureInputHolder: nil,
             windowCount: 0
         )
-        XCTAssertTrue(unsupported.contains("Window ids: UNSUPPORTED ON THIS SYSTEM"))
+        XCTAssertEqual(unsupported.value(of: "Window ids"), "UNSUPPORTED ON THIS SYSTEM")
 
         let fine = Diagnostics.report(
             status: .init(accessibility: true, screenRecording: true),
@@ -43,8 +43,8 @@ final class ShimTests: XCTestCase {
             secureInputHolder: nil,
             windowCount: 3
         )
-        XCTAssertTrue(fine.contains("Window ids: available"))
-        XCTAssertTrue(fine.contains("Secure input: off"))
+        XCTAssertEqual(fine.value(of: "Window ids"), "available")
+        XCTAssertEqual(fine.value(of: "Secure input"), "off")
     }
 
     func testDiagnosticsNameWhoeverHoldsSecureInput() {
@@ -58,7 +58,7 @@ final class ShimTests: XCTestCase {
             windowCount: 3
         )
 
-        XCTAssertTrue(report.contains("Secure input: ON, macOS attributes it to Vault (pid 42)"))
+        XCTAssertEqual(report.value(of: "Secure input"), "ON, macOS attributes it to Vault (pid 42)")
     }
 
     func testAnUnnamedSecureInputHolderIsStillDescribed() {

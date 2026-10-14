@@ -33,8 +33,9 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private lazy var settingsWindow = SettingsWindow(config: config)
     private lazy var updates = UpdateChecker(config: config)
     private lazy var inputSources = InputSourceSwitcher(config: config)
+    private lazy var diagnosticsWindow = DiagnosticsWindow { [weak self] in self?.diagnostics() }
     private lazy var aboutWindow = AboutWindow(
-        onCopyDiagnostics: { [weak self] in self?.diagnostics() ?? "" }
+        onShowDiagnostics: { [weak self] in self?.diagnosticsWindow.show() }
     )
 
     static func main() {
@@ -69,12 +70,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
             onShowSettings: { [weak self] in self?.settingsWindow.show() },
             onShowUpdate: { NSWorkspace.shared.open(UpdateChecker.releases) },
             onShowAbout: { [weak self] in self?.aboutWindow.show() },
-            onCopyDiagnostics: { [weak self] in
-                guard let self else { return }
-
-                Diagnostics.copyToPasteboard(diagnostics())
-                log.notice("diagnostics copied to the clipboard")
-            },
+            onShowDiagnostics: { [weak self] in self?.diagnosticsWindow.show() },
             onTogglePause: { [weak self] in self?.togglePause() },
             onApplyLayout: { [weak self] id in self?.applyLayout(id) },
             onExplainSecureInput: { [weak self] in self?.explainSecureInput() }
@@ -167,7 +163,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         log.notice("explaining secure input")
     }
 
-    private func diagnostics() -> String {
+    private func diagnostics() -> DiagnosticsReport {
         Diagnostics.report(
             status: status,
             isPaused: isPaused,

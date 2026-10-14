@@ -340,7 +340,7 @@ echo
 echo "Menu bar"
 ITEMS=$(osascript -e 'tell application "System Events" to tell process "Flip" to get name of menu items of menu 1 of menu bar item 1 of menu bar 1' 2>/dev/null)
 osascript -e 'tell application "System Events" to key code 53' >/dev/null 2>&1
-for item in "Settings…" "About Flip" "Copy Diagnostics" "Quit Flip" "Pause"; do
+for item in "Settings…" "About Flip" "Diagnostics…" "Quit Flip" "Pause"; do
     case "$ITEMS" in
         *"$item"*) pass "The menu offers $item" ;;
         *) fail "The menu offers $item" "menu was: $ITEMS" ;;
@@ -353,16 +353,27 @@ printf 'smoke-marker' | pbcopy
 # item is found but never activates.
 osascript -e 'tell application "System Events" to tell process "Flip" to set frontmost to true' >/dev/null 2>&1
 open_menu
-click_menu_item "Copy Diagnostics"
+click_menu_item "Diagnostics…"
 # The slowest step in the suite: the report reads the OSLog store, measured at
 # 1.6s idle and longer after the raising loop. Hence the wide ceiling.
-COPIED=""
+SHOWN=""
 for _ in $(seq 1 150); do
+    osascript -e 'tell application "System Events" to tell process "Flip" to exists window "Flip Diagnostics"' 2>/dev/null \
+        | grep -q true && { SHOWN=yes; break; }
+    sleep 0.1
+done
+[ -n "$SHOWN" ] && pass "Diagnostics… opens the report" || fail "Diagnostics… opens the report" "no window"
+
+# SwiftUI gives the buttons no accessibility name; Copy is the last of them.
+osascript -e 'tell application "System Events" to tell process "Flip" to click last button of group 1 of window "Flip Diagnostics"' >/dev/null 2>&1
+COPIED=""
+for _ in $(seq 1 30); do
     case "$(pbpaste)" in *"Accessibility:"*) COPIED=yes; break ;; esac
     sleep 0.1
 done
-[ -n "$COPIED" ] && pass "Copy Diagnostics fills the clipboard" \
-    || fail "Copy Diagnostics fills the clipboard" "clipboard was: $(pbpaste | head -1)"
+[ -n "$COPIED" ] && pass "Its Copy button fills the clipboard" \
+    || fail "Its Copy button fills the clipboard" "clipboard was: $(pbpaste | head -1)"
+osascript -e 'tell application "System Events" to tell process "Flip" to click button 1 of window "Flip Diagnostics"' >/dev/null 2>&1
 
 # --------------------------------------------------------------------- the settings
 

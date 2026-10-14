@@ -7,11 +7,11 @@ import SwiftUI
 final class AboutWindow {
     static let repository = URL(string: "https://github.com/mxwnk/flip")!
 
-    private let onCopyDiagnostics: () -> String
+    private let onShowDiagnostics: () -> Void
     private var window: NSWindow?
 
-    init(onCopyDiagnostics: @escaping () -> String) {
-        self.onCopyDiagnostics = onCopyDiagnostics
+    init(onShowDiagnostics: @escaping () -> Void) {
+        self.onShowDiagnostics = onShowDiagnostics
     }
 
     func show() {
@@ -32,7 +32,7 @@ final class AboutWindow {
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
 
-        let host = NSHostingView(rootView: AboutView(onCopyDiagnostics: onCopyDiagnostics))
+        let host = NSHostingView(rootView: AboutView(onShowDiagnostics: onShowDiagnostics))
         host.sizingOptions = []
         window.contentView = host
 
@@ -48,9 +48,7 @@ final class AboutWindow {
 }
 
 private struct AboutView: View {
-    let onCopyDiagnostics: () -> String
-
-    @State private var copied = false
+    let onShowDiagnostics: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -84,8 +82,7 @@ private struct AboutView: View {
                 Link("github.com/mxwnk/flip", destination: AboutWindow.repository)
                     .font(.system(size: 12))
 
-                Button(copied ? "Diagnostics Copied" : "Copy Diagnostics") { copy() }
-                    .disabled(copied)
+                Button("Show Diagnostics…", action: onShowDiagnostics)
             }
 
             Spacer(minLength: 20)
@@ -99,13 +96,5 @@ private struct AboutView: View {
             .padding(.bottom, 22)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func copy() {
-        Diagnostics.copyToPasteboard(onCopyDiagnostics())
-        copied = true
-
-        // Long enough to read, short enough that the button is not stuck.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
     }
 }
