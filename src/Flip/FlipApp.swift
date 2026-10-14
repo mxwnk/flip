@@ -32,6 +32,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
     private let config = ConfigStore()
     private lazy var settingsWindow = SettingsWindow(config: config)
     private lazy var updates = UpdateChecker(config: config)
+    private lazy var inputSources = InputSourceSwitcher(config: config)
     private lazy var aboutWindow = AboutWindow(
         onCopyDiagnostics: { [weak self] in self?.diagnostics() ?? "" }
     )
@@ -88,6 +89,7 @@ final class FlipApp: NSObject, NSApplicationDelegate {
         updates.start()
 
         frontmost.startObserving()
+        inputSources.start()
         startWindowStoreIfPermitted()
         startInputIfPermitted()
         startControlServer()

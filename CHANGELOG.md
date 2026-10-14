@@ -1,374 +1,78 @@
 # Changelog
 
-The release pipeline lifts the section matching the tag out of this file and
-publishes it as the release notes, so what is written here is what people read.
+The release pipeline publishes the section matching the tag as the release notes.
+
+## 2.2.0
+
+- 🌐 **Input source per app** – Flip switches the keyboard layout when an app comes to the front (Settings › Input Sources, `inputSources` in `config.json`)
 
 ## 2.1.0
 
-**Layouts put a whole set of windows in place with one key.** A layout names
-applications and where each one goes: a display, and a half, a quarter or the
-whole of it. Hold the arrangement leader, ⌃⌥ by default, and press the layout's
-key, or pick it from the new Layouts menu in the menu bar, or run
-`flip layout <name>`. Every application it names comes forward, the last rule in
-front. They are set up on a Layouts page of their own in Settings and kept in
-`config.json` under `arrange.layouts`. A layout whose key is already taken by an
-arrangement, or that shares its name or key with another layout, says so on that
-page instead of quietly doing nothing.
-
-**The switcher can keep an application's windows together.** With "Group windows
-by application" on the Switcher page, an application's windows sit side by side
-instead of being spread out by when each was last used. Tapping ⌘Tab still goes
-back to the window you were just in. Whatever is grouped, the windows sharing an
-application with the selected one are lit up.
-
-**Flip says when macOS is hiding the keyboard from it.** While any application
-holds secure input, which password fields turn on and some applications forget to
-turn off, macOS passes no keystroke to Flip, but ⌘Tab still reaches the Dock, so
-Flip looks overruled. The menu bar now shows a warning, and the menu names the
-application holding it. Quitting that application gives the keys back, so there
-is no need to log out. Copy Diagnostics reports it too.
-
-**A `flip` command that hung up early no longer shuts Flip down.** Interrupting
-`flip` before it had read the answer stopped Flip entirely, and since nothing
-restarts it, ⌘Tab went back to the Dock until the next login. A `flip` that
-connects and never finishes no longer blocks the ones after it either.
-
-**Window actions move the window you are looking at.** They moved the window Flip
-had last seen focused. After a click on the desktop, or in an application whose
-focus changes Flip had missed, that was another window. Now they ask the
-application in front, and leave everything alone when it has no window.
-
-**An application that hangs no longer stalls Flip for seconds.** The half-second
-limit on waiting for an unresponsive application covered the application but not
-its windows, which waited out macOS's default of six seconds per question. And an
-application that was not ready to answer when it launched used to stay half-known
-until Flip restarted. It is now picked up the next time it comes to the front.
-
-**Smaller fixes.** Window thumbnails are ready the first time the switcher opens
-after launch. A `config.json` edited by hand that cannot be read is logged with
-the reason. Every key typed anywhere costs Flip less work.
+- 🗂️ **Layouts** – place a whole set of windows with one key, from the menu bar or `flip layout <name>`
+- 🧲 **Group windows by app** in the switcher; ⌘Tab still jumps back to your last window
+- 🔐 **Secure input warning** – the menu bar names the app that hides your keystrokes from Flip
+- 💥 A `flip` command that hung up early no longer shuts Flip down
+- 🎯 Window actions move the window you are actually looking at
+- 🐢 A hanging app no longer stalls Flip for seconds
+- ✨ Thumbnails ready on first open, unreadable `config.json` edits are logged, less work per keystroke
 
 ## 2.0.0
 
-**Flip is configured by one file, `config.json`, and reads no other.** It is
-grouped the way the settings window is — `general`, `switcher`, `shortcuts`,
-`arrange` and `excluded` — so a setting sits under the page whose switch changes
-it, and the application keys are the `bindings` inside `shortcuts`. An edit made
-by hand is picked up while Flip runs, settings included: those used to need a
-restart. Nothing carries over from a 1.x install, so this is a major version:
-Flip starts from the defaults and you set it up once.
-
-**Every arrangement key is in the file too.** `arrange.keys` names all eleven —
-`"left-half": "left"`, `"maximize": "return"`, `"top-left": "u"` — by the same
-name `flip arrange` takes, so the keys can be read and changed where the rest of
-the configuration is rather than only being listed in the settings window.
-Naming one leaves the other ten alone; a name no arrangement answers to is an
-error. Keys are written the way a binding is: a character, or a name for the ones
-that type nothing — `left`, `right`, `up`, `down`, `return`, `f1` to `f12`.
-
-**Filling the screen is called maximizing.** `flip arrange fill` is now
-`flip arrange maximize`, and the settings window says Maximize. The behaviour is
-unchanged, toggle and all.
-
-**Modifiers are spelled one way throughout the file.** Every modifier setting is
-an array of keywords — `switcher.leader` is `["command"]`, `arrange.leader` is
-`["option", "control"]`, `arrange.displayMove` is `["option", "shift"]` — rather
-than a word per setting with a spelling of its own. The words are `command`,
-`option`, `control` and `shift`, and they are read in any order. A combination a
-setting does not offer is an error rather than a silent fallback: Flip logs it,
-runs on the defaults and leaves the file alone for you to look at.
-
-**Moving a window to the next display follows the arrangement.** It stepped
-through the displays in the order the window server hands them over, which is by
-display number: with two screens side by side, ⇧⌥→ was as likely to send the
-window left as right, and on three it was anyone's guess. They are now ordered
-the way they stand in System Settings — left to right, then top to bottom.
-
-**⌘Tab now opens the switcher, and ⌥Tab narrows to the application in front.**
-The two were the other way round, which meant the first thing anybody had to
-learn was that the key they had used for years now did something else. ⌘Tab is
-the switcher every Mac user already reaches for; Flip only changes what it lists,
-which is windows rather than applications. Narrowing to one application moves to
-⌥Tab, where stock macOS uses ⌘` — a key half the keyboards in Europe put
-somewhere else. Swap them back in Settings › Switcher if you prefer.
-
-**Closing a window with ⌫ works in both grids.** It answered to the switcher's
-leader alone, so in the other grid — the one held open by the other hotkey — the
-key did nothing. It now answers to whichever modifier is holding the grid open,
-and the same goes for Return. A window action still wins: ⌃⌥↩ fills the window
-behind the grid rather than committing.
-
-**`flip permissions` reports what macOS has granted**, and exits nonzero when
-something is missing — enough for a setup script to stop and say which, instead of
-starting a Flip that quietly does nothing. It asks the running application rather
-than answering for itself: a grant belongs to Flip's signature, and the command
-has its own. Granting still cannot be scripted, and nothing that claims otherwise
-should be trusted with it.
+- 📄 **One config file** – everything lives in `config.json`, grouped like the settings window, and hand edits apply live. Nothing carries over from 1.x
+- ⌨️ All arrangement keys are in the file (`arrange.keys`)
+- 🔤 Modifiers are written as arrays: `["option", "control"]`
+- 📐 `flip arrange fill` is now `flip arrange maximize`
+- 🔁 ⌘Tab opens the switcher, ⌥Tab narrows to the app in front (swap them back in Settings › Switcher)
+- 🖥️ Moving to the next display follows how your displays are arranged
+- ⌫ Closing a window works in both grids
+- ✅ `flip permissions` reports both privacy grants
 
 ## 1.5.1
 
-**Flip could refuse to launch at all, and then refuse to stay gone.** It reads a
-private accessibility symbol to put a window server id on a window — the only
-reliable way to line the two lists up. That symbol was linked strongly, so on a
-system that does not export it the process was killed by the dynamic linker
-*before any Flip code ran*: no log, no menu bar, nothing to read but a system
-dialog. The check inside the app that was supposed to catch this could never fire,
-because there was no app yet.
-
-It is weakly imported now. Where the symbol is missing Flip starts, says so in
-the menu bar and in Copy Diagnostics, and does the rest of its job.
-
-**And the login item no longer resurrects a broken copy.** The launch agent asked
-launchd to restart Flip after any unsuccessful exit, which turns "cannot start"
-into a loop: a new process every few seconds, and quitting or force-quitting it
-brings it straight back. Measured on a deliberately failing job — three starts in
-twenty-five seconds with that setting, one without. It is gone. Starting at login
-still works; a crash now leaves Flip closed until you open it.
+- 🛟 Flip starts even where a private accessibility symbol is missing, and says so
+- 🔂 The login item no longer restarts a broken copy in a loop
 
 ## 1.5.0
 
-**The halves and quarters are settable too.** They were nailed to `⌃⌥` with an
-argument attached: every single modifier is already spoken for on the arrows, so
-a pair is what is left. The argument holds for how many modifiers, and says
-nothing about which two — so Settings › Windows now picks that as well, on the
-same keys as everything else, with the display move above it. Each modifier is
-listed with the keys it carries rather than all eleven in one table underneath,
-which is the only arrangement in which you can see that the two do not tread on
-each other.
-
-The reasoning did not go away, it moved into the window that needed it: choose a
-single modifier and Flip says what it takes from you, since `⌥` and an arrow is
-move-by-word and `⌃` and an arrow switches spaces. The two modifiers on this page
-can never collide, whatever you pick — the display moves live in a set the halves
-cannot reach — and the tests now prove that across every combination of the two
-rather than for the pair that used to be hard-coded.
-
-An older configuration comes back on `⌃⌥`, so nothing your fingers know moves.
-
-**The application keys have a leader of their own.** They used to borrow the
-switcher's, which quietly decided one question with the answer to another. The
-two are held differently — one is tapped and let go, the other is held while you
-aim at a key — and on a board with a Windows bottom row they are not even in the
-places their names suggest, so the key that feels like command is the one macOS
-calls option.
-
-Settings › Shortcuts picks it as keys rather than from a menu, each carrying its
-word, because which modifier this should be is a question about where your thumb
-rests. Choosing one with command in it says so plainly: `⌘` and a letter is a
-menu shortcut everywhere, and a binding there takes it away.
-
-A file written before this keeps behaving exactly as it did — the shortcut leader
-falls back to the switcher's rather than to a default, so nothing moves under an
-update. Narrowing an open grid is the one thing that still answers to the
-switcher's leader, since that is the modifier already holding the grid open.
-
-The row in the editor also stops claiming `⌥` regardless of what is set. It never
-followed the setting at all.
-
-**The settings window has pages down the side.** Four tabs across the top were
-already one more than a tab bar wears well, and each page had to introduce itself
-in its own words. Now the pages are a sidebar with a colour each, the page says
-its own name at the top, and the keyboard stays where it was along the bottom.
-
-The switcher got a page of its own out of it. General had grown into everything —
-what opens the grid, where it appears, how long it waits, what it draws — with
-start-at-login and the update check sitting among them as though they were the
-same kind of question. They are not: one page is the application, the other is
-the grid. The two modifiers that open the switcher are picked as keys there now,
-like every other modifier in the window.
-
-**Close a window from the grid.** `⌥⌫` on the selected tile closes it and leaves
-the grid standing, so the window you only opened the switcher to go and close is
-gone without ever being focused, and the next one is a keystroke away.
-
-It presses the window's own close button, which is the only close accessibility
-offers — so the application still decides what closing means and an unsaved
-document still gets to put its sheet up. The tile leaves at once rather than
-waiting for the destroyed notification to come back around, and closing the last
-one ends the session, because an empty grid answers nothing.
-
-Held down it acts once. Backspace is a key people lean on, and a repeat would
-empty the grid before they let go. With `⌘` held it does nothing at all: that is
-`⌘⌫`, which means move-to-trash everywhere else.
-
-**The shortcuts editor records the key you press.** It was a text field, so it
-could only ever be given characters — and F1 to F12 are perfectly good bindings.
-`bindings.json` could name them and the editor could not, which is a strange
-place for a settings window to be. Click the key, press the one you want.
-
-Recording asks Flip's own tap to stand down for the moment, or a key that is
-already bound would be answered by that binding instead of arriving: F1 above
-all, which ships bound out of the box and is exactly the key this is for. It
-gives the keys back after five seconds if nothing is pressed, and pausing keeps
-the last word — resuming from here cannot undo it.
+- 🎛️ Choose the modifier for halves and quarters
+- 🔑 App shortcuts get a leader of their own
+- 🗄️ Settings has pages down the side, the switcher gets its own page
+- ❌ Close a window from the grid with `⌥⌫`
+- 🎙️ The shortcut editor records the key you press, F1–F12 included
 
 ## 1.4.0
 
-**Flip has a command line.** `flip list` prints every window it knows as JSON,
-`flip focus <id>` brings one forward, `flip arrange left-half` moves the focused
-one, and `flip switch`, `flip pause` and `flip resume` do what they say. Homebrew
-puts it on your PATH; a disk image install gets it with `make link`.
-
-It drives the running application over a socket rather than reaching into
-accessibility itself, so it sees exactly the windows the switcher sees rather
-than a second opinion. The window-title search Flip does not have is now a
-pipeline: `flip list | jq` and `flip focus`.
-
-Opening the switcher from a script left it with no way out, because nothing was
-holding a modifier to release. **Return now commits the selection** — bare or
-with the leader held, so `⌃⌥↩` still fills the window behind the grid.
-
-**A fresh install now ships one shortcut instead of fourteen.** The old seed was
-one person's habits — a file manager most people have never installed, a
-particular Chrome web app, three editors — and every key it claimed was one a new
-user had to find and clear before it was theirs. What is left is `⌥ F` for the
-Finder: enough to show what application keys are, on the one application every
-Mac certainly has. An existing `bindings.json` is untouched.
+- 💻 **Command line** – `flip list`, `focus`, `arrange`, `switch`, `pause`, `resume`
+- ↩️ Return commits the selection
+- 🌱 A fresh install ships one shortcut instead of fourteen
 
 ## 1.3.0
 
-**The wheel steps through the grid.** Hovering already picked a tile and
-clicking already took it; scrolling was the one thing a hand on the mouse could
-not do. A notch is one window, the way it is in any list, and it follows the
-scrolling direction set on the machine rather than deciding for itself. A
-trackpad has to travel about a tile's width to earn a step, so a flick browses
-rather than bolting to the end.
-
-**Five fixes from a full read of the source.**
-
-A tap that failed to start had no way back. The port is created on its own
-thread, so a failure arrived after startup had already recorded the tap as
-running — no hotkey worked until the next launch, and the menu bar went on
-saying everything was fine. It now reports back, retries, and says so in the
-menu when it cannot.
-
-The safety timer that closes an overlay nobody let go of was re-armed on every
-narrowing, leaving the first one in the runloop. Half a minute later it could
-close a session it had nothing to do with. It now belongs to the session, which
-is what it was always measuring.
-
-Choosing an application with `⌘Tab` when macOS reported no frontmost application
-gave up without telling the router, which went on swallowing arrows and escape
-until the modifier came back up. Every other giving-up path already reported.
-
-Thumbnails were captured twice whenever two requests overlapped — reliably with
-the overlay delay set to Immediately — because a capture in flight was invisible
-to the check for what still needed one. The captures are also ordered around the
-tile that ends up selected now, rather than the one selected before the grid had
-stepped.
-
-A window closed by quitting its application left its remembered position behind,
-and window IDs get reused.
-
-**The shortcut editor warns when your leader is already spoken for.** Window
-actions are matched before application shortcuts, so choosing `⌃⌥` as the leader
-left bindings on `u i j k` and Return permanently unreachable, with nothing
-saying why.
-
-**The settings window stays in front.** Flip runs as an accessory application —
-no Dock icon, never the active one — and macOS will not reliably bring such an
-application's window forward. The window did open; it landed behind whatever was
-in front and looked as though the menu item had done nothing. It now floats above
-ordinary windows, and well below the switcher's own level, so the grid still draws
-over it.
-
-**The display moves are settable.** They share the arrow keys with the halves, so
-they have always needed a modifier of their own — and which one is a matter of
-what else is bound on the machine. Settings › Windows now offers `⇧⌥` as before,
-or `⌃⌥⌘`, all three at once. It switches rather than adds: whichever you do not
-pick stops working, so nothing is bound twice behind your back.
-
-The halves and quarters stay fixed, and the settings window now says why rather
-than only that they cannot be changed.
-
-**A keyboard along the bottom of the settings window**, with the keys of whichever
-tab you are on lit up. `⌃⌥⌘⇧` mean nothing until you can see which physical key
-each one is, and the settings window was full of them — so the modifiers carry the
-word as well as the symbol, in the positions your thumbs already know.
-
-Three questions go into drawing it, and they are not the same one. The letters
-come from the keyboard layout, so a German one shows Z and ß where an American
-shows Y and a hyphen. The shape comes from the hardware, which macOS reports
-separately — a German layout is typed on plenty of ANSI boards, and those have no
-key between the left shift and Z and no key beside the return.
-
-The third is where command sits in the bottom row, and that one macOS genuinely
-cannot answer: the modifier remapping it exposes says what each key *does*, not
-where it *is*, and a board like the Nuphy Air75 reports Apple's own vendor
-identifier while carrying the Windows arrangement — control, command, option. So
-it is a small switch under the picture, and nothing else depends on it.
+- 🖱️ Scroll through the grid
+- 🐛 Five fixes from a full source review
+- ⚠️ Warning when your leader is already taken
+- 🔝 The settings window stays in front
+- 🎚️ The display-move modifier is settable
+- ⌨️ A keyboard picture in Settings shows which keys are in use
 
 ## 1.2.0
 
-Nothing in the application itself changed — this release is about everything
-around it. The binary is byte for byte the one in 1.1.0.
-
-**The install command is shorter.** The tap moved to the name personal taps
-usually carry, so it reads `brew install --cask mxwnk/tap/flip` rather than
-stuttering. An existing install keeps working; `brew upgrade --cask flip` was
-already short and still is.
-
-**The disk image says which version it is installing** — the backdrop is redrawn
-for every release with the number stamped in — and it warns about the permission
-dialog before it appears rather than after. A permission nobody was expecting is
-the moment an unsigned application starts to look like malware.
-
-**"Apple cannot check it for malicious software" now has an answer.** Downloading
-the disk image by hand runs into Gatekeeper, and the workaround every guide on the
-internet repeats — Control-click, Open — stopped working on macOS 26. The readme
-and the site both spell out the three clicks that do work, and the one line that
-skips them. Homebrew has always cleared this for you; this is for everyone who
-takes the disk image instead.
-
-**Flip has a page:** [mxwnk.github.io/flip](https://mxwnk.github.io/flip/). It
-leads with the measurements, because everyone claims to be fast and nobody shows
-the number.
-
-The readme is half its old length and now about using Flip rather than building
-it; that moved to `docs/development.md`.
+- 🍺 Shorter install: `brew install --cask mxwnk/tap/flip`
+- 💿 The disk image shows its version
+- 🛡️ How to get past Gatekeeper on macOS 26
+- 🌍 Flip has a website: [mxwnk.github.io/flip](https://mxwnk.github.io/flip/)
 
 ## 1.1.0
 
-**Pick the display the grid opens on.** On a desk with two monitors the switcher
-could open on the one you were not looking at, and for a moment it read as though
-the key had done nothing. Settings › General now offers three answers: the display
-holding the active window, as before; the main display, always; or every display
-at once, the same grid on each. A panel per screen is built at launch the way the
-first one always was, so showing three costs no more than showing one — measured,
-not assumed.
-
-**Stage Manager no longer ruins previews.** With Stage Manager on, macOS parks a
-window as a shrunken, tilted miniature at the edge of the screen and reports that
-miniature as the window itself — 200 points wide where the window is 2497. Flip
-was dutifully capturing it, which is how a tile ended up with a smear where a
-preview should be. Accessibility keeps reporting the real size throughout, so the
-two disagreeing is now the tell: the miniature is skipped, the previous capture
-stands, and a window Flip has never seen full size keeps its icon.
-
-**Down from the end of a short row goes somewhere.** With seven windows in rows of
-four and three, pressing down on the last tile of the top row used to do nothing
-at all — the column it wanted did not exist below, and the old code stepped past
-the row entirely. It now lands on the last tile of that row.
-
-**Icons fill their tile.** With thumbnails turned off, the stand-in icon was a
-fixed 64 points inside a tile built to hold a window, and looked lost in it. It is
-sized to the tile now, and shrinks with it once enough windows are open to squeeze
-the columns. Minimised windows and captures that have not landed yet get the same
-treatment.
-
-Under the hood: `make smoke` — two dozen checks that drive the keyboard and the
-mouse through a running copy and read back what Flip decided. It covers the border
-with macOS, which is where every real bug in this project has been.
+- 🖥️ Choose the display the grid opens on
+- 🪟 Stage Manager no longer ruins previews
+- ⬇️ Down from the end of a short row goes somewhere
+- 🖼️ Icons fill their tile
 
 ## 1.0.1
 
-The disk image got a window instead of a file listing: a backdrop, the two icons
-placed with an arrow between them, and Flip's own icon on the volume.
+- 💿 A proper disk image window
 
 ## 1.0.0
 
-First release. Hold Option and tap Tab for every window on the current space, most
-recently used first; let go inside 150 ms and it switches without ever drawing
-anything. One key per application. Halves, quarters, filling and moving between
-displays from the keyboard. Mouse selection in the grid, windows from every space,
-an update check that only ever tells you.
+- 🎉 First release: window switcher, one key per app, halves, quarters and display moves from the keyboard
