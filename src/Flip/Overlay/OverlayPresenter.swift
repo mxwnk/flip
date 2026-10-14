@@ -170,7 +170,7 @@ final class OverlayPresenter: SwitcherPresenting {
 
         guard let window else { return }
 
-        // The title stays private: Copy Diagnostics pastes this log into an
+        // The title stays private: the diagnostics report pastes this log into an
         // issue, and a window title is a document name or a mail subject.
         log.debug("focusing \(window.applicationName, privacy: .public) — \(window.title, privacy: .private)")
         store.focus(window)

@@ -15,7 +15,7 @@ final class MenuBarItem: NSObject {
     private let onShowSettings: () -> Void
     private let onShowUpdate: () -> Void
     private let onShowAbout: () -> Void
-    private let onCopyDiagnostics: () -> Void
+    private let onShowDiagnostics: () -> Void
     private let onTogglePause: () -> Void
     private let onApplyLayout: (UUID) -> Void
     private let onExplainSecureInput: () -> Void
@@ -24,7 +24,7 @@ final class MenuBarItem: NSObject {
         onShowSettings: @escaping () -> Void,
         onShowUpdate: @escaping () -> Void,
         onShowAbout: @escaping () -> Void,
-        onCopyDiagnostics: @escaping () -> Void,
+        onShowDiagnostics: @escaping () -> Void,
         onTogglePause: @escaping () -> Void,
         onApplyLayout: @escaping (UUID) -> Void,
         onExplainSecureInput: @escaping () -> Void
@@ -32,7 +32,7 @@ final class MenuBarItem: NSObject {
         self.onShowSettings = onShowSettings
         self.onShowUpdate = onShowUpdate
         self.onShowAbout = onShowAbout
-        self.onCopyDiagnostics = onCopyDiagnostics
+        self.onShowDiagnostics = onShowDiagnostics
         self.onTogglePause = onTogglePause
         self.onApplyLayout = onApplyLayout
         self.onExplainSecureInput = onExplainSecureInput
@@ -162,7 +162,7 @@ final class MenuBarItem: NSObject {
 
         menu.addItem(.separator())
         menu.addItem(action("About Flip", #selector(showAbout)))
-        let diagnostics = action("Copy Diagnostics", #selector(copyDiagnostics))
+        let diagnostics = action("Diagnostics…", #selector(showDiagnostics))
         diagnostics.toolTip = "Version, grants, settings and Flip's recent log, as text"
         menu.addItem(diagnostics)
 
@@ -218,8 +218,8 @@ final class MenuBarItem: NSObject {
         onShowAbout()
     }
 
-    @objc private func copyDiagnostics() {
-        onCopyDiagnostics()
+    @objc private func showDiagnostics() {
+        onShowDiagnostics()
     }
 
     @objc private func openPrivacySettings() {

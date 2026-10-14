@@ -203,9 +203,9 @@ appear, and every key is in there too, the application shortcuts under
 hand are picked up while Flip runs. It is the only file Flip reads; there is
 nowhere else a setting can be hiding.
 
-**Something is wrong and I want to report it.** **Copy Diagnostics** in the menu
-puts the version, both permissions, every setting and Flip's recent log on the
-clipboard — enough for an issue without opening a terminal.
+**Something is wrong and I want to report it.** **Diagnostics…** in the menu
+shows the version, both permissions, every setting and Flip's recent log, with a
+Copy button — enough for an issue without opening a terminal.
 
 ## Contributing
 
